@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Subject - Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-body">
+    <div class="admin-layout">
+        <!-- Admin Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="admin-logo">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                <a href="/" class="back-to-site">← Back to Site</a>
+            </div>
+            
+            <ul class="admin-nav">
+                <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/subjects" class="active"><i class="fas fa-book-open"></i> Subjects</a></li>
+                <li><a href="/admin/lessons"><i class="fas fa-chalkboard-teacher"></i> Lessons</a></li>
+                <li><a href="/admin/questions"><i class="fas fa-question-circle"></i> Questions</a></li>
+                <li><a href="/admin/videos"><i class="fas fa-video"></i> Videos</a></li>
+                <li><a href="/admin/export"><i class="fas fa-download"></i> Export/Import</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <header class="admin-header">
+                <div class="header-actions">
+                    <div>
+                        <h1>Create New Subject</h1>
+                        <p>Add a new learning subject to your platform</p>
+                    </div>
+                    <a href="/admin/subjects" class="action-btn secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Subjects
+                    </a>
+                </div>
+            </header>
+
+            <div class="form-container">
+                <form id="createSubjectForm" class="admin-form">
+                    <div class="form-section">
+                        <h3>Basic Information</h3>
+                        
+                        <div class="form-group">
+                            <label for="subjectName">Subject Name *</label>
+                            <input type="text" id="subjectName" name="name" required 
+                                   placeholder="e.g., Python Programming, Mathematics, History">
+                            <small>This will be displayed to students</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subjectId">Subject ID *</label>
+                            <input type="text" id="subjectId" name="id" required 
+                                   placeholder="e.g., python, math, history" readonly>
+                            <small>Auto-generated from subject name (lowercase, no spaces)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description *</label>
+                            <textarea id="description" name="description" rows="4" required 
+                                      placeholder="Describe what students will learn in this subject..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Visual Settings</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="icon">Icon *</label>
+                                <div class="icon-selector">
+                                    <input type="text" id="icon" name="icon" value="fas fa-book" required>
+                                    <div class="icon-preview">
+                                        <i id="iconPreview" class="fas fa-book"></i>
+                                    </div>
+                                </div>
+                                <small>Font Awesome icon class (e.g., fas fa-book, fab fa-python)</small>
+                                
+                                <div class="icon-suggestions">
+                                    <button type="button" class="icon-btn" data-icon="fas fa-book">
+                                        <i class="fas fa-book"></i> Book
+                                    </button>
+                                    <button type="button" class="icon-btn" data-icon="fab fa-python">
+                                        <i class="fab fa-python"></i> Python
+                                    </button>
+                                    <button type="button" class="icon-btn" data-icon="fas fa-calculator">
+                                        <i class="fas fa-calculator"></i> Math
+                                    </button>
+                                    <button type="button" class="icon-btn" data-icon="fas fa-flask">
+                                        <i class="fas fa-flask"></i> Science
+                                    </button>
+                                    <button type="button" class="icon-btn" data-icon="fas fa-globe">
+                                        <i class="fas fa-globe"></i> Geography
+                                    </button>
+                                    <button type="button" class="icon-btn" data-icon="fas fa-landmark">
+                                        <i class="fas fa-landmark"></i> History
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="color">Theme Color *</label>
+                                <div class="color-selector">
+                                    <input type="color" id="color" name="color" value="#4299e1" required>
+                                    <div class="color-preview" id="colorPreview"></div>
+                                </div>
+                                <small>Primary color for this subject's branding</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section preview-section">
+                        <h3>Preview</h3>
+                        <div class="subject-preview">
+                            <div class="subject-card-preview">
+                                <div class="subject-icon-preview">
+                                    <i id="previewIcon" class="fas fa-book"></i>
+                                </div>
+                                <div class="subject-content-preview">
+                                    <h4 id="previewName">Subject Name</h4>
+                                    <p id="previewDescription">Subject description will appear here...</p>
+                                    <div class="subject-stats-preview">
+                                        <span><i class="fas fa-book"></i> 0 Topics</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="window.location.href='/admin/subjects'">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Create Subject
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <div id="loadingModal" class="modal hidden">
+        <div class="loading-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Creating subject...</p>
+        </div>
+    </div>
+
+    <style>
+        .admin-body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .admin-sidebar {
+            width: 280px;
+            background: #1a2332;
+            color: white;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .admin-logo {
+            padding: 20px;
+            border-bottom: 1px solid #2d3748;
+            text-align: center;
+        }
+
+        .admin-logo h2 {
+            margin: 0;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .back-to-site {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .back-to-site:hover {
+            color: #4299e1;
+        }
+
+        .admin-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .admin-nav li a {
+            display: block;
+            padding: 15px 20px;
+            color: #a0aec0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .admin-nav li a:hover,
+        .admin-nav li a.active {
+            background: #2d3748;
+            color: #4299e1;
+            border-left-color: #4299e1;
+        }
+
+        .admin-nav li a i {
+            margin-right: 10px;
+            width: 16px;
+        }
+
+        .admin-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .admin-header {
+            margin-bottom: 30px;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 2.5rem;
+        }
+
+        .admin-header p {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.secondary {
+            background: #718096;
+            color: white;
+        }
+
+        .action-btn.secondary:hover {
+            background: #4a5568;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+
+        .admin-form {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-section h3 {
+            margin: 0 0 25px 0;
+            color: #2d3748;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #718096;
+            font-size: 0.85rem;
+        }
+
+        .icon-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .icon-selector input {
+            flex: 1;
+        }
+
+        .icon-preview {
+            width: 50px;
+            height: 50px;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #4299e1;
+        }
+
+        .icon-suggestions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .icon-btn {
+            padding: 10px 15px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .icon-btn:hover,
+        .icon-btn.selected {
+            border-color: #4299e1;
+            background: #ebf8ff;
+            color: #4299e1;
+        }
+
+        .color-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-selector input {
+            width: 60px;
+            height: 50px;
+            padding: 0;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+        }
+
+        .color-preview {
+            width: 100px;
+            height: 50px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: #4299e1;
+        }
+
+        .preview-section {
+            background: #f7fafc;
+            margin: 0 -40px 40px -40px;
+            padding: 40px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .subject-card-preview {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            max-width: 500px;
+        }
+
+        .subject-icon-preview i {
+            font-size: 3rem;
+            color: #4299e1;
+        }
+
+        .subject-content-preview h4 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+            font-size: 1.3rem;
+        }
+
+        .subject-content-preview p {
+            margin: 0 0 10px 0;
+            color: #718096;
+        }
+
+        .subject-stats-preview {
+            font-size: 0.85rem;
+            color: #4299e1;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .loading-content i {
+            font-size: 2rem;
+            color: #4299e1;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                width: 100%;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-form {
+                padding: 20px;
+            }
+        }
+    </style>
+
+    <script>
+        // Auto-generate subject ID from name
+        document.getElementById('subjectName').addEventListener('input', function() {
+            const name = this.value;
+            const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+            document.getElementById('subjectId').value = id;
+            updatePreview();
+        });
+
+        // Update icon preview
+        document.getElementById('icon').addEventListener('input', function() {
+            updateIconPreview(this.value);
+            updatePreview();
+        });
+
+        // Update color preview
+        document.getElementById('color').addEventListener('input', function() {
+            updateColorPreview(this.value);
+            updatePreview();
+        });
+
+        // Update description preview
+        document.getElementById('description').addEventListener('input', updatePreview);
+
+        // Icon button handlers
+        document.querySelectorAll('.icon-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const icon = this.dataset.icon;
+                document.getElementById('icon').value = icon;
+                updateIconPreview(icon);
+                updatePreview();
+                
+                // Update button states
+                document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        function updateIconPreview(iconClass) {
+            const preview = document.getElementById('iconPreview');
+            preview.className = iconClass;
+        }
+
+        function updateColorPreview(color) {
+            document.getElementById('colorPreview').style.background = color;
+        }
+
+        function updatePreview() {
+            const name = document.getElementById('subjectName').value || 'Subject Name';
+            const description = document.getElementById('description').value || 'Subject description will appear here...';
+            const icon = document.getElementById('icon').value;
+            const color = document.getElementById('color').value;
+
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewDescription').textContent = description;
+            document.getElementById('previewIcon').className = icon;
+            document.getElementById('previewIcon').style.color = color;
+        }
+
+        // Form submission
+        document.getElementById('createSubjectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                id: document.getElementById('subjectId').value,
+                name: document.getElementById('subjectName').value,
+                description: document.getElementById('description').value,
+                icon: document.getElementById('icon').value,
+                color: document.getElementById('color').value
+            };
+
+            document.getElementById('loadingModal').classList.remove('hidden');
+
+            try {
+                const response = await fetch('/admin/subjects/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Subject created successfully!');
+                    window.location.href = '/admin/subjects';
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to create subject'));
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                document.getElementById('loadingModal').classList.add('hidden');
+            }
+        });
+
+        // Initialize preview
+        updatePreview();
+        updateColorPreview('#4299e1');
+    </script>
+</body>
+</html>

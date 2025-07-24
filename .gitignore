@@ -2,7 +2,7 @@
 /*
 
 # Exception: Don't ignore the self-pace-learning-joshTest2 directory
-!/self-pace-learning-joshTest2/
+!/self-paced-learning/
 
 # Don't ignore this .gitignore file itself
 !.gitignore

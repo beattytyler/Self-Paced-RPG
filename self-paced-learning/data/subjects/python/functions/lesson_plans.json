@@ -1,0 +1,575 @@
+{
+  "lessons": {
+    "python function basics": {
+      "title": "A Comprehensive Guide to Python Functions",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "1. The Role of Functions in Programming"
+        },
+        {
+          "type": "paragraph",
+          "text": "At its core, a function is a named, reusable block of code designed to perform a single, related action. Think of them as mini-programs within your main program. Their primary purpose is to promote code organization, reduce repetition (following the DRY principle: Don't Repeat Yourself), and improve readability."
+        },
+        {
+          "type": "header",
+          "text": "2. Anatomy of a Python Function"
+        },
+        {
+          "type": "code",
+          "text": "#       (2)          (3)\n#       |            |\ndef function_name(parameter1, parameter2):\n    # (4) Function Body\n    # Code to perform a task\n    result = parameter1 + parameter2\n    # (5) Return Statement\n    return result"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>1. `def` keyword:</strong> Always starts a function definition.",
+            "<strong>2. Function Name:</strong> A descriptive name that follows Python's variable naming rules (e.g., `calculate_sum`, `send_data`).",
+            "<strong>3. Parameters:</strong> Variables inside the parentheses `()` that act as placeholders for the data a function needs to work. They are optional.",
+            "<strong>4. Function Body:</strong> The indented block of code that contains the logic of the function.",
+            "<strong>5. `return` statement:</strong> (Optional) Exits the function and sends a value back to where the function was called. A function that doesn't explicitly return a value implicitly returns `None`."
+          ]
+        },
+        {
+          "type": "header",
+          "text": "3. Parameters vs. Arguments"
+        },
+        {
+          "type": "paragraph",
+          "text": "Though often used interchangeably, these terms have distinct meanings:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Parameter:</strong> The variable listed inside the parentheses in the function <em>definition</em> (e.g., `name` in `def greet(name):`).",
+            "<strong>Argument:</strong> The actual value that is sent to the function when it is <em>called</em> (e.g., `'Alice'` in `greet('Alice')`)."
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Master argument passing with defaults, `*args`, and `**kwargs` for ultimate flexibility. Use scope correctly to avoid bugs, and leverage lambda functions for concise, simple operations."
+        }
+      ]
+    },
+    "function definition": {
+      "title": "Defining Functions: Syntax and Terminology",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "The Blueprint of a Function"
+        },
+        {
+          "type": "paragraph",
+          "text": "A function definition is the blueprint that tells Python what a function is named, what information it needs, and what it does. Getting the syntax right is crucial."
+        },
+        {
+          "type": "header",
+          "text": "Core Syntax Breakdown"
+        },
+        {
+          "type": "code",
+          "text": "def get_full_name(first_name, last_name):\n    \"\"\"This is a docstring. It explains the function.\"\"\"\n    full_name = f\"{first_name} {last_name}\"\n    return full_name.title()"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>`def`</strong>: The keyword that starts every function definition.",
+            "<strong>`get_full_name`</strong>: The function name. Use `snake_case` for function names in Python.",
+            "<strong>`(first_name, last_name)`</strong>: The parameters of the function, enclosed in parentheses.",
+            "<strong>`:`</strong>: A colon marks the end of the function header.",
+            "<strong>Indented Body</strong>: The code block that makes up the function's logic. It must be indented (usually 4 spaces).",
+            "<strong>Docstring</strong>: An optional string literal as the first line to explain what the function does. It's a best practice for documentation.",
+            "<strong>`return`</strong>: The keyword to send a value back from the function."
+          ]
+        },
+        {
+          "type": "header",
+          "text": "Key Terminology"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Definition/Declaration:</strong> The process of creating a function using `def`.",
+            "<strong>Call/Invocation:</strong> The act of executing the function by using its name followed by parentheses, e.g., `get_full_name('john', 'doe')`.",
+            "<strong>Parameter:</strong> The variable name in the function's definition (e.g., `first_name`).",
+            "<strong>Argument:</strong> The actual data passed into the function when it is called (e.g., `'john'`).",
+            "<strong>Return Value:</strong> The data that a function sends back using the `return` statement."
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> A function definition binds a name to a block of code. Every part, from `def` to the colon to the indentation, is syntactically required."
+        }
+      ]
+    },
+    "syntax": {
+      "title": "Reviewing Core Function Syntax",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Why Syntax Matters"
+        },
+        {
+          "type": "paragraph",
+          "text": "Syntax refers to the strict rules of a programming language. A single misplaced character can cause a `SyntaxError` and prevent your program from running at all. For functions, the most common errors involve the colon and indentation."
+        },
+        {
+          "type": "header",
+          "text": "Common Syntax Pitfalls"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Missing Colon:</strong> The function definition line *must* end with a colon (`:`). Forgetting it is a very common error.",
+            "<strong>Incorrect Indentation:</strong> The code inside the function body *must* be indented consistently (the standard is 4 spaces). All lines of the body must have at least this much indentation.",
+            "<strong>Mismatched Parentheses:</strong> Ensure all parentheses in the function header and within the body are properly opened and closed."
+          ]
+        },
+        {
+          "type": "code",
+          "text": "# CORRECT SYNTAX\ndef correct_function(param1, param2):\n    # Body is indented\n    result = param1 + param2\n    return result\n\n# --- COMMON MISTAKES ---\n\n# INCORRECT: Missing colon at the end\n# def incorrect_function(p1, p2)\n#     print(p1)\n\n# INCORRECT: Body is not indented\n# def incorrect_function(p1, p2):\n# print(p1)"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Always double-check for the colon (`:`) after the function's parameter list and ensure every line of the function's body is properly indented."
+        }
+      ]
+    },
+    "terminology": {
+      "title": "Function Terminology and Concepts",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Key Terminology"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Definition/Declaration</strong>: The process of creating a function using `def`.",
+            "<strong>Call/Invocation</strong>: The act of executing the function by using its name followed by parentheses, e.g., `get_full_name('john', 'doe')`.",
+            "<strong>Parameter</strong>: The variable name in the function's definition (e.g., `first_name`).",
+            "<strong>Argument</strong>: The actual data passed into the function when it is called (e.g., `'john'`).",
+            "<strong>Return Value</strong>: The data that a function sends back using the `return` statement."
+          ]
+        },
+        {
+          "type": "header",
+          "text": "Understanding the Difference: Parameters vs Arguments"
+        },
+        {
+          "type": "paragraph",
+          "text": "This distinction is crucial for clear communication about functions:"
+        },
+        {
+          "type": "code",
+          "text": "def greet_user(name, greeting):  # 'name' and 'greeting' are PARAMETERS\n    return f\"{greeting}, {name}!\"\n\n# When calling the function:\nresult = greet_user(\"Alice\", \"Hello\")  # \"Alice\" and \"Hello\" are ARGUMENTS"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Remember:</strong> Parameters are in the definition, arguments are in the call."
+        }
+      ]
+    },
+    "passing function arguments": {
+      "title": "Advanced Argument Passing Techniques",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "5. Advanced Argument Passing"
+        },
+        {
+          "type": "paragraph",
+          "text": "Python offers flexible ways to pass arguments to functions, making your code more readable and your functions more versatile."
+        },
+        {
+          "type": "header",
+          "text": "Types of Arguments"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Positional Arguments:</strong> Arguments passed in a specific order. `greet('John', 'Hello')`",
+            "<strong>Keyword Arguments:</strong> Arguments passed by specifying parameter names. `greet(name='John', greeting='Hello')`",
+            "<strong>Default Arguments:</strong> Parameters with preset values. `def greet(name, greeting='Hello'):`",
+            "<strong>Variable Arguments (*args):</strong> Accept any number of positional arguments. `def sum_all(*numbers):`",
+            "<strong>Variable Keyword Arguments (**kwargs):</strong> Accept any number of keyword arguments. `def display_info(**details):`"
+          ]
+        },
+        {
+          "type": "code",
+          "text": "def versatile_function(pos_arg, default_arg='default', *args, **kwargs):\n    print(f\"Positional: {pos_arg}\")\n    print(f\"Default: {default_arg}\")\n    print(f\"Extra positional: {args}\")\n    print(f\"Extra keyword: {kwargs}\")\n\n# Example call:\nversatile_function('required', 'custom', 1, 2, 3, name='John', age=25)"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Master these argument types to create flexible, reusable functions that can handle various input scenarios."
+        }
+      ]
+    },
+    "keyword arguments": {
+      "title": "Using Keyword Arguments Effectively",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "What Are Keyword Arguments?"
+        },
+        {
+          "type": "paragraph",
+          "text": "When you call a function, you can specify which parameter each argument corresponds to by using the parameter's name. This is called a 'keyword argument'. It frees you from having to pass arguments in the exact order they were defined."
+        },
+        {
+          "type": "header",
+          "text": "Positional vs. Keyword Arguments"
+        },
+        {
+          "type": "code",
+          "text": "def create_email(recipient, subject, body):\n    print(f'To: {recipient}')\n    print(f'Subject: {subject}')\n    print(f'---\\n{body}')\n\n# --- 1. Calling with positional arguments (order matters) ---\ncreate_email('student@example.com', 'Your Grades', 'See attached.')\n\n# --- 2. Calling with keyword arguments (order does not matter) ---\ncreate_email(subject='Project Update', body='Meeting at 4pm.', recipient='boss@example.com')"
+        },
+        {
+          "type": "header",
+          "text": "Benefits of Keyword Arguments"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Clarity:</strong> Makes function calls self-documenting",
+            "<strong>Flexibility:</strong> Arguments can be passed in any order",
+            "<strong>Error Prevention:</strong> Reduces mistakes from argument order confusion",
+            "<strong>Partial Specification:</strong> Can specify only some arguments by name when others have defaults"
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Keyword arguments make your function calls more readable and less error-prone, especially for functions with many parameters. Once you use a keyword argument, all subsequent arguments in that call must also be keyword arguments."
+        }
+      ]
+    },
+    "default parameter values": {
+      "title": "Using Default Parameter Values",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "What Are Default Parameter Values?"
+        },
+        {
+          "type": "paragraph",
+          "text": "A default parameter value is a value assigned to a parameter in the function definition. If a user calls the function without providing an argument for that parameter, it will automatically use the default value. This makes arguments optional."
+        },
+        {
+          "type": "header",
+          "text": "Syntax and Example"
+        },
+        {
+          "type": "paragraph",
+          "text": "You define a default value using the assignment operator (`=`) in the function header."
+        },
+        {
+          "type": "code",
+          "text": "def create_user(username, active=True, role='guest'):\n    print(f\"Creating user: {username}\")\n    print(f\"Status: {'Active' if active else 'Inactive'}\")\n    print(f\"Role: {role}\")\n\n# --- Calling the function in different ways ---\n# 1. Providing all arguments\ncreate_user('admin', active=False, role='administrator')\n\n# 2. Omitting 'role', so the default is used\ncreate_user('testuser', active=True)\n\n# 3. Omitting both 'active' and 'role'\ncreate_user('newbie')"
+        },
+        {
+          "type": "header",
+          "text": "Important Rules"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Order Matters:</strong> Parameters with default values must come after those without defaults",
+            "<strong>Avoid Mutable Defaults:</strong> Don't use lists or dictionaries as default values",
+            "<strong>Use None Pattern:</strong> For mutable defaults, use `None` and check inside the function"
+          ]
+        },
+        {
+          "type": "code",
+          "text": "# GOOD: Using None pattern for mutable defaults\ndef add_item(item, item_list=None):\n    if item_list is None:\n        item_list = []  # Create new list each time\n    item_list.append(item)\n    return item_list"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Default values make your functions more flexible and user-friendly. Any parameters with default values must be listed *after* any parameters that do not have defaults."
+        }
+      ]
+    },
+    "*args and **kwargs": {
+      "title": "Mastering *args and **kwargs",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Why Use Flexible Arguments?"
+        },
+        {
+          "type": "paragraph",
+          "text": "Sometimes, you need to create a function that can accept a variable number of arguments. For example, a function to sum numbers should work whether you give it two or ten numbers. This is where `*args` and `**kwargs` provide essential flexibility."
+        },
+        {
+          "type": "header",
+          "text": "Understanding `*args`"
+        },
+        {
+          "type": "paragraph",
+          "text": "The `*args` syntax in a function definition allows you to pass a variable number of <strong>positional arguments</strong>. Python collects these arguments into a <strong>tuple</strong>. The name `args` is a convention; you could name it `*numbers` or `*items`, but `*args` is standard."
+        },
+        {
+          "type": "code",
+          "text": "def sum_all(*numbers):\n    print(f\"Inside the function, 'numbers' is a {type(numbers)}: {numbers}\")\n    total = 0\n    for num in numbers:\n        total += num\n    return total\n\n# Calling with different numbers of arguments\nprint(sum_all(1, 2, 3))       # Output: 6\nprint(sum_all(10, 20, 30, 40)) # Output: 100"
+        },
+        {
+          "type": "header",
+          "text": "Understanding `**kwargs`"
+        },
+        {
+          "type": "paragraph",
+          "text": "The `**kwargs` syntax allows you to pass a variable number of <strong>keyword arguments</strong>. Python collects these into a <strong>dictionary</strong>, where the argument names are the keys. The name `kwargs` (for 'keyword arguments') is also a convention."
+        },
+        {
+          "type": "code",
+          "text": "def display_user_profile(**details):\n    print(f\"Inside the function, 'details' is a {type(details)}: {details}\")\n    print(\"--- User Profile ---\")\n    for key, value in details.items():\n        print(f\"{key.title()}: {value}\")\n\ndisplay_user_profile(name='Chris', age=30, city='New York', status='Active')"
+        },
+        {
+          "type": "header",
+          "text": "Combining Everything"
+        },
+        {
+          "type": "code",
+          "text": "def ultimate_function(required_arg, default_arg='default', *args, **kwargs):\n    print(f\"Required: {required_arg}\")\n    print(f\"Default: {default_arg}\")\n    print(f\"Args: {args}\")\n    print(f\"Kwargs: {kwargs}\")\n\n# Example usage:\nultimate_function('must_have', 'custom', 1, 2, 3, name='John', age=25)"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Use `*args` to capture extra positional arguments as a tuple. Use `**kwargs` to capture extra keyword arguments as a dictionary. They must appear in that order after standard arguments."
+        }
+      ]
+    },
+    "positional-only and keyword-only arguments": {
+      "title": "Controlling Argument Types",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Why Enforce Argument Types?"
+        },
+        {
+          "type": "paragraph",
+          "text": "As functions become more complex, you may want to enforce how arguments are passed to prevent ambiguity and make your function's API clearer. Python allows you to specify that some arguments can *only* be passed by position and others *only* by keyword."
+        },
+        {
+          "type": "header",
+          "text": "Positional-Only Arguments (`/`)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Any parameter listed <strong>before</strong> a forward slash (`/`) in a function definition can only be passed as a positional argument. You cannot use its name as a keyword."
+        },
+        {
+          "type": "code",
+          "text": "def process_element(elem, /):\n    print(elem)\n\n# --- VALID CALLS ---\nprocess_element(10)        # Passed by position\n\n# --- INVALID CALL ---\n# process_element(elem=10)   # This will raise a TypeError"
+        },
+        {
+          "type": "header",
+          "text": "Keyword-Only Arguments (`*`)"
+        },
+        {
+          "type": "paragraph",
+          "text": "Any parameter listed <strong>after</strong> a bare asterisk (`*`) or `*args` must be passed as a keyword argument. You cannot pass it by position."
+        },
+        {
+          "type": "code",
+          "text": "def set_config(*, verbose, retries=3):\n    print(f\"Verbose mode: {verbose}\")\n    print(f\"Retries: {retries}\")\n\n# --- VALID CALLS ---\nset_config(verbose=True)\nset_config(verbose=False, retries=5)\n\n# --- INVALID CALL ---\n# set_config(True)           # This will raise a TypeError"
+        },
+        {
+          "type": "header",
+          "text": "Combining All Three"
+        },
+        {
+          "type": "paragraph",
+          "text": "You can combine them to create a robust and clear function signature."
+        },
+        {
+          "type": "code",
+          "text": "def create_connection(host, port, /, timeout=10, *, secure=True):\n    # host and port: Must be positional\n    # timeout: Can be positional or keyword\n    # secure: Must be keyword\n    pass\n\n# Valid calls:\ncreate_connection('localhost', 8080, secure=False)\ncreate_connection('localhost', 8080, 5, secure=True)"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Use `/` to force arguments to be positional. Use `*` to force subsequent arguments to be keyword-only. This improves the clarity and reliability of your functions."
+        }
+      ]
+    },
+    "return values": {
+      "title": "Understanding Return Values",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Getting Data Out of a Function"
+        },
+        {
+          "type": "paragraph",
+          "text": "Most functions process data and need to send a result back to the part of the code that called it. The `return` statement is how a function gives back this result. The `return` statement immediately ends the function's execution."
+        },
+        {
+          "type": "header",
+          "text": "Returning Different Things"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>No `return` statement:</strong> If a function doesn't have a `return` statement, or if it reaches the end without hitting one, it automatically returns the special value `None`.",
+            "<strong>Returning a single value:</strong> `return some_variable`",
+            "<strong>Returning multiple values:</strong> You can return multiple values by separating them with a comma. Python automatically packs them into a tuple. `return name, age, status`"
+          ]
+        },
+        {
+          "type": "code",
+          "text": "def get_user_stats(user_data):\n    # Calculates name length and number of posts\n    name_length = len(user_data['name'])\n    post_count = len(user_data['posts'])\n    \n    # Returns two values, which will be packed into a tuple\n    return name_length, post_count\n\nstats = get_user_stats({'name': 'Alex', 'posts': [1, 2, 3]})\nprint(f'User stats (as a tuple): {stats}') # Output: (4, 3)\n\n# You can unpack the tuple directly into variables\nlength, num_posts = get_user_stats({'name': 'Alex', 'posts': [1, 2, 3]})\nprint(f'Name length: {length}')"
+        },
+        {
+          "type": "header",
+          "text": "Early Returns and Control Flow"
+        },
+        {
+          "type": "code",
+          "text": "def validate_age(age):\n    if age < 0:\n        return \"Invalid: Age cannot be negative\"\n    if age > 150:\n        return \"Invalid: Age seems unrealistic\"\n    if age < 18:\n        return \"Minor\"\n    return \"Adult\""
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> The `return` statement is the primary way for a function to output data. Understanding that it stops execution and that multiple returned items form a tuple is crucial."
+        }
+      ]
+    },
+    "function return values": {
+      "title": "Understanding Return Values",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Getting Data Out of a Function"
+        },
+        {
+          "type": "paragraph",
+          "text": "Most functions process data and need to send a result back to the part of the code that called it. The `return` statement is how a function gives back this result. The `return` statement immediately ends the function's execution."
+        },
+        {
+          "type": "header",
+          "text": "Returning Different Things"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>No `return` statement:</strong> If a function doesn't have a `return` statement, or if it reaches the end without hitting one, it automatically returns the special value `None`.",
+            "<strong>Returning a single value:</strong> `return some_variable`",
+            "<strong>Returning multiple values:</strong> You can return multiple values by separating them with a comma. Python automatically packs them into a tuple. `return name, age, status`"
+          ]
+        },
+        {
+          "type": "code",
+          "text": "def calculate_stats(numbers):\n    if not numbers:\n        return None  # Early return for empty list\n    \n    total = sum(numbers)\n    average = total / len(numbers)\n    maximum = max(numbers)\n    minimum = min(numbers)\n    \n    # Return multiple values as a tuple\n    return total, average, maximum, minimum\n\n# Usage:\nresult = calculate_stats([1, 2, 3, 4, 5])\nprint(result)  # (15, 3.0, 5, 1)\n\n# Or unpack directly:\ntotal, avg, max_val, min_val = calculate_stats([1, 2, 3, 4, 5])"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> The `return` statement is the primary way for a function to output data. Understanding that it stops execution and that multiple returned items form a tuple is crucial."
+        }
+      ]
+    },
+    "recursive functions": {
+      "title": "The Concept of Recursive Functions",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "What is Recursion?"
+        },
+        {
+          "type": "paragraph",
+          "text": "A recursive function is a function that <strong>calls itself</strong> during its execution. This technique is a powerful way to solve problems that can be broken down into smaller, self-similar sub-problems. It's an alternative to using loops for iteration."
+        },
+        {
+          "type": "header",
+          "text": "The Two Essential Components"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>1. Base Case:</strong> A condition within the function that stops the recursion. Without a base case, the function would call itself forever, leading to a `RecursionError`.",
+            "<strong>2. Recursive Step:</strong> The part of the function where it calls itself, but with a modified argument that brings it closer to the base case."
+          ]
+        },
+        {
+          "type": "header",
+          "text": "Example: Factorial Calculation"
+        },
+        {
+          "type": "paragraph",
+          "text": "The factorial of a number `n` (written as `n!`) is the product of all positive integers up to `n`. For example, `4! = 4 * 3 * 2 * 1 = 24`. This can be expressed recursively: `n! = n * (n-1)!`."
+        },
+        {
+          "type": "code",
+          "text": "def factorial(n):\n    # 1. Base Case: When n is 1, stop the recursion.\n    if n == 1:\n        return 1\n    # 2. Recursive Step: Call the function with a smaller value (n - 1).\n    else:\n        return n * factorial(n - 1)\n\nprint(factorial(4)) # Output: 24\n# How it works:\n# factorial(4) -> 4 * factorial(3)\n# factorial(3) -> 3 * factorial(2)\n# factorial(2) -> 2 * factorial(1)\n# factorial(1) -> returns 1\n# The results are then multiplied back up: 2 * 1 -> 3 * 2 -> 4 * 6 = 24"
+        },
+        {
+          "type": "header",
+          "text": "Another Example: Fibonacci Sequence"
+        },
+        {
+          "type": "code",
+          "text": "def fibonacci(n):\n    # Base cases\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 1\n    # Recursive step\n    else:\n        return fibonacci(n-1) + fibonacci(n-2)\n\n# Generate first 10 Fibonacci numbers\nfor i in range(10):\n    print(f\"F({i}) = {fibonacci(i)}\")"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Every recursive function needs a base case to stop the process and a recursive step to continue it. It's a powerful but sometimes less efficient alternative to loops."
+        }
+      ]
+    },
+    "error handling": {
+      "title": "Error Handling in Functions",
+      "videoId": "kvO_nHnvPtQ",
+      "content": [
+        {
+          "type": "header",
+          "text": "Why Handle Errors?"
+        },
+        {
+          "type": "paragraph",
+          "text": "Writing a function that works with perfect input is easy. Writing a 'robust' function that can handle unexpected or bad input is the mark of a good programmer. Error handling prevents your entire program from crashing when something goes wrong."
+        },
+        {
+          "type": "header",
+          "text": "The `try...except` Block"
+        },
+        {
+          "type": "paragraph",
+          "text": "The primary tool for error handling is the `try...except` block. Python will 'try' to run the code in the `try` block. If an error occurs, it stops and runs the code in the `except` block instead of crashing."
+        },
+        {
+          "type": "code",
+          "text": "def divide(a, b):\n    try:\n        result = a / b\n        return result\n    except ZeroDivisionError:\n        # This block only runs if a ZeroDivisionError occurs\n        print('Error: Cannot divide by zero!')\n        return None # Return a safe value\n\n# --- Calling the function ---\nprint(divide(10, 2))  # Output: 5.0\nprint(divide(10, 0))  # Output: Error: Cannot divide by zero! \n                      #          None"
+        },
+        {
+          "type": "header",
+          "text": "Common Error Types in Functions"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>TypeError:</strong> Wrong data type passed as argument",
+            "<strong>ValueError:</strong> Correct type but inappropriate value",
+            "<strong>ZeroDivisionError:</strong> Division by zero",
+            "<strong>IndexError:</strong> List index out of range",
+            "<strong>KeyError:</strong> Dictionary key doesn't exist"
+          ]
+        },
+        {
+          "type": "code",
+          "text": "def safe_calculator(operation, a, b):\n    try:\n        if operation == 'add':\n            return a + b\n        elif operation == 'subtract':\n            return a - b\n        elif operation == 'multiply':\n            return a * b\n        elif operation == 'divide':\n            return a / b\n        else:\n            raise ValueError(f\"Unknown operation: {operation}\")\n    except ZeroDivisionError:\n        return \"Error: Cannot divide by zero\"\n    except TypeError:\n        return \"Error: Invalid input types\"\n    except ValueError as e:\n        return f\"Error: {e}\"\n\n# Test the function:\nprint(safe_calculator('divide', 10, 2))  # 5.0\nprint(safe_calculator('divide', 10, 0))  # Error: Cannot divide by zero\nprint(safe_calculator('power', 2, 3))    # Error: Unknown operation: power"
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Wrap risky operations (like division, file access, or type conversions) in a `try...except` block to gracefully manage potential errors and make your functions more reliable."
+        }
+      ]
+    }
+  }
+}
