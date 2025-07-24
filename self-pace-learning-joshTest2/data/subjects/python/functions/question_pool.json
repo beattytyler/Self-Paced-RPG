@@ -1,0 +1,309 @@
+{
+  "questions": [
+    {
+      "question": "Which keyword is used to begin a function definition in Python?",
+      "type": "multiple_choice",
+      "options": ["function", "def", "define", "fun"],
+      "answer_index": 1,
+      "tags": ["function definition", "syntax", "python function basics"]
+    },
+    {
+      "question": "What is the primary characteristic of a Python function?",
+      "type": "multiple_choice",
+      "options": [
+        "It must always return a numerical value.",
+        "It is a block of code that only runs when it is called.",
+        "It can only be defined once in a program.",
+        "It automatically executes when the Python script starts."
+      ],
+      "answer_index": 1,
+      "tags": ["function definition", "python function basics"]
+    },
+    {
+      "question": "What punctuation mark must end a function definition header?",
+      "type": "multiple_choice",
+      "options": [
+        "A semicolon (;)",
+        "A period (.)",
+        "A colon (:)",
+        "A comma (,)"
+      ],
+      "answer_index": 2,
+      "tags": ["function definition", "syntax"]
+    },
+    {
+      "question": "Complete the function definition: ____ greet():",
+      "type": "fill_in_the_blank",
+      "correct_answer": "def",
+      "tags": ["function definition", "syntax", "python function basics"]
+    },
+    {
+      "question": "Write a simple function named 'say_hello' that prints 'Hello, World!' when called.",
+      "type": "coding",
+      "starter_code": "# Write your function here\n",
+      "sample_solution": "def say_hello():\n    print('Hello, World!')",
+      "tags": ["function definition", "python function basics"]
+    },
+    {
+      "question": "In the function definition `def greet(user_name):`, what is `user_name` technically referred to?",
+      "type": "multiple_choice",
+      "options": [
+        "An argument",
+        "A parameter",
+        "A global variable",
+        "A return value"
+      ],
+      "answer_index": 1,
+      "tags": [
+        "passing function arguments",
+        "function definition",
+        "terminology"
+      ]
+    },
+    {
+      "question": "When you call a function like `my_func('hello')`, what is the value 'hello' technically called?",
+      "type": "multiple_choice",
+      "options": ["A parameter", "A variable", "A default", "An argument"],
+      "answer_index": 3,
+      "tags": ["passing function arguments", "terminology"]
+    },
+    {
+      "question": "In function definitions, variables inside parentheses are called ____, while values passed during function calls are called ____.",
+      "type": "fill_in_the_blank",
+      "correct_answer": "parameters, arguments",
+      "tags": ["passing function arguments", "terminology"]
+    },
+    {
+      "question": "Create a function named 'multiply' that takes two parameters and returns their product.",
+      "type": "coding",
+      "starter_code": "# Define the multiply function\n",
+      "sample_solution": "def multiply(a, b):\n    return a * b",
+      "tags": [
+        "passing function arguments",
+        "function definition",
+        "return values"
+      ]
+    },
+    {
+      "question": "If a function is defined as `def send_email(recipient, subject, body):`, which call is valid and correctly uses keyword arguments?",
+      "type": "multiple_choice",
+      "options": [
+        "send_email(recipient=\"user@example.com\", \"Hello\", body=\"Hi there!\")",
+        "send_email(\"user@example.com\", subject=\"Meeting Update\", body=\"See attached.\")",
+        "send_email(subject=\"Important\", \"user@example.com\", \"Message content\")",
+        "send_email(\"user@example.com\", \"Greetings\", body_content=\"Welcome!\")"
+      ],
+      "answer_index": 1,
+      "tags": ["keyword arguments", "passing function arguments"]
+    },
+    {
+      "question": "Write a function call for 'create_user' with parameters name, age, and email, using keyword arguments for age=25 and email='user@test.com'",
+      "type": "coding",
+      "starter_code": "# Assume the function is: def create_user(name, age, email):\n#     pass\n\n# Write your function call here:\n",
+      "sample_solution": "create_user('John', age=25, email='user@test.com')",
+      "tags": ["keyword arguments", "passing function arguments"]
+    },
+    {
+      "question": "To allow a function to accept an arbitrary number of positional arguments, which syntax is used in its definition?",
+      "type": "multiple_choice",
+      "options": [
+        "def my_func(&params):",
+        "def my_func(*params):",
+        "def my_func(**params):",
+        "def my_func(params[]):"
+      ],
+      "answer_index": 1,
+      "tags": ["*args and **kwargs", "passing function arguments"]
+    },
+    {
+      "question": "When you define a function with `**kwargs`, what Python data type does `kwargs` become inside the function?",
+      "type": "multiple_choice",
+      "options": [
+        "A tuple of keyword arguments",
+        "A list of argument values",
+        "A dictionary where keys are argument names and values are their values",
+        "A set of unique argument names"
+      ],
+      "answer_index": 2,
+      "tags": ["*args and **kwargs", "passing function arguments"]
+    },
+    {
+      "question": "Complete the function definition to accept any number of positional arguments: def calculate_sum(____numbers):",
+      "type": "fill_in_the_blank",
+      "correct_answer": "*",
+      "tags": ["*args and **kwargs", "passing function arguments"]
+    },
+    {
+      "question": "Write a function named 'flexible_greet' that accepts a name as the first argument and any number of additional keyword arguments, then prints the name and all keyword arguments.",
+      "type": "coding",
+      "starter_code": "# Write a function that uses **kwargs\n",
+      "sample_solution": "def flexible_greet(name, **kwargs):\n    print(f'Hello {name}')\n    for key, value in kwargs.items():\n        print(f'{key}: {value}')",
+      "tags": [
+        "*args and **kwargs",
+        "passing function arguments",
+        "keyword arguments"
+      ]
+    },
+    {
+      "question": "How do you correctly define a function parameter `timeout` with a default value of `30`?",
+      "type": "multiple_choice",
+      "options": [
+        "def connect(timeout is 30):",
+        "def connect(timeout = 30):",
+        "def connect(timeout: 30):",
+        "def connect(timeout == 30):"
+      ],
+      "answer_index": 1,
+      "tags": ["default parameter values", "function definition"]
+    },
+    {
+      "question": "Given `def configure(mode, retries=3):`, which function call is valid?",
+      "type": "multiple_choice",
+      "options": [
+        "configure()",
+        "configure(retries=5)",
+        "configure(\"active\")",
+        "configure(5, mode=\"backup\")"
+      ],
+      "answer_index": 2,
+      "tags": [
+        "default parameter values",
+        "passing function arguments",
+        "syntax"
+      ]
+    },
+    {
+      "question": "Complete the function definition with a default value: def connect(host, port____80):",
+      "type": "fill_in_the_blank",
+      "correct_answer": "=",
+      "tags": ["default parameter values", "function definition", "syntax"]
+    },
+    {
+      "question": "Create a function named 'greet_user' that takes a required 'name' parameter and an optional 'greeting' parameter with default value 'Hello'.",
+      "type": "coding",
+      "starter_code": "# Create function with default parameter\n",
+      "sample_solution": "def greet_user(name, greeting='Hello'):\n    print(f'{greeting}, {name}!')",
+      "tags": ["default parameter values", "function definition"]
+    },
+    {
+      "question": "What is the main purpose of the `return` statement in a Python function?",
+      "type": "multiple_choice",
+      "options": [
+        "To print output directly to the console.",
+        "To end the function's execution and optionally send a value back to the caller.",
+        "To assign a value to a global variable.",
+        "To indicate the start of the function's code block."
+      ],
+      "answer_index": 1,
+      "tags": ["return values", "function return values"]
+    },
+    {
+      "question": "If a Python function does not explicitly use a `return` statement, what value does it return by default?",
+      "type": "multiple_choice",
+      "options": ["0", "True", "None", "An empty string (\"\")"],
+      "answer_index": 2,
+      "tags": ["return values", "function return values"]
+    },
+    {
+      "question": "A function without an explicit return statement returns ____.",
+      "type": "fill_in_the_blank",
+      "correct_answer": "None",
+      "tags": ["return values", "function return values"]
+    },
+    {
+      "question": "Write a function named 'calculate_area' that takes length and width as parameters and returns their product.",
+      "type": "coding",
+      "starter_code": "# Write function that returns a value\n",
+      "sample_solution": "def calculate_area(length, width):\n    return length * width",
+      "tags": ["return values", "function return values", "function definition"]
+    },
+    {
+      "question": "What is the defining characteristic of a recursive function?",
+      "type": "multiple_choice",
+      "options": [
+        "It must be defined using the `recurse` keyword.",
+        "It contains at least one `for` or `while` loop.",
+        "It calls itself during its execution.",
+        "It can only accept numerical arguments."
+      ],
+      "answer_index": 2,
+      "tags": ["recursive functions"]
+    },
+    {
+      "question": "What is essential for a recursive function to eventually stop calling itself and avoid an infinite loop?",
+      "type": "multiple_choice",
+      "options": [
+        "A `break` statement outside of any loop.",
+        "A `return None` statement.",
+        "A base case that, when met, stops the recursion.",
+        "The use of the `**kwargs` parameter."
+      ],
+      "answer_index": 2,
+      "tags": ["recursive functions"]
+    },
+    {
+      "question": "A recursive function must have a ____ case to prevent infinite recursion.",
+      "type": "fill_in_the_blank",
+      "correct_answer": "base",
+      "tags": ["recursive functions"]
+    },
+    {
+      "question": "Write a simple recursive function named 'countdown' that takes a number n and prints numbers from n down to 1.",
+      "type": "coding",
+      "starter_code": "# Write a recursive countdown function\ndef countdown(n):\n    # Add your code here\n    pass",
+      "sample_solution": "def countdown(n):\n    if n <= 0:  # base case\n        return\n    print(n)\n    countdown(n - 1)  # recursive call",
+      "tags": ["recursive functions"]
+    },
+    {
+      "question": "In a function definition `def process_items(item1, /, item2):`, what does the `/` (slash) indicate?",
+      "type": "multiple_choice",
+      "options": [
+        "That `item2` is optional.",
+        "That `item1` can only be passed as a keyword argument.",
+        "That `item1` must be passed as a positional argument only.",
+        "That the function performs division."
+      ],
+      "answer_index": 2,
+      "tags": [
+        "positional-only and keyword-only arguments",
+        "passing function arguments"
+      ]
+    },
+    {
+      "question": "In a function definition `def setup(*, user, host):`, what does the `*` (asterisk) indicate?",
+      "type": "multiple_choice",
+      "options": [
+        "That the function can accept any number of values.",
+        "That `user` and `host` must be passed as keyword arguments only.",
+        "That all arguments are optional.",
+        "That the function will return a pointer."
+      ],
+      "answer_index": 1,
+      "tags": [
+        "positional-only and keyword-only arguments",
+        "passing function arguments",
+        "keyword arguments"
+      ]
+    },
+    {
+      "question": "In `def example(a, /, b, *, c):`, parameter 'a' is ____-only, 'b' can be passed either way, and 'c' is ____-only.",
+      "type": "fill_in_the_blank",
+      "correct_answer": "positional, keyword",
+      "tags": [
+        "positional-only and keyword-only arguments",
+        "passing function arguments"
+      ]
+    },
+    {
+      "question": "Create a function named 'create_account' that takes 'username' as positional-only, 'email' as keyword-only, and 'active' as either, with active defaulting to True.",
+      "type": "coding",
+      "starter_code": "# Use / and * to specify argument types\n",
+      "sample_solution": "def create_account(username, /, active=True, *, email):\n    pass",
+      "tags": [
+        "positional-only and keyword-only arguments",
+        "passing function arguments",
+        "default parameter values"
+      ]
+    }
+  ]
+}

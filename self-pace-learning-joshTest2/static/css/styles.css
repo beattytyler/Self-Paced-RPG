@@ -1,0 +1,1156 @@
+/* General Body and Typography */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  margin: 0; /* Reset margin */
+  padding: 0; /* Reset padding */
+  background-color: #f5f9fc; /* Light blue-gray background */
+}
+
+/* Main container for content pages like index.html and results.html */
+.page-container {
+  max-width: 1200px; /* General max-width for wider pages like index */
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Specific container for results.html to keep it more focused */
+.results-container {
+  max-width: 800px;
+  margin: 40px auto; /* More top/bottom margin */
+  padding: 30px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Header from user's original CSS (likely for index.html) */
+header.main-header {
+  text-align: center;
+  padding: 30px 20px;
+  background-color: #2b5b84; /* Dark blue */
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+header.main-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+header.main-header .subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin-top: 5px;
+}
+
+/* General H1 style - results.html will use this within its container */
+h1 {
+  color: #2c3e50; /* Dark grayish blue */
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 2.2rem; /* Slightly adjusted for results page */
+}
+
+h2 {
+  color: #34495e; /* Slightly lighter grayish blue */
+  font-size: 1.5em;
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eaecee;
+  padding-bottom: 10px;
+}
+
+/* Topics Grid (for index.html) */
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.topic-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex; /* Added for flex column layout */
+  flex-direction: column; /* Added */
+}
+
+.topic-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.topic-header {
+  background-color: #3776ab; /* Medium blue */
+  color: white;
+  padding: 15px 20px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  position: relative;
+}
+
+.topic-content {
+  padding: 20px;
+  flex-grow: 1; /* Allow content to grow */
+  display: flex; /* Added */
+  flex-direction: column; /* Added */
+  justify-content: space-between; /* Added */
+}
+
+.topic-description {
+  margin-bottom: 15px;
+  min-height: 60px;
+  color: #555;
+  flex-grow: 1; /* Allow description to take available space */
+}
+
+/* Progress Bar */
+.progress-container {
+  height: 10px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  margin: 15px 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4caf50; /* Green */
+  border-radius: 5px;
+  width: 0%;
+  transition: width 0.4s ease-in-out;
+}
+
+/* General Button Styling - used as base for .action-button */
+.button,
+.action-button {
+  display: inline-block;
+  background-color: #3498db; /* Brighter blue for actions */
+  color: white !important;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  border: none;
+  font-size: 1em;
+  text-align: center;
+  margin-top: auto; /* Push button to bottom of topic-content */
+}
+
+.button:hover,
+.action-button:hover {
+  background-color: #2980b9;
+  transform: translateY(-1px);
+}
+
+/* Specific styles for results.html elements */
+.status {
+  font-size: 1.15em;
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  border-radius: 5px;
+  border-left-width: 5px;
+  border-left-style: solid;
+}
+
+.status-loading {
+  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.status-loading::before {
+  content: "⟳";
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 1.2em;
+  animation: spin 1s linear infinite;
+}
+
+.status-loading::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.status-success {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+}
+
+.status-error {
+  background: linear-gradient(135deg, #e17055 0%, #d63031 100%);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(225, 112, 85, 0.3);
+}
+
+.feedback-section {
+  margin-top: 25px;
+  padding: 20px;
+  background: #fdfdfd;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.feedback-content {
+  white-space: pre-wrap;
+  color: #444;
+  font-size: 0.95em;
+}
+
+.weak-topics-list,
+.recommended-videos-list {
+  list-style-type: disc; /* Changed from none for better readability */
+  padding-left: 20px; /* Indent list items */
+}
+
+.weak-topics-list li,
+.recommended-videos-list li {
+  background-color: #f0f3f4;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  border-left: 4px solid #7f8c8d;
+  color: #34495e;
+  font-size: 0.9em;
+}
+
+.recommended-videos-list li p {
+  /* Style for paragraph inside video list item */
+  margin: 0;
+}
+.recommended-videos-list li strong {
+  /* Style for title part */
+  color: #2980b9; /* Blue for title */
+}
+
+#no-videos-message {
+  padding: 10px;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+#mastery-message-container {
+  background-color: #e6ffed;
+  border-left: 5px solid #2ecc71;
+  padding: 20px;
+  margin-top: 25px;
+  border-radius: 6px;
+}
+#mastery-message-container h2 {
+  color: #27ae60;
+}
+#mastery-message-container p {
+  color: #229954;
+  font-size: 1.05em;
+}
+
+.action-button {
+  margin-top: 20px;
+}
+
+/* Video Modal */
+.video-container {
+  display: none; /* CRITICAL: Ensures modal is hidden by default */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  /* Flex properties for centering will be applied by JS when shown, or can be here if display:none is the only one toggled */
+  /* For now, JS will set display: flex when opening */
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Class to be added by JavaScript to show the modal */
+.video-container.active {
+  display: flex;
+}
+
+.video-player-content {
+  background-color: #1c1c1c;
+  padding: 20px;
+  padding-top: 40px; /* Extra padding for close button */
+  border-radius: 8px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 840px;
+  position: relative;
+}
+
+.video-player iframe {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: none;
+  border-radius: 4px;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 30px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+  z-index: 1001; /* Ensure it's above iframe content */
+}
+.close-button:hover {
+  background-color: rgba(231, 76, 60, 0.8); /* Reddish on hover */
+}
+
+.video-title {
+  color: #ecf0f1;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+/* Completion Badge */
+.completion-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #4caf50;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  display: none;
+}
+
+/* Utility class */
+.hidden {
+  display: none !important;
+}
+
+/* BB CLONE */ /* =================================================================
+   Blackboard Results Page Layout (FINAL - Static Width)
+   ================================================================= */
+
+/* --- Overall Theme & Font --- */
+body.blackboard-theme {
+  /* --- ADJUST THIS ONE VALUE TO CHANGE THE SIDEBAR WIDTH --- */
+  --sidebar-width: 350px;
+
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #2c3e50;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}
+
+/* --- Main Two-Column Layout --- */
+.blackboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* --- Left Sidebar (Navigation) --- */
+.sidebar {
+  /* UPDATED: Using the CSS variable for a static width */
+  width: var(--sidebar-width);
+  flex-shrink: 0; /* Prevents the sidebar from shrinking */
+
+  background: linear-gradient(180deg, #0e3158 0%, #224364 100%);
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  border-radius: 0 20px 20px 0;
+}
+
+.sidebar-header h2 {
+  margin-top: 0;
+  color: #ffffff;
+  border-bottom: 1px solid #3a4049;
+  padding-bottom: 15px;
+}
+
+.sidebar-header p {
+  font-size: 0.9em;
+  color: #9ab;
+  margin-top: -10px;
+}
+
+.topic-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.topic-nav-list li a {
+  display: block;
+  padding: 12px 15px;
+  color: #bdc3c7;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 0.95em;
+
+  /* UPDATED: Handle text that is too long */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topic-nav-list li a:hover {
+  background-color: #3a4049;
+  color: #ffffff;
+}
+
+.topic-nav-list li a.active {
+  background-color: #3498db;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #3a4049;
+}
+
+.sidebar-footer .action-button:disabled {
+  background-color: #4f5461;
+  color: #8d96a0;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.sidebar-footer .action-button:disabled:hover {
+  background-color: #4f5461;
+  transform: none;
+}
+
+/* --- Right Content Area --- */
+.content-area {
+  flex-grow: 1;
+  padding: 40px 50px;
+  /* This 'min-width' helps prevent the main content from being squished too much */
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.95);
+  margin: 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+#content-display h2 {
+  color: #2c3e50;
+  margin-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #4a90e2;
+}
+
+#content-display h5 {
+  font-size: 1.2em;
+  color: #34495e;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #bdc3c7;
+  padding-bottom: 8px;
+}
+
+#content-display p,
+#content-display li {
+  line-height: 1.7;
+  font-size: 1.05em;
+  color: #5a6c7d;
+}
+
+#content-display ul {
+  list-style-type: disc;
+  padding-left: 25px;
+  margin-bottom: 20px;
+}
+
+#content-display li {
+  margin-bottom: 10px;
+}
+
+#content-display pre {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #2c3e50;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.95em;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+#content-display .feedback-content {
+  background: linear-gradient(135deg, #e8f4fd 0%, #f0f8ff 100%);
+  padding: 25px;
+  border-radius: 15px;
+  border-left: 5px solid #4a90e2;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  box-shadow: 0 4px 15px rgba(74, 144, 226, 0.1);
+}
+
+#content-display .call-to-action {
+  margin-top: 30px;
+  font-size: 1.2em;
+  font-style: italic;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.sidebar-footer .action-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.topic-group li a::before {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+}
+.topic-group li.completed a::before {
+  content: "☑"; /* Checked box */
+  color: #27ae60;
+}
+
+/* Enhanced completion checkbox with animation */
+.topic-group li.completed a::before {
+  content: "☑"; /* Checked box */
+  color: #27ae60 !important;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Animation for when item becomes completed */
+.topic-group li.completed {
+  animation: completionPulse 0.6s ease-out;
+}
+
+@keyframes completionPulse {
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+  50% {
+    transform: scale(1.02);
+    background-color: rgba(39, 174, 96, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+/* =================================================================
+   Quiz Page Styles
+   ================================================================= */
+
+/* Quiz page body styling */
+body.quiz-page {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  line-height: 1.6;
+  margin: 20px auto;
+  max-width: 800px;
+  background-color: #f4f4f9;
+  color: #333;
+}
+
+/* Quiz page h1 styling */
+.quiz-page h1 {
+  color: #2c3e50;
+  text-align: center;
+}
+
+/* Quiz form styling */
+.quiz-form {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Question container */
+.question {
+  margin-bottom: 25px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 20px;
+}
+
+.question p {
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+/* Enhanced quiz option labels with visual feedback */
+.question label {
+  display: block;
+  margin: 10px 0;
+  cursor: pointer;
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  position: relative;
+}
+
+.question label:hover {
+  background-color: #e9ecef;
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.question label.selected {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.question input[type="radio"] {
+  margin-right: 12px;
+  transform: scale(1.2);
+}
+
+/* Text inputs and textareas */
+.question input[type="text"],
+.question textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.question textarea {
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.9em;
+  line-height: 1.4;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: 2px solid #464647;
+  border-radius: 6px;
+  min-height: 200px;
+  padding: 15px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.question textarea:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.question textarea::placeholder {
+  color: #858585;
+  font-style: italic;
+}
+
+/* Inline input for fill-in-the-blank questions */
+.inline-input {
+  width: 150px;
+  min-width: 80px;
+  text-align: center;
+  border: none;
+  border-bottom: 2px solid #3498db;
+  margin: 0 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  background-color: transparent;
+  color: #2c3e50;
+  padding: 2px 4px;
+  transition: all 0.3s ease;
+}
+
+.inline-input:focus {
+  outline: none;
+  border-bottom-color: #2980b9;
+  background-color: #f8f9fa;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+/* Quiz submit button */
+.quiz-submit-button {
+  display: block;
+  width: 100%;
+  background-color: #3498db;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.quiz-submit-button:hover {
+  background-color: #2980b9;
+}
+
+/* =================================================================
+   Score Display Styles for Results Page
+   ================================================================= */
+
+/* Score container styling */
+.score-container {
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 15px;
+  margin-bottom: 25px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.score-container::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+}
+
+.score-container h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.8em;
+  position: relative;
+  z-index: 2;
+}
+
+.score-display {
+  font-size: 3em;
+  font-weight: bold;
+  margin: 10px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.score-details {
+  font-size: 1.1em;
+  opacity: 0.9;
+  position: relative;
+  z-index: 2;
+}
+
+/* Score badge variants */
+.score-excellent {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+  box-shadow: 0 8px 25px rgba(0, 184, 148, 0.3);
+}
+
+.score-good {
+  background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
+  box-shadow: 0 8px 25px rgba(9, 132, 227, 0.3);
+}
+
+.score-needs-improvement {
+  background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+  box-shadow: 0 8px 25px rgba(253, 203, 110, 0.3);
+}
+
+/* =================================================================
+   Additional Results Page Styles (moved from inline styles)
+   ================================================================= */
+
+/* Styling for the lesson/video list in the sidebar */
+.topic-group > span {
+  font-weight: bold;
+  display: block;
+  padding: 10px 15px;
+  color: #fff;
+}
+
+.topic-group ul {
+  padding-left: 15px;
+  margin-top: 0;
+  list-style-type: none;
+}
+
+.topic-group li a {
+  padding-left: 25px;
+  position: relative;
+}
+
+.topic-group li a::before {
+  content: "☐"; /* Unchecked box */
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+}
+
+.topic-group li.completed a::before {
+  content: "☑"; /* Checked box */
+  color: #27ae60;
+}
+
+/* Enhanced completion checkbox with animation */
+.topic-group li.completed a::before {
+  content: "☑"; /* Checked box */
+  color: #27ae60 !important;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Animation for when item becomes completed */
+.topic-group li.completed {
+  animation: completionPulse 0.6s ease-out;
+}
+
+@keyframes completionPulse {
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+  50% {
+    transform: scale(1.02);
+    background-color: rgba(39, 174, 96, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+/* Enhanced video player container with modern styling */
+#video-player-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 30px auto;
+  background: linear-gradient(145deg, #1e1e1e, #2c2c2c);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 1px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+#video-player-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Video player wrapper for aspect ratio */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+#video-player-container iframe {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: none;
+  border-radius: 16px;
+}
+
+/* Video header with title */
+.video-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 20px;
+  font-weight: 600;
+  font-size: 1.1em;
+  border-radius: 20px 20px 0 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.video-header:hover::before {
+  left: 100%;
+}
+
+/* Custom progress bar */
+.video-progress-container {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  padding: 12px 20px;
+  position: relative;
+  border-radius: 0 0 20px 20px;
+}
+
+.video-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.video-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.3s ease;
+  position: relative;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+.video-progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.video-progress-text {
+  color: #ecf0f1;
+  font-size: 0.85em;
+  margin-top: 8px;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.video-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 0.8em;
+  color: #bdc3c7;
+}
+
+.video-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.video-stat-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.completion-icon {
+  background: #27ae60;
+}
+.time-icon {
+  background: #3498db;
+}
+.progress-icon {
+  background: #f39c12;
+}
+
+/* Responsive design for video player */
+@media (max-width: 768px) {
+  #video-player-container {
+    max-width: 95%;
+    margin: 15px auto;
+    border-radius: 15px;
+  }
+
+  .video-wrapper {
+    margin: 8px;
+    border-radius: 12px;
+  }
+
+  .video-header {
+    padding: 12px 15px;
+    font-size: 1em;
+    border-radius: 15px 15px 0 0;
+  }
+
+  .video-progress-container {
+    padding: 10px 15px;
+    border-radius: 0 0 15px 15px;
+  }
+
+  .video-stats {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.75em;
+  }
+
+  .video-stat {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  #video-player-container {
+    margin: 10px auto;
+    border-radius: 12px;
+  }
+
+  .video-wrapper {
+    margin: 6px;
+    border-radius: 10px;
+  }
+
+  .video-header {
+    padding: 10px 12px;
+    font-size: 0.9em;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .video-progress-container {
+    padding: 8px 12px;
+    border-radius: 0 0 12px 12px;
+  }
+}
+
+/* Loading state for video player */
+.video-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  background: linear-gradient(145deg, #1e1e1e, #2c2c2c);
+  border-radius: 16px;
+  margin: 12px;
+  color: #ecf0f1;
+  font-size: 1.1em;
+}
+
+.video-loading::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  border: 2px solid #667eea;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

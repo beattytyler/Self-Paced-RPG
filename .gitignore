@@ -1,0 +1,29 @@
+# Ignore everything at the root level
+/*
+
+# Exception: Don't ignore the self-pace-learning-joshTest2 directory
+!/self-pace-learning-joshTest2/
+
+# Don't ignore this .gitignore file itself
+!.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.log
+.env

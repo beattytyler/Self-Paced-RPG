@@ -1,0 +1,10 @@
+{
+  "subject_info": {
+    "name": "test",
+    "description": "testeset",
+    "icon": "fas fa-globe",
+    "color": "#4299e1"
+  },
+  "subtopics": {},
+  "allowed_keywords": []
+}

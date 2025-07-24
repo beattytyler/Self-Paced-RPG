@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Subjects - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects" class="active"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/videos"><i class="fas fa-video"></i> Videos</a>
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-content">
+        <header class="admin-header">
+          <div class="header-actions">
+            <div>
+              <h1>Manage Subjects</h1>
+              <p>Create, edit, and organize learning subjects</p>
+            </div>
+            <a href="/admin/subjects/create" class="action-btn primary">
+              <i class="fas fa-plus"></i>
+              Create New Subject
+            </a>
+          </div>
+        </header>
+
+        <!-- Subjects Grid -->
+        <div class="subjects-grid">
+          {% if subjects %} {% for subject_id, subject_data in subjects.items()
+          %}
+          <div class="subject-card">
+            <div class="subject-card-header">
+              <div class="subject-icon">
+                <i
+                  class="{{ subject_data.icon }}"
+                  style="color: {{ subject_data.color }};"
+                ></i>
+              </div>
+              <div class="subject-status {{ subject_data.status }}">
+                {{ subject_data.status.title() }}
+              </div>
+            </div>
+
+            <div class="subject-card-content">
+              <h3>{{ subject_data.name }}</h3>
+              <p>{{ subject_data.description }}</p>
+
+              <div class="subject-meta">
+                <div class="meta-item">
+                  <i class="fas fa-layer-group"></i>
+                  <span>{{ subject_data.subtopic_count }} Subtopics</span>
+                </div>
+                <div class="meta-item">
+                  <i class="fas fa-calendar"></i>
+                  <span>Created {{ subject_data.created_date }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="subject-card-actions">
+              <a
+                href="/admin/subjects/{{ subject_id }}/edit"
+                class="btn-action edit"
+              >
+                <i class="fas fa-edit"></i>
+                Edit
+              </a>
+              <a
+                href="/subjects/{{ subject_id }}"
+                target="_blank"
+                class="btn-action view"
+              >
+                <i class="fas fa-eye"></i>
+                View
+              </a>
+              <button
+                class="btn-action delete"
+                onclick="deleteSubject('{{ subject_id }}', '{{ subject_data.name }}')"
+              >
+                <i class="fas fa-trash"></i>
+                Delete
+              </button>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <h3>No Subjects Created</h3>
+            <p>
+              Create your first subject to start building your learning platform
+            </p>
+            <a href="/admin/subjects/create" class="action-btn primary">
+              <i class="fas fa-plus"></i>
+              Create Your First Subject
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </main>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Delete Subject</h3>
+        <p>
+          Are you sure you want to delete "<span id="deleteSubjectName"></span
+          >"?
+        </p>
+        <p class="warning">
+          This action cannot be undone and will remove all associated subtopics,
+          lessons, and questions.
+        </p>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeDeleteModal()">
+            Cancel
+          </button>
+          <button class="btn-delete" onclick="confirmDelete()">
+            Delete Subject
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .admin-body {
+        background: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        width: 280px;
+        background: #1a2332;
+        color: white;
+        padding: 0;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 20px;
+        border-bottom: 1px solid #2d3748;
+        text-align: center;
+      }
+
+      .admin-logo h2 {
+        margin: 0;
+        color: white;
+        font-size: 1.5rem;
+      }
+
+      .back-to-site {
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .back-to-site:hover {
+        color: #4299e1;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: block;
+        padding: 15px 20px;
+        color: #a0aec0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: #2d3748;
+        color: #4299e1;
+        border-left-color: #4299e1;
+      }
+
+      .admin-nav li a i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .admin-header {
+        margin-bottom: 30px;
+      }
+
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 2.5rem;
+      }
+
+      .admin-header p {
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .action-btn.primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .action-btn.primary:hover {
+        background: #3182ce;
+        transform: translateY(-1px);
+      }
+
+      .subjects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+      }
+
+      .subject-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .subject-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+      }
+
+      .subject-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .subject-icon i {
+        font-size: 2.5rem;
+      }
+
+      .subject-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .subject-status.active {
+        background: rgba(72, 187, 120, 0.2);
+        color: #38a169;
+      }
+
+      .subject-card-content {
+        padding: 20px;
+      }
+
+      .subject-card-content h3 {
+        margin: 0 0 10px 0;
+        color: #2d3748;
+        font-size: 1.3rem;
+      }
+
+      .subject-card-content p {
+        color: #718096;
+        margin: 0 0 15px 0;
+        line-height: 1.5;
+      }
+
+      .subject-meta {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.85rem;
+        color: #718096;
+      }
+
+      .subject-card-actions {
+        display: flex;
+        gap: 10px;
+        padding: 15px 20px;
+        background: #f7fafc;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .btn-action {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .btn-action.edit {
+        background: #4299e1;
+        color: white;
+      }
+
+      .btn-action.edit:hover {
+        background: #3182ce;
+      }
+
+      .btn-action.view {
+        background: #48bb78;
+        color: white;
+      }
+
+      .btn-action.view:hover {
+        background: #38a169;
+      }
+
+      .btn-action.delete {
+        background: #f56565;
+        color: white;
+      }
+
+      .btn-action.delete:hover {
+        background: #e53e3e;
+      }
+
+      .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        color: #718096;
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #cbd5e0;
+      }
+
+      .empty-state h3 {
+        color: #2d3748;
+        margin-bottom: 10px;
+      }
+
+      /* Modal Styles */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal.hidden {
+        display: none;
+      }
+
+      .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+      }
+
+      .modal-content h3 {
+        margin: 0 0 15px 0;
+        color: #2d3748;
+      }
+
+      .modal-content p {
+        margin-bottom: 10px;
+        color: #718096;
+      }
+
+      .warning {
+        color: #f56565;
+        font-weight: 600;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+        justify-content: flex-end;
+      }
+
+      .btn-cancel,
+      .btn-delete {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .btn-cancel {
+        background: #e2e8f0;
+        color: #4a5568;
+      }
+
+      .btn-delete {
+        background: #f56565;
+        color: white;
+      }
+
+      @media (max-width: 768px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .header-actions {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .subjects-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <script>
+      let deleteSubjectId = null;
+
+      function deleteSubject(subjectId, subjectName) {
+        deleteSubjectId = subjectId;
+        document.getElementById("deleteSubjectName").textContent = subjectName;
+        document.getElementById("deleteModal").classList.remove("hidden");
+      }
+
+      function closeDeleteModal() {
+        document.getElementById("deleteModal").classList.add("hidden");
+        deleteSubjectId = null;
+      }
+
+      function confirmDelete() {
+        if (!deleteSubjectId) return;
+
+        // Show loading state
+        const deleteBtn = document.querySelector(".btn-delete");
+        const originalText = deleteBtn.textContent;
+        deleteBtn.textContent = "Deleting...";
+        deleteBtn.disabled = true;
+
+        // Make AJAX call to delete the subject
+        fetch(`/admin/subjects/${deleteSubjectId}/delete`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Show success message
+              alert("Subject deleted successfully!");
+              // Reload the page to reflect changes
+              window.location.reload();
+            } else {
+              // Show error message
+              alert(
+                "Error deleting subject: " + (data.error || "Unknown error")
+              );
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error deleting subject: " + error.message);
+          })
+          .finally(() => {
+            // Reset button state
+            deleteBtn.textContent = originalText;
+            deleteBtn.disabled = false;
+            closeDeleteModal();
+          });
+      }
+
+      // Close modal when clicking outside
+      document
+        .getElementById("deleteModal")
+        .addEventListener("click", function (e) {
+          if (e.target === this) {
+            closeDeleteModal();
+          }
+        });
+    </script>
+  </body>
+</html>

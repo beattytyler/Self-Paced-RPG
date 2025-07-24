@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Learning Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-body">
+    <div class="admin-layout">
+        <!-- Admin Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="admin-logo">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                <a href="/" class="back-to-site">← Back to Site</a>
+            </div>
+            
+            <ul class="admin-nav">
+                <li><a href="/admin" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/subjects"><i class="fas fa-book-open"></i> Subjects</a></li>
+                <li><a href="/admin/lessons"><i class="fas fa-chalkboard-teacher"></i> Lessons</a></li>
+                <li><a href="/admin/questions"><i class="fas fa-question-circle"></i> Questions</a></li>
+                <li><a href="/admin/videos"><i class="fas fa-video"></i> Videos</a></li>
+                <li><a href="/admin/export"><i class="fas fa-download"></i> Export/Import</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <header class="admin-header">
+                <h1>Dashboard Overview</h1>
+                <p>Manage your learning platform content</p>
+            </header>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ stats.total_subjects }}</h3>
+                        <p>Subjects</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ stats.total_subtopics }}</h3>
+                        <p>Subtopics</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ stats.total_lessons }}</h3>
+                        <p>Lessons</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>{{ stats.total_questions }}</h3>
+                        <p>Questions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="admin-sections">
+                <section class="admin-section">
+                    <h2>Quick Actions</h2>
+                    <div class="quick-actions">
+                        <a href="/admin/subjects/create" class="action-btn primary">
+                            <i class="fas fa-plus"></i>
+                            Create New Subject
+                        </a>
+                        <a href="/admin/lessons" class="action-btn secondary">
+                            <i class="fas fa-edit"></i>
+                            Manage Lessons
+                        </a>
+                        <a href="/admin/questions" class="action-btn secondary">
+                            <i class="fas fa-plus-circle"></i>
+                            Add Questions
+                        </a>
+                        <a href="/admin/export" class="action-btn tertiary">
+                            <i class="fas fa-download"></i>
+                            Export Data
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Subjects Overview -->
+                <section class="admin-section">
+                    <h2>Subjects Overview</h2>
+                    <div class="subjects-list">
+                        {% if subjects %}
+                            {% for subject_id, subject_data in subjects.items() %}
+                            <div class="subject-item">
+                                <div class="subject-icon">
+                                    <i class="{{ subject_data.icon }}" style="color: {{ subject_data.color }};"></i>
+                                </div>
+                                <div class="subject-details">
+                                    <h3>{{ subject_data.name }}</h3>
+                                    <p>{{ subject_data.description[:100] }}{% if subject_data.description|length > 100 %}...{% endif %}</p>
+                                    <span class="subtopic-count">{{ subject_data.subtopic_count }} subtopics</span>
+                                </div>
+                                <div class="subject-actions">
+                                    <a href="/admin/subjects/{{ subject_id }}/edit" class="btn-small">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="/subjects/{{ subject_id }}" target="_blank" class="btn-small">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open"></i>
+                                <p>No subjects created yet</p>
+                                <a href="/admin/subjects/create" class="action-btn primary">Create Your First Subject</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .admin-body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .admin-sidebar {
+            width: 280px;
+            background: #1a2332;
+            color: white;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .admin-logo {
+            padding: 20px;
+            border-bottom: 1px solid #2d3748;
+            text-align: center;
+        }
+
+        .admin-logo h2 {
+            margin: 0;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .back-to-site {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .back-to-site:hover {
+            color: #4299e1;
+        }
+
+        .admin-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .admin-nav li a {
+            display: block;
+            padding: 15px 20px;
+            color: #a0aec0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .admin-nav li a:hover,
+        .admin-nav li a.active {
+            background: #2d3748;
+            color: #4299e1;
+            border-left-color: #4299e1;
+        }
+
+        .admin-nav li a i {
+            margin-right: 10px;
+            width: 16px;
+        }
+
+        .admin-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .admin-header {
+            margin-bottom: 30px;
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 2.5rem;
+        }
+
+        .admin-header p {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stat-info h3 {
+            margin: 0;
+            font-size: 2rem;
+            color: #2d3748;
+        }
+
+        .stat-info p {
+            margin: 5px 0 0 0;
+            color: #718096;
+        }
+
+        .admin-sections {
+            display: grid;
+            gap: 30px;
+        }
+
+        .admin-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        .admin-section h2 {
+            margin: 0 0 20px 0;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .action-btn.primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .action-btn.secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .action-btn.tertiary {
+            background: #ed8936;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .subjects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .subject-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .subject-icon i {
+            font-size: 2rem;
+        }
+
+        .subject-details {
+            flex: 1;
+        }
+
+        .subject-details h3 {
+            margin: 0 0 5px 0;
+            color: #2d3748;
+        }
+
+        .subject-details p {
+            margin: 0 0 5px 0;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .subtopic-count {
+            font-size: 0.8rem;
+            color: #4299e1;
+            font-weight: 600;
+        }
+
+        .subject-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            background: #4299e1;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-small:hover {
+            background: #3182ce;
+            text-decoration: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #cbd5e0;
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                width: 100%;
+            }
+
+            .admin-content {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>
