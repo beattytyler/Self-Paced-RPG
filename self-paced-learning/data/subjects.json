@@ -17,6 +17,15 @@
       "status": "active",
       "created_date": "2025-01-01",
       "subtopic_count": 0
+    },
+    "test2": {
+      "name": "test2",
+      "description": "test2",
+      "icon": "fas fa-calculator",
+      "color": "#67db3d",
+      "status": "active",
+      "created_date": "2025-01-01",
+      "subtopic_count": 0
     }
   }
 }

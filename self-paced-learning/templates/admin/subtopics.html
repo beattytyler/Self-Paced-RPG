@@ -147,6 +147,13 @@
               <div class="subtopic-actions">
                 <button
                   class="btn-icon"
+                  title="Manage Quiz Questions"
+                  onclick="window.location.href='/admin/quiz/{{ subject_id }}/{{ subtopic_id }}'"
+                >
+                  <i class="fas fa-question-circle"></i>
+                </button>
+                <button
+                  class="btn-icon"
                   title="Manage Keywords"
                   onclick="manageKeywords('{{ subject_id }}', '{{ subtopic_id }}')"
                 >

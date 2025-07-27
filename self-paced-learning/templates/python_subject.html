@@ -106,7 +106,10 @@
               Watch Lecture
             </button>
             {% endif %} {% if subtopic_data.question_count > 0 %}
-            <a href="/quiz/python/{{ subtopic_id }}" class="button quiz-btn">
+            <a
+              href="/quiz/{{ subject }}/{{ subtopic_id }}"
+              class="button quiz-btn"
+            >
               <i class="fas fa-brain"></i>
               Take Quiz
             </a>

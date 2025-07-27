@@ -279,6 +279,17 @@ def subject_page(subject):
         subject_info = subject_config.get("subject_info", {})
         subtopics = subject_config.get("subtopics", {})
 
+        # Update question counts dynamically by checking for quiz data
+        for subtopic_id, subtopic_data in subtopics.items():
+            quiz_data = data_loader.load_quiz_data(subject, subtopic_id)
+            if quiz_data and quiz_data.get("questions"):
+                # Count questions in the initial quiz
+                question_count = len(quiz_data.get("questions", []))
+                subtopic_data["question_count"] = question_count
+            else:
+                # No quiz data or empty quiz
+                subtopic_data["question_count"] = 0
+
         # Sort subtopics by order
         sorted_subtopics = dict(
             sorted(subtopics.items(), key=lambda x: x[1].get("order", 999))
@@ -1972,6 +1983,244 @@ def admin_lessons_by_subtopic(subject, subtopic):
     except Exception as e:
         app.logger.error(f"Error loading lessons for {subject}/{subtopic}: {e}")
         return "Error loading lessons", 500
+
+
+# ===== QUIZ MANAGEMENT ROUTES =====
+
+
+@app.route("/admin/questions")
+def admin_questions():
+    """Questions management page."""
+    try:
+        # Load all subjects and their subtopics with quiz data
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        subjects_data = {}
+        stats = {
+            "total_initial_questions": 0,
+            "total_pool_questions": 0,
+            "total_subtopics": 0,
+            "subtopics_without_questions": 0,
+        }
+
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                all_subjects = json.load(f).get("subjects", {})
+
+            for subject_id, subject_data in all_subjects.items():
+                # Load subject config to get subtopics
+                subject_config = data_loader.load_subject_config(subject_id)
+                if subject_config and "subtopics" in subject_config:
+                    subject_data["subtopics"] = {}
+
+                    for subtopic_id, subtopic_data in subject_config[
+                        "subtopics"
+                    ].items():
+                        # Load quiz data and question pool to get counts
+                        quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
+                        pool_data = data_loader.load_question_pool(
+                            subject_id, subtopic_id
+                        )
+
+                        quiz_count = (
+                            len(quiz_data.get("questions", [])) if quiz_data else 0
+                        )
+                        pool_count = (
+                            len(pool_data.get("questions", [])) if pool_data else 0
+                        )
+
+                        subtopic_data["quiz_questions_count"] = quiz_count
+                        subtopic_data["pool_questions_count"] = pool_count
+
+                        # Update statistics
+                        stats["total_initial_questions"] += quiz_count
+                        stats["total_pool_questions"] += pool_count
+                        stats["total_subtopics"] += 1
+
+                        if quiz_count == 0 and pool_count == 0:
+                            stats["subtopics_without_questions"] += 1
+
+                        subject_data["subtopics"][subtopic_id] = subtopic_data
+
+                subjects_data[subject_id] = subject_data
+
+        return render_template(
+            "admin/questions.html", subjects=subjects_data, stats=stats
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error loading questions admin page: {e}")
+        return f"Error: {e}", 500
+
+
+@app.route("/admin/quiz/<subject>/<subtopic>")
+def admin_quiz_editor(subject, subtopic):
+    """Edit quiz for a specific subject/subtopic."""
+    try:
+        # Load subject config to verify subtopic exists
+        subject_config = data_loader.load_subject_config(subject)
+        if not subject_config or subtopic not in subject_config.get("subtopics", {}):
+            return f"Subtopic '{subtopic}' not found in subject '{subject}'", 404
+
+        # Load quiz data (initial quiz)
+        quiz_data = data_loader.load_quiz_data(subject, subtopic)
+        if not quiz_data:
+            quiz_data = {
+                "quiz_title": f"{subject.title()} {subtopic.replace('-', ' ').title()} Quiz",
+                "questions": [],
+            }
+
+        # Load question pool (remedial quiz questions)
+        question_pool = data_loader.load_question_pool(subject, subtopic)
+        if not question_pool:
+            question_pool = {"questions": []}
+
+        # Get subtopic info
+        subtopic_data = subject_config["subtopics"][subtopic]
+
+        return render_template(
+            "admin/quiz_editor.html",
+            subject=subject,
+            subtopic=subtopic,
+            subtopic_data=subtopic_data,
+            quiz_data=quiz_data,
+            question_pool=question_pool,
+        )
+    except Exception as e:
+        app.logger.error(f"Error loading quiz editor for {subject}/{subtopic}: {e}")
+        return f"Error: {e}", 500
+
+
+@app.route("/admin/quiz/<subject>/<subtopic>/initial", methods=["POST"])
+def admin_save_initial_quiz(subject, subtopic):
+    """Save initial quiz data (quiz_data.json)."""
+    try:
+        data = request.json
+        quiz_title = data.get("quiz_title", "")
+        questions = data.get("questions", [])
+
+        # Validate data
+        if not quiz_title:
+            return jsonify({"error": "Quiz title is required"}), 400
+
+        # Ensure subtopic directory exists
+        subtopic_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject, subtopic)
+        os.makedirs(subtopic_dir, exist_ok=True)
+
+        # Save quiz data
+        quiz_data = {"quiz_title": quiz_title, "questions": questions}
+
+        quiz_path = os.path.join(subtopic_dir, "quiz_data.json")
+        with open(quiz_path, "w", encoding="utf-8") as f:
+            json.dump(quiz_data, f, indent=2, ensure_ascii=False)
+
+        # Clear cache
+        data_loader.clear_cache()
+
+        return jsonify({"success": True, "message": "Initial quiz saved successfully"})
+
+    except Exception as e:
+        app.logger.error(f"Error saving initial quiz for {subject}/{subtopic}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/quiz/<subject>/<subtopic>/pool", methods=["POST"])
+def admin_save_question_pool(subject, subtopic):
+    """Save question pool data (question_pool.json)."""
+    try:
+        data = request.json
+        questions = data.get("questions", [])
+
+        # Ensure subtopic directory exists
+        subtopic_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject, subtopic)
+        os.makedirs(subtopic_dir, exist_ok=True)
+
+        # Save question pool
+        question_pool_data = {"questions": questions}
+
+        pool_path = os.path.join(subtopic_dir, "question_pool.json")
+        with open(pool_path, "w", encoding="utf-8") as f:
+            json.dump(question_pool_data, f, indent=2, ensure_ascii=False)
+
+        # Clear cache
+        data_loader.clear_cache()
+
+        return jsonify({"success": True, "message": "Question pool saved successfully"})
+
+    except Exception as e:
+        app.logger.error(f"Error saving question pool for {subject}/{subtopic}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/quiz/validate", methods=["POST"])
+def admin_validate_question():
+    """Validate a quiz question structure."""
+    try:
+        question = request.json
+
+        # Basic validation
+        if not question.get("question"):
+            return jsonify({"valid": False, "error": "Question text is required"})
+
+        question_type = question.get("type", "multiple_choice")
+
+        if question_type == "multiple_choice":
+            options = question.get("options", [])
+            answer_index = question.get("answer_index")
+
+            if len(options) < 2:
+                return jsonify(
+                    {
+                        "valid": False,
+                        "error": "Multiple choice questions need at least 2 options",
+                    }
+                )
+
+            if answer_index is None or answer_index < 0 or answer_index >= len(options):
+                return jsonify(
+                    {
+                        "valid": False,
+                        "error": "Invalid answer index for multiple choice question",
+                    }
+                )
+
+        elif question_type == "fill_in_the_blank":
+            if "____" not in question.get("question", ""):
+                return jsonify(
+                    {
+                        "valid": False,
+                        "error": "Fill in the blank questions must contain '____' placeholder",
+                    }
+                )
+
+            if not question.get("correct_answer"):
+                return jsonify(
+                    {
+                        "valid": False,
+                        "error": "Fill in the blank questions must have a correct_answer",
+                    }
+                )
+
+        elif question_type == "coding":
+            if not question.get("sample_solution"):
+                return jsonify(
+                    {
+                        "valid": False,
+                        "error": "Coding questions should have a sample_solution",
+                    }
+                )
+
+        # Validate tags
+        tags = question.get("tags", [])
+        if not tags:
+            return jsonify(
+                {"valid": False, "error": "Questions should have at least one tag"}
+            )
+
+        return jsonify({"valid": True, "message": "Question is valid"})
+
+    except Exception as e:
+        app.logger.error(f"Error validating question: {e}")
+        return jsonify({"valid": False, "error": str(e)})
 
 
 @app.route("/admin/clear-cache", methods=["POST"])
