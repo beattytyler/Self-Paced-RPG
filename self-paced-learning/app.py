@@ -1149,6 +1149,76 @@ def admin_edit_subject(subject):
         return f"Error: {e}", 500
 
 
+@app.route("/admin/subjects/<subject>/update", methods=["POST"])
+def admin_update_subject(subject):
+    """Update an existing subject."""
+    try:
+        data = request.json
+        subject_name = data.get("name", "")
+        description = data.get("description", "")
+        icon = data.get("icon", "fas fa-book")
+        color = data.get("color", "#007bff")
+        allowed_keywords = data.get("allowed_keywords", [])
+
+        if not subject_name:
+            return jsonify({"error": "Subject name is required"}), 400
+
+        # Update subjects.json
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects_data = json.load(f)
+        else:
+            return jsonify({"error": "Subjects file not found"}), 404
+
+        if subject not in subjects_data["subjects"]:
+            return jsonify({"error": "Subject not found"}), 404
+
+        # Update subject in subjects.json
+        subjects_data["subjects"][subject].update({
+            "name": subject_name,
+            "description": description,
+            "icon": icon,
+            "color": color,
+        })
+
+        # Save subjects.json
+        with open(subjects_path, "w", encoding="utf-8") as f:
+            json.dump(subjects_data, f, indent=2)
+
+        # Update subject_config.json
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        config_path = os.path.join(subject_dir, "subject_config.json")
+        
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
+                subject_config = json.load(f)
+        else:
+            return jsonify({"error": "Subject config not found"}), 404
+
+        # Update subject config
+        subject_config["subject_info"].update({
+            "name": subject_name,
+            "description": description,
+            "icon": icon,
+            "color": color,
+        })
+        subject_config["allowed_keywords"] = allowed_keywords
+
+        # Save subject config
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(subject_config, f, indent=2)
+
+        # Clear cache to ensure fresh data is loaded
+        data_loader.clear_cache()
+
+        return jsonify({"success": True, "message": "Subject updated successfully"})
+
+    except Exception as e:
+        app.logger.error(f"Error updating subject: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/admin/subjects/<subject>/<subtopic>")
 def admin_edit_subtopic(subject, subtopic):
     """Edit a subtopic."""

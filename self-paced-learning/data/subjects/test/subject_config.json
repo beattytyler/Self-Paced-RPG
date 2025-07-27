@@ -1,9 +1,9 @@
 {
   "subject_info": {
-    "name": "test",
-    "description": "testeset",
-    "icon": "fas fa-globe",
-    "color": "#4299e1"
+    "name": "Test Subject Updated",
+    "description": "This is an updated test description",
+    "icon": "fas fa-book",
+    "color": "#ff5733"
   },
   "subtopics": {
     "test": {
@@ -33,8 +33,7 @@
   },
   "allowed_keywords": [
     "test",
-    "test1",
-    "test2",
-    "test3"
+    "updated",
+    "new"
   ]
 }

@@ -10,10 +10,10 @@
       "subtopic_count": 6
     },
     "test": {
-      "name": "test",
-      "description": "testeset",
-      "icon": "fas fa-globe",
-      "color": "#4299e1",
+      "name": "Test Subject Updated",
+      "description": "This is an updated test description",
+      "icon": "fas fa-book",
+      "color": "#ff5733",
       "status": "active",
       "created_date": "2025-01-01",
       "subtopic_count": 0
