@@ -21,7 +21,7 @@
       "name": "Python Loops",
       "description": "Learn how to automate repetitive tasks using for and while loops",
       "order": 2,
-      "status": "active", 
+      "status": "active",
       "prerequisites": [],
       "estimated_time": "1.5 hours",
       "video_count": 1,
@@ -33,7 +33,9 @@
       "description": "Discover efficient numerical computations and data processing with NumPy arrays",
       "order": 3,
       "status": "active",
-      "prerequisites": ["functions"],
+      "prerequisites": [
+        "functions"
+      ],
       "estimated_time": "2 hours",
       "video_count": 0,
       "lesson_count": 0,
@@ -55,7 +57,9 @@
       "description": "Learn about unordered collections and set operations like union and intersection",
       "order": 5,
       "status": "active",
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "estimated_time": "1 hour",
       "video_count": 0,
       "lesson_count": 0,
@@ -66,8 +70,21 @@
       "description": "Explore key-value mappings and dictionary comprehensions",
       "order": 6,
       "status": "active",
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "estimated_time": "1.5 hours",
+      "video_count": 0,
+      "lesson_count": 0,
+      "question_count": 0
+    },
+    "test": {
+      "name": "test",
+      "description": "test",
+      "order": 1,
+      "status": "active",
+      "prerequisites": [],
+      "estimated_time": "",
       "video_count": 0,
       "lesson_count": 0,
       "question_count": 0
@@ -86,6 +103,7 @@
     "return values",
     "function return values",
     "recursive functions",
-    "error handling"
+    "error handling",
+    "test"
   ]
 }

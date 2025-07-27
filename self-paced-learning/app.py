@@ -1250,6 +1250,399 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
         return False
 
 
+# ==================== SUBTOPICS ADMIN ROUTES ====================
+
+
+@app.route("/admin/subtopics")
+def admin_subtopics():
+    """Manage subtopics across all subjects."""
+    try:
+        # Load subjects data
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        subjects = {}
+
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects_data = json.load(f)
+                subjects = subjects_data.get("subjects", {})
+
+        # Enhance subjects data with subtopic information from subject_config.json
+        for subject_id, subject_info in subjects.items():
+            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
+            subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+            if os.path.exists(subject_config_path):
+                try:
+                    with open(subject_config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+
+                    # Get subtopics from subject_config.json
+                    config_subtopics = config.get("subtopics", {})
+                    allowed_keywords = config.get("allowed_keywords", [])
+
+                    # Also check actual directory structure for any additional subtopics
+                    actual_subtopics = {}
+                    if os.path.exists(subject_dir):
+                        for item in os.listdir(subject_dir):
+                            subtopic_dir = os.path.join(subject_dir, item)
+                            if os.path.isdir(subtopic_dir) and item != "__pycache__":
+                                # Count lessons and questions
+                                lesson_plans_path = os.path.join(
+                                    subtopic_dir, "lesson_plans.json"
+                                )
+                                question_pool_path = os.path.join(
+                                    subtopic_dir, "question_pool.json"
+                                )
+
+                                lesson_count = 0
+                                question_count = 0
+
+                                if os.path.exists(lesson_plans_path):
+                                    try:
+                                        with open(
+                                            lesson_plans_path, "r", encoding="utf-8"
+                                        ) as f:
+                                            lessons = json.load(f)
+                                            lesson_count = len(
+                                                lessons.get("lessons", {})
+                                            )
+                                    except:
+                                        pass
+
+                                if os.path.exists(question_pool_path):
+                                    try:
+                                        with open(
+                                            question_pool_path, "r", encoding="utf-8"
+                                        ) as f:
+                                            questions = json.load(f)
+                                            question_count = len(
+                                                questions.get("questions", {})
+                                            )
+                                    except:
+                                        pass
+
+                                actual_subtopics[item] = {
+                                    "lesson_count": lesson_count,
+                                    "question_count": question_count,
+                                }
+
+                    # Merge config subtopics with actual directory info
+                    merged_subtopics = {}
+                    for subtopic_id, subtopic_info in config_subtopics.items():
+                        merged_info = dict(subtopic_info)  # Copy config info
+                        if subtopic_id in actual_subtopics:
+                            merged_info.update(actual_subtopics[subtopic_id])
+                        else:
+                            merged_info.update({"lesson_count": 0, "question_count": 0})
+                        merged_subtopics[subtopic_id] = merged_info
+
+                    # Add any directory-only subtopics not in config
+                    for subtopic_id, counts in actual_subtopics.items():
+                        if subtopic_id not in merged_subtopics:
+                            merged_subtopics[subtopic_id] = {
+                                "name": subtopic_id.replace("-", " ").title(),
+                                "description": "",
+                                "order": 999,
+                                "status": "active",
+                                "prerequisites": [],
+                                "estimated_time": "",
+                                "video_count": 0,
+                                **counts,
+                            }
+
+                    subjects[subject_id]["subtopics"] = merged_subtopics
+                    subjects[subject_id]["allowed_keywords"] = allowed_keywords
+
+                except Exception as e:
+                    app.logger.error(
+                        f"Error reading subject config for {subject_id}: {e}"
+                    )
+                    subjects[subject_id]["subtopics"] = {}
+                    subjects[subject_id]["allowed_keywords"] = []
+            else:
+                subjects[subject_id]["subtopics"] = {}
+                subjects[subject_id]["allowed_keywords"] = []
+
+        return render_template("admin/subtopics.html", subjects=subjects)
+
+    except Exception as e:
+        app.logger.error(f"Error loading subtopics: {e}")
+        return render_template("admin/subtopics.html", subjects={})
+
+
+@app.route("/admin/subtopics", methods=["POST"])
+def admin_create_subtopic():
+    """Create a new subtopic."""
+    try:
+        data = request.get_json()
+        subject = data.get("subject")
+        subtopic_id = data.get("subtopic_id")
+        name = data.get("name", "")
+        description = data.get("description", "")
+        keywords = data.get("keywords", [])
+        estimated_time = data.get("estimated_time", "")
+        order = data.get("order", 1)
+
+        # Validation
+        if not subject or not subtopic_id:
+            return jsonify({"error": "Subject and subtopic ID are required"}), 400
+
+        # Validate subtopic ID format
+        if not re.match(r"^[a-z0-9-]+$", subtopic_id):
+            return (
+                jsonify(
+                    {
+                        "error": "Subtopic ID can only contain lowercase letters, numbers, and hyphens"
+                    }
+                ),
+                400,
+            )
+
+        # Check if subject exists
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if not os.path.exists(subjects_path):
+            return jsonify({"error": "Subjects file not found"}), 404
+
+        with open(subjects_path, "r", encoding="utf-8") as f:
+            subjects_data = json.load(f)
+
+        if subject not in subjects_data.get("subjects", {}):
+            return jsonify({"error": "Subject not found"}), 404
+
+        # Load subject config
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+        if not os.path.exists(subject_config_path):
+            return jsonify({"error": "Subject configuration not found"}), 404
+
+        with open(subject_config_path, "r", encoding="utf-8") as f:
+            subject_config = json.load(f)
+
+        # Check if subtopic already exists
+        if subtopic_id in subject_config.get("subtopics", {}):
+            return jsonify({"error": "Subtopic already exists"}), 400
+
+        # Create subtopic directory
+        subtopic_dir = os.path.join(subject_dir, subtopic_id)
+        os.makedirs(subtopic_dir, exist_ok=True)
+
+        # Add subtopic to subject config
+        if "subtopics" not in subject_config:
+            subject_config["subtopics"] = {}
+
+        subject_config["subtopics"][subtopic_id] = {
+            "name": name or subtopic_id.replace("-", " ").title(),
+            "description": description,
+            "order": order,
+            "status": "active",
+            "prerequisites": [],
+            "estimated_time": estimated_time,
+            "video_count": 0,
+            "lesson_count": 0,
+            "question_count": 0,
+        }
+
+        # Update allowed keywords if provided
+        if keywords:
+            if "allowed_keywords" not in subject_config:
+                subject_config["allowed_keywords"] = []
+
+            # Add new keywords that don't already exist
+            existing_keywords = set(subject_config["allowed_keywords"])
+            for keyword in keywords:
+                if keyword.strip() and keyword.strip().lower() not in [
+                    k.lower() for k in existing_keywords
+                ]:
+                    subject_config["allowed_keywords"].append(keyword.strip())
+
+        # Save updated subject config
+        with open(subject_config_path, "w", encoding="utf-8") as f:
+            json.dump(subject_config, f, indent=2)
+
+        # Create empty lesson plans file
+        lesson_plans_data = {"lessons": {}}
+        lesson_plans_path = os.path.join(subtopic_dir, "lesson_plans.json")
+        with open(lesson_plans_path, "w", encoding="utf-8") as f:
+            json.dump(lesson_plans_data, f, indent=2)
+
+        # Create empty question pool file
+        question_pool_data = {"questions": {}}
+        question_pool_path = os.path.join(subtopic_dir, "question_pool.json")
+        with open(question_pool_path, "w", encoding="utf-8") as f:
+            json.dump(question_pool_data, f, indent=2)
+
+        # Create empty quiz data file
+        quiz_data = {"quizzes": {}}
+        quiz_path = os.path.join(subtopic_dir, "quiz_data.json")
+        with open(quiz_path, "w", encoding="utf-8") as f:
+            json.dump(quiz_data, f, indent=2)
+
+        # Create empty videos file
+        videos_data = {"videos": {}}
+        videos_path = os.path.join(subtopic_dir, "videos.json")
+        with open(videos_path, "w", encoding="utf-8") as f:
+            json.dump(videos_data, f, indent=2)
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Subtopic '{subject_config['subtopics'][subtopic_id]['name']}' created successfully",
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error creating subtopic: {e}")
+        return jsonify({"error": "An error occurred while creating the subtopic"}), 500
+
+
+@app.route("/admin/subtopics/<subject>/<subtopic_id>", methods=["PUT"])
+def admin_update_subtopic(subject, subtopic_id):
+    """Update an existing subtopic."""
+    try:
+        data = request.get_json()
+        name = data.get("name", "")
+        description = data.get("description", "")
+        keywords = data.get("keywords", [])
+        estimated_time = data.get("estimated_time", "")
+        order = data.get("order", 1)
+
+        # Load subject config
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+        if not os.path.exists(subject_config_path):
+            return jsonify({"error": "Subject configuration not found"}), 404
+
+        with open(subject_config_path, "r", encoding="utf-8") as f:
+            subject_config = json.load(f)
+
+        # Check if subtopic exists
+        if subtopic_id not in subject_config.get("subtopics", {}):
+            return jsonify({"error": "Subtopic not found"}), 404
+
+        # Update subtopic information
+        subject_config["subtopics"][subtopic_id].update(
+            {
+                "name": name or subtopic_id.replace("-", " ").title(),
+                "description": description,
+                "estimated_time": estimated_time,
+                "order": order,
+            }
+        )
+
+        # Update allowed keywords if provided
+        if keywords:
+            if "allowed_keywords" not in subject_config:
+                subject_config["allowed_keywords"] = []
+
+            # Add new keywords that don't already exist
+            existing_keywords = set(subject_config["allowed_keywords"])
+            for keyword in keywords:
+                if keyword.strip() and keyword.strip().lower() not in [
+                    k.lower() for k in existing_keywords
+                ]:
+                    subject_config["allowed_keywords"].append(keyword.strip())
+
+        # Save updated subject config
+        with open(subject_config_path, "w", encoding="utf-8") as f:
+            json.dump(subject_config, f, indent=2)
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Subtopic '{subject_config['subtopics'][subtopic_id]['name']}' updated successfully",
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error updating subtopic: {e}")
+        return jsonify({"error": "An error occurred while updating the subtopic"}), 500
+
+
+@app.route("/admin/subtopics/<subject>/<subtopic_id>", methods=["DELETE"])
+def admin_delete_subtopic(subject, subtopic_id):
+    """Delete a subtopic and all its associated data."""
+    try:
+        # Load subject config
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+        if not os.path.exists(subject_config_path):
+            return jsonify({"error": "Subject configuration not found"}), 404
+
+        with open(subject_config_path, "r", encoding="utf-8") as f:
+            subject_config = json.load(f)
+
+        # Check if subtopic exists in config
+        subtopic_name = subtopic_id.replace("-", " ").title()
+        if subtopic_id in subject_config.get("subtopics", {}):
+            subtopic_name = subject_config["subtopics"][subtopic_id].get(
+                "name", subtopic_name
+            )
+            # Remove from config
+            del subject_config["subtopics"][subtopic_id]
+
+            # Save updated config
+            with open(subject_config_path, "w", encoding="utf-8") as f:
+                json.dump(subject_config, f, indent=2)
+
+        # Remove the subtopic directory if it exists
+        subtopic_dir = os.path.join(subject_dir, subtopic_id)
+        if os.path.exists(subtopic_dir):
+            shutil.rmtree(subtopic_dir)
+
+        # Clear cache for this subject/subtopic
+        data_loader.clear_cache_for_subject_subtopic(subject, subtopic_id)
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Subtopic '{subtopic_name}' and all associated data deleted successfully",
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error deleting subtopic: {e}")
+        return jsonify({"error": "An error occurred while deleting the subtopic"}), 500
+
+
+@app.route("/admin/subjects/<subject>/keywords", methods=["PUT"])
+def admin_update_subject_keywords(subject):
+    """Update keywords for a subject."""
+    try:
+        data = request.get_json()
+        keywords = data.get("keywords", [])
+
+        # Load subject config
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+        if not os.path.exists(subject_config_path):
+            return jsonify({"error": "Subject configuration not found"}), 404
+
+        with open(subject_config_path, "r", encoding="utf-8") as f:
+            subject_config = json.load(f)
+
+        # Update allowed keywords
+        subject_config["allowed_keywords"] = [k.strip() for k in keywords if k.strip()]
+
+        # Save updated subject config
+        with open(subject_config_path, "w", encoding="utf-8") as f:
+            json.dump(subject_config, f, indent=2)
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Keywords updated successfully. {len(subject_config['allowed_keywords'])} keywords saved.",
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error updating subject keywords: {e}")
+        return jsonify({"error": "An error occurred while updating keywords"}), 500
+
+
 @app.route("/admin/lessons")
 def admin_lessons():
     """List all lessons across all subjects."""
