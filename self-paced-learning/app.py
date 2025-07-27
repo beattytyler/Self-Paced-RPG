@@ -296,7 +296,9 @@ def subject_page(subject):
                 video_count = len(video_data) if video_data else 0
                 subtopic_data["video_count"] = video_count
             except Exception as e:
-                app.logger.debug(f"No video data found for {subject}/{subtopic_id}: {e}")
+                app.logger.debug(
+                    f"No video data found for {subject}/{subtopic_id}: {e}"
+                )
                 subtopic_data["video_count"] = 0
 
         # Sort subtopics by order
@@ -407,20 +409,20 @@ def admin_mark_complete():
     """Admin endpoint to mark topics as complete."""
     if not is_admin_override_active(session):
         return jsonify({"success": False, "error": "Admin privileges required"}), 403
-    
+
     data = request.get_json()
     topic = data.get("topic")
-    
+
     if not topic:
         return jsonify({"success": False, "error": "Topic is required"}), 400
-    
+
     # Get current progress
     user_progress = session.get("progress", {})
-    
+
     # Mark topic as 100% complete
     user_progress[topic] = 100
     session["progress"] = user_progress
-    
+
     return jsonify({"success": True, "topic": topic, "progress": 100})
 
 
@@ -1214,12 +1216,14 @@ def admin_update_subject(subject):
             return jsonify({"error": "Subject not found"}), 404
 
         # Update subject in subjects.json
-        subjects_data["subjects"][subject].update({
-            "name": subject_name,
-            "description": description,
-            "icon": icon,
-            "color": color,
-        })
+        subjects_data["subjects"][subject].update(
+            {
+                "name": subject_name,
+                "description": description,
+                "icon": icon,
+                "color": color,
+            }
+        )
 
         # Save subjects.json
         with open(subjects_path, "w", encoding="utf-8") as f:
@@ -1228,7 +1232,7 @@ def admin_update_subject(subject):
         # Update subject_config.json
         subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
         config_path = os.path.join(subject_dir, "subject_config.json")
-        
+
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
                 subject_config = json.load(f)
@@ -1236,12 +1240,14 @@ def admin_update_subject(subject):
             return jsonify({"error": "Subject config not found"}), 404
 
         # Update subject config
-        subject_config["subject_info"].update({
-            "name": subject_name,
-            "description": description,
-            "icon": icon,
-            "color": color,
-        })
+        subject_config["subject_info"].update(
+            {
+                "name": subject_name,
+                "description": description,
+                "icon": icon,
+                "color": color,
+            }
+        )
         subject_config["allowed_keywords"] = allowed_keywords
 
         # Save subject config
@@ -1693,11 +1699,11 @@ def admin_create_subtopic():
             videos_data["videos"][subtopic_id] = {
                 "title": video_data.get("title", ""),
                 "url": video_data.get("url", ""),
-                "description": video_data.get("description", "")
+                "description": video_data.get("description", ""),
             }
             # Update video count in subtopic config
             subject_config["subtopics"][subtopic_id]["video_count"] = 1
-        
+
         videos_path = os.path.join(subtopic_dir, "videos.json")
         with open(videos_path, "w", encoding="utf-8") as f:
             json.dump(videos_data, f, indent=2)
@@ -1793,9 +1799,11 @@ def admin_update_subtopic(subject, subtopic_id):
 
         # Handle video data update
         if video_data is not None:  # Check for None to allow clearing video data
-            subtopic_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject, subtopic_id)
+            subtopic_dir = os.path.join(
+                DATA_ROOT_PATH, "subjects", subject, subtopic_id
+            )
             videos_path = os.path.join(subtopic_dir, "videos.json")
-            
+
             # Load existing videos or create new structure
             videos_data = {"videos": {}}
             if os.path.exists(videos_path):
@@ -1804,20 +1812,20 @@ def admin_update_subtopic(subject, subtopic_id):
                         videos_data = json.load(f)
                 except:
                     videos_data = {"videos": {}}
-            
+
             # Update video data
             if video_data:  # If video data provided
                 videos_data["videos"][subtopic_id] = {
                     "title": video_data.get("title", ""),
                     "url": video_data.get("url", ""),
-                    "description": video_data.get("description", "")
+                    "description": video_data.get("description", ""),
                 }
                 subject_config["subtopics"][subtopic_id]["video_count"] = 1
             else:  # If video data is empty (clearing video)
                 if subtopic_id in videos_data.get("videos", {}):
                     del videos_data["videos"][subtopic_id]
                 subject_config["subtopics"][subtopic_id]["video_count"] = 0
-            
+
             # Save videos file
             with open(videos_path, "w", encoding="utf-8") as f:
                 json.dump(videos_data, f, indent=2)
@@ -2418,13 +2426,13 @@ def admin_get_video_data(subject, subtopic):
     try:
         # Load video data
         video_data = get_video_data(subject, subtopic)
-        
+
         # Check if video exists for this subtopic
         if subtopic in video_data:
             return jsonify({"success": True, "video": video_data[subtopic]})
         else:
             return jsonify({"success": True, "video": None})
-            
+
     except Exception as e:
         app.logger.error(f"Error loading video data for {subject}/{subtopic}: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

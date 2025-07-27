@@ -66,20 +66,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     ytPlayer = new YT.Player(elementId, {
-      height: '400',
-      width: '100%',
+      height: "400",
+      width: "100%",
       videoId: videoId,
       playerVars: {
-        'autoplay': 1,
-        'controls': 1,
-        'rel': 0,
-        'showinfo': 0,
-        'modestbranding': 1
+        autoplay: 1,
+        controls: 1,
+        rel: 0,
+        showinfo: 0,
+        modestbranding: 1,
       },
       events: {
-        'onReady': onPlayerReady,
-        'onStateChange': onPlayerStateChange
-      }
+        onReady: onPlayerReady,
+        onStateChange: onPlayerStateChange,
+      },
     });
   }
 
@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const currentTime = ytPlayer.getCurrentTime();
       const duration = ytPlayer.getDuration();
-      
+
       if (duration > 0) {
         const progress = Math.min((currentTime / duration) * 100, 100);
         updateVideoProgress(currentTopic, progress);
@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function handleVideoComplete() {
     if (currentTopic) {
       saveProgress(currentTopic, 100);
-      
+
       // Redirect to quiz for functions topic
       if (currentTopic === "functions") {
         setTimeout(() => {
@@ -152,17 +152,17 @@ document.addEventListener("DOMContentLoaded", function () {
   // Open video modal with selected topic
   function openVideo(topic) {
     currentTopic = topic;
-    
+
     // Determine the correct API endpoint based on page context
     let apiUrl;
     const currentPath = window.location.pathname;
-    
-    if (currentPath.startsWith('/subjects/')) {
+
+    if (currentPath.startsWith("/subjects/")) {
       // We're on a subject page, extract subject from URL
-      const pathParts = currentPath.split('/');
+      const pathParts = currentPath.split("/");
       const subject = pathParts[2]; // /subjects/{subject}
       const subtopic = topic; // The topic is actually the subtopic ID
-      
+
       // For subject pages, we need to get the first video from the subtopic
       // The API expects /api/video/{subject}/{subtopic}/{videoKey}
       // We'll fetch the video data to get the available video keys
@@ -171,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // Legacy behavior for results page
       apiUrl = `/api/video/${topic}`;
     }
-    
+
     // Get video data from API
     fetch(apiUrl)
       .then((response) => response.json())
@@ -185,18 +185,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (videoId) {
           // Create YouTube player container if it doesn't exist
-          if (!document.getElementById('youtube-player')) {
+          if (!document.getElementById("youtube-player")) {
             videoIframe.outerHTML = '<div id="youtube-player"></div>';
           }
-          
+
           // Initialize YouTube player with enhanced tracking
           setTimeout(() => {
-            initializePlayer(videoId, 'youtube-player');
+            initializePlayer(videoId, "youtube-player");
           }, 100);
         } else {
           // Fallback to iframe for non-YouTube videos
           videoIframe.src = data.url;
-          
+
           // Legacy handling for functions topic
           if (topic === "functions") {
             videoIframe.onload = function () {
@@ -240,19 +240,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Extract YouTube video ID from various URL formats
   function extractVideoId(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    return match && match[2].length === 11 ? match[2] : null;
   }
 
   // Add admin override button to video modal
   function addAdminOverrideButton() {
-    if (document.getElementById('admin-override-btn')) return;
+    if (document.getElementById("admin-override-btn")) return;
 
-    const overrideBtn = document.createElement('button');
-    overrideBtn.id = 'admin-override-btn';
-    overrideBtn.textContent = 'Admin: Mark Complete';
-    overrideBtn.className = 'admin-override-button';
+    const overrideBtn = document.createElement("button");
+    overrideBtn.id = "admin-override-btn";
+    overrideBtn.textContent = "Admin: Mark Complete";
+    overrideBtn.className = "admin-override-button";
     overrideBtn.style.cssText = `
       position: absolute;
       top: 10px;
@@ -266,13 +267,13 @@ document.addEventListener("DOMContentLoaded", function () {
       font-size: 12px;
       z-index: 1001;
     `;
-    
-    overrideBtn.addEventListener('click', function() {
+
+    overrideBtn.addEventListener("click", function () {
       handleVideoComplete();
       closeVideo();
     });
 
-    videoModal.querySelector('.modal-content').appendChild(overrideBtn);
+    videoModal.querySelector(".modal-content").appendChild(overrideBtn);
   }
 
   // Close video modal
@@ -293,7 +294,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Remove admin override button
-    const overrideBtn = document.getElementById('admin-override-btn');
+    const overrideBtn = document.getElementById("admin-override-btn");
     if (overrideBtn) {
       overrideBtn.remove();
     }

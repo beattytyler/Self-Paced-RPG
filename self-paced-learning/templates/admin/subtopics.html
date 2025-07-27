@@ -354,7 +354,10 @@
                       id="videoUrl"
                       placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
                     />
-                    <small>YouTube video URL (will be converted to embed format)</small>
+                    <small
+                      >YouTube video URL (will be converted to embed
+                      format)</small
+                    >
                   </div>
                 </div>
                 <div class="form-group">
@@ -365,15 +368,28 @@
                     placeholder="Brief description of what this video covers..."
                   ></textarea>
                 </div>
-                <div class="video-preview" id="videoPreview" style="display: none;">
+                <div
+                  class="video-preview"
+                  id="videoPreview"
+                  style="display: none"
+                >
                   <div class="video-preview-header">
                     <i class="fas fa-play-circle"></i> Video Preview
                   </div>
                   <div class="video-preview-content">
-                    <iframe id="previewIframe" width="300" height="169" frameborder="0" allowfullscreen></iframe>
+                    <iframe
+                      id="previewIframe"
+                      width="300"
+                      height="169"
+                      frameborder="0"
+                      allowfullscreen
+                    ></iframe>
                     <div class="video-preview-info">
                       <div class="video-preview-title" id="previewTitle"></div>
-                      <div class="video-preview-description" id="previewDescription"></div>
+                      <div
+                        class="video-preview-description"
+                        id="previewDescription"
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -2094,19 +2110,19 @@
           const videoUrlInput = document.getElementById('videoUrl');
           const videoTitleInput = document.getElementById('videoTitle');
           const videoDescriptionInput = document.getElementById('videoDescription');
-          
+
           if (videoUrlInput) {
               videoUrlInput.addEventListener('input', function() {
                   updateVideoPreview();
               });
           }
-          
+
           if (videoTitleInput) {
               videoTitleInput.addEventListener('input', function() {
                   updateVideoPreview();
               });
           }
-          
+
           if (videoDescriptionInput) {
               videoDescriptionInput.addEventListener('input', function() {
                   updateVideoPreview();
@@ -2144,11 +2160,11 @@
           // Handle various YouTube URL formats
           const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
           const match = url.match(youtubeRegex);
-          
+
           if (match && match[1]) {
               return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1`;
           }
-          
+
           // If it's already an embed URL, return it
           if (url.includes('youtube.com/embed/')) {
               if (!url.includes('enablejsapi=1')) {
@@ -2157,7 +2173,7 @@
               }
               return url;
           }
-          
+
           return null;
       }
 
@@ -2171,7 +2187,7 @@
                   const video = data.video;
                   document.getElementById('videoTitle').value = video.title || '';
                   document.getElementById('videoDescription').value = video.description || '';
-                  
+
                   // Convert embed URL back to regular YouTube URL for editing
                   let displayUrl = video.url || '';
                   if (displayUrl.includes('youtube.com/embed/')) {
@@ -2181,7 +2197,7 @@
                       }
                   }
                   document.getElementById('videoUrl').value = displayUrl;
-                  
+
                   // Update preview
                   updateVideoPreview();
               } else {
@@ -2722,7 +2738,7 @@
 
       function submitSubtopicForm() {
           const isEdit = document.getElementById('editMode').value === 'true';
-          
+
           // Prepare video data
           const videoUrl = document.getElementById('videoUrl').value.trim();
           const videoData = {};
@@ -2734,7 +2750,7 @@
                   videoData.description = document.getElementById('videoDescription').value.trim() || '';
               }
           }
-          
+
           const formData = {
               subject: document.getElementById('subtopicSubject').value,
               subtopic_id: document.getElementById('subtopicId').value,

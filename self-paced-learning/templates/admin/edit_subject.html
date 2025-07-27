@@ -110,7 +110,9 @@
                   rows="4"
                   required
                   placeholder="Describe what students will learn in this subject..."
-                >{{ config.subject_info.description }}</textarea>
+                >
+{{ config.subject_info.description }}</textarea
+                >
               </div>
             </div>
 
@@ -129,7 +131,10 @@
                       required
                     />
                     <div class="icon-preview">
-                      <i id="iconPreview" class="{{ config.subject_info.icon }}"></i>
+                      <i
+                        id="iconPreview"
+                        class="{{ config.subject_info.icon }}"
+                      ></i>
                     </div>
                   </div>
                   <small
@@ -241,7 +246,7 @@
 
             <div class="form-section">
               <h3>Keywords Management</h3>
-              
+
               <div class="form-group">
                 <label for="allowedKeywords">Allowed Keywords</label>
                 <div class="keywords-input-container">
@@ -254,13 +259,20 @@
                     <i class="fas fa-plus"></i> Add
                   </button>
                 </div>
-                <small>Keywords that can be assigned to subtopics in this subject</small>
-                
+                <small
+                  >Keywords that can be assigned to subtopics in this
+                  subject</small
+                >
+
                 <div class="keywords-list" id="keywordsList">
                   {% for keyword in config.allowed_keywords %}
                   <span class="keyword-tag">
                     {{ keyword }}
-                    <button type="button" class="remove-keyword" data-keyword="{{ keyword }}">
+                    <button
+                      type="button"
+                      class="remove-keyword"
+                      data-keyword="{{ keyword }}"
+                    >
                       <i class="fas fa-times"></i>
                     </button>
                   </span>
@@ -270,7 +282,11 @@
             </div>
 
             <div class="form-actions">
-              <button type="button" class="action-btn secondary" onclick="window.location.href='/admin/subjects'">
+              <button
+                type="button"
+                class="action-btn secondary"
+                onclick="window.location.href='/admin/subjects'"
+              >
                 <i class="fas fa-times"></i>
                 Cancel
               </button>

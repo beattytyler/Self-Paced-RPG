@@ -21,7 +21,11 @@
 
         <div class="sidebar-footer">
           {% if is_admin %}
-          <button id="adminMarkCompleteButton" class="action-button admin-button" style="background: #dc3545; margin-bottom: 10px;">
+          <button
+            id="adminMarkCompleteButton"
+            class="action-button admin-button"
+            style="background: #dc3545; margin-bottom: 10px"
+          >
             Admin: Mark All Complete
           </button>
           {% endif %}
@@ -32,7 +36,8 @@
             href="{{ url_for('subject_page', subject=current_subject) if current_subject else url_for('subject_selection') }}"
             id="backToTopicsButton"
             class="action-button hidden"
-            >Back to {{ current_subject.title() if current_subject else 'Subject' }} Topics</a
+            >Back to {{ current_subject.title() if current_subject else
+            'Subject' }} Topics</a
           >
         </div>
       </nav>
@@ -102,7 +107,9 @@
         const continueButton = document.getElementById("continueButton");
         const backToTopicsButton =
           document.getElementById("backToTopicsButton");
-        const adminMarkCompleteButton = document.getElementById("adminMarkCompleteButton");
+        const adminMarkCompleteButton = document.getElementById(
+          "adminMarkCompleteButton"
+        );
 
         // --- State Tracking ---
         let completionState = {};
@@ -117,9 +124,10 @@
 
         // --- Helper Functions ---
         function extractVideoIdFromUrl(url) {
-          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+          const regExp =
+            /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
           const match = url.match(regExp);
-          return (match && match[2].length === 11) ? match[2] : null;
+          return match && match[2].length === 11 ? match[2] : null;
         }
 
         // --- Main Analysis Logic ---
@@ -266,7 +274,11 @@
         // Admin mark complete functionality
         if (adminMarkCompleteButton) {
           adminMarkCompleteButton.addEventListener("click", async function () {
-            if (confirm("Mark all weak topics as complete? This will set all read and watch activities to 100% completion.")) {
+            if (
+              confirm(
+                "Mark all weak topics as complete? This will set all read and watch activities to 100% completion."
+              )
+            ) {
               try {
                 // Get all current weak topics
                 const weakTopics = Object.keys(completionState);
@@ -287,18 +299,22 @@
                     completionState[topic].read = true;
                     completionState[topic].watched = true;
                     completedCount++;
-                    
+
                     // Update visual indicators for both read and watch
                     const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
-                    
+
                     // Mark read as complete
-                    const readElement = document.getElementById(`read-${safeTopicId}`);
+                    const readElement = document.getElementById(
+                      `read-${safeTopicId}`
+                    );
                     if (readElement) {
                       readElement.classList.add("completed");
                     }
-                    
+
                     // Mark watch as complete
-                    const watchElement = document.getElementById(`watch-${safeTopicId}`);
+                    const watchElement = document.getElementById(
+                      `watch-${safeTopicId}`
+                    );
                     if (watchElement) {
                       watchElement.classList.add("completed");
                     }
@@ -306,11 +322,12 @@
                 }
 
                 // Show success message
-                alert(`Successfully marked ${completedCount} topics as complete!`);
-                
+                alert(
+                  `Successfully marked ${completedCount} topics as complete!`
+                );
+
                 // Check if all topics are now complete
                 checkCompletionAndToggleButton();
-
               } catch (error) {
                 console.error("Error marking topics complete:", error);
                 alert("Error marking topics complete. Please try again.");
@@ -377,7 +394,7 @@
 
           // Extract video ID from YouTube URL
           const videoId = extractVideoIdFromUrl(videoData.url);
-          
+
           if (!videoId) {
             lessonContentArea.innerHTML = `<h2>Invalid Video</h2><p>The video URL for "${topic}" is not valid.</p>`;
             return;
@@ -388,7 +405,9 @@
             <div id="video-player-container">
               <div class="video-header">
                 <div class="video-title">${videoData.title || topic}</div>
-                <div class="video-description">${videoData.description || ''}</div>
+                <div class="video-description">${
+                  videoData.description || ""
+                }</div>
               </div>
               <div class="video-wrapper">
                 <div class="video-loading">Loading video...</div>
