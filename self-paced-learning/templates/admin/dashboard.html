@@ -62,8 +62,23 @@
       <!-- Main Content -->
       <main class="admin-content">
         <header class="admin-header">
-          <h1>Dashboard Overview</h1>
-          <p>Manage your learning platform content</p>
+          <div class="header-actions">
+            <div>
+              <h1>Dashboard Overview</h1>
+              <p>Manage your learning platform content</p>
+            </div>
+            <div class="admin-actions">
+              <button
+                id="toggleOverrideBtn"
+                class="action-btn secondary"
+                onclick="toggleAdminOverride()"
+                title="Toggle admin override for testing prerequisites"
+              >
+                <i class="fas fa-shield-alt"></i>
+                <span id="overrideStatus">Enable Override</span>
+              </button>
+            </div>
+          </div>
         </header>
 
         <!-- Stats Grid -->
@@ -564,8 +579,146 @@
                 from { transform: translateX(100%); opacity: 0; }
                 to { transform: translateX(0); opacity: 1; }
             }
+            
+            .header-actions {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .admin-actions {
+                display: flex;
+                gap: 15px;
+                align-items: center;
+            }
+
+            .admin-actions .action-btn.secondary {
+                background: #f8f9fa;
+                color: #495057;
+                border: 1px solid #dee2e6;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.95rem;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .admin-actions .action-btn.secondary:hover {
+                background: #e9ecef;
+                color: #495057;
+            }
+
+            .admin-actions .action-btn.secondary.override-active {
+                background: #28a745;
+                color: white;
+                border-color: #28a745;
+            }
+
+            .admin-actions .action-btn.secondary.override-active:hover {
+                background: #218838;
+                border-color: #1e7e34;
+            }
         `;
       document.head.appendChild(style);
+
+      // Admin override functionality
+      function toggleAdminOverride() {
+        fetch("/admin/toggle-override", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              updateOverrideButton(data.admin_override);
+              showNotification(data.message, "success");
+            } else {
+              showNotification("Error: " + data.error, "error");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showNotification("Error toggling admin override", "error");
+          });
+      }
+
+      function updateOverrideButton(isActive) {
+        const btn = document.getElementById("toggleOverrideBtn");
+        const status = document.getElementById("overrideStatus");
+
+        if (isActive) {
+          btn.classList.add("override-active");
+          status.textContent = "Disable Override";
+        } else {
+          btn.classList.remove("override-active");
+          status.textContent = "Enable Override";
+        }
+      }
+
+      // Check override status on page load
+      fetch("/admin/toggle-override", {
+        method: "GET",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            updateOverrideButton(data.admin_override);
+          }
+        })
+        .catch((error) => {
+          console.error("Error checking override status:", error);
+        });
+
+      // Notification system
+      function showNotification(message, type = "info") {
+        // Remove existing notifications
+        document.querySelectorAll(".notification").forEach((n) => n.remove());
+
+        const notification = document.createElement("div");
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 1000;
+          animation: slideIn 0.3s ease-out;
+          max-width: 350px;
+          word-wrap: break-word;
+        `;
+
+        if (type === "success") {
+          notification.style.background = "#d4edda";
+          notification.style.color = "#155724";
+          notification.style.border = "1px solid #c3e6cb";
+        } else if (type === "error") {
+          notification.style.background = "#f8d7da";
+          notification.style.color = "#721c24";
+          notification.style.border = "1px solid #f5c6cb";
+        } else {
+          notification.style.background = "#d1ecf1";
+          notification.style.color = "#0c5460";
+          notification.style.border = "1px solid #bee5eb";
+        }
+
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 4000);
+      }
     </script>
   </body>
 </html>

@@ -67,6 +67,45 @@ def get_quiz_data(subject: str, subtopic: str) -> list:
     return data_loader.get_quiz_questions(subject, subtopic)
 
 
+def check_prerequisites(
+    subject: str, subtopic: str, user_progress: dict = None
+) -> tuple[bool, list]:
+    """Check if user has completed all prerequisites for a subtopic.
+
+    Args:
+        subject: Subject ID
+        subtopic: Subtopic ID
+        user_progress: User's completion progress (for future implementation)
+
+    Returns:
+        tuple: (prerequisites_met, missing_prerequisites)
+    """
+    try:
+        subject_config = data_loader.load_subject_config(subject)
+        if not subject_config:
+            return True, []
+
+        subtopic_data = subject_config.get("subtopics", {}).get(subtopic, {})
+        prerequisites = subtopic_data.get("prerequisites", [])
+
+        if not prerequisites:
+            return True, []
+
+        # For now, we'll assume no progress tracking is implemented
+        # In the future, this would check actual user completion data
+        # For testing purposes, we'll return that prerequisites are not met
+        return False, prerequisites
+
+    except Exception as e:
+        app.logger.error(f"Error checking prerequisites for {subject}/{subtopic}: {e}")
+        return True, []  # Default to allowing access if there's an error
+
+
+def is_admin_override_active(session_data: dict) -> bool:
+    """Check if admin override is active for current session."""
+    return session_data.get("admin_override", False)
+
+
 def get_question_pool(subject: str, subtopic: str) -> list:
     """Get question pool for remedial quizzes."""
     return data_loader.get_question_pool_questions(subject, subtopic)
@@ -343,6 +382,30 @@ def quiz_page(subject, subtopic):
     if not data_loader.validate_subject_subtopic(subject, subtopic):
         return f"Error: Subject '{subject}' with subtopic '{subtopic}' not found.", 404
 
+    # Check prerequisites unless admin override is active
+    admin_override = is_admin_override_active(session)
+    if not admin_override:
+        prerequisites_met, missing_prerequisites = check_prerequisites(
+            subject, subtopic
+        )
+        if not prerequisites_met:
+            # Get subject config for display names
+            subject_config = data_loader.load_subject_config(subject)
+            missing_names = []
+            if subject_config and "subtopics" in subject_config:
+                for req in missing_prerequisites:
+                    req_data = subject_config["subtopics"].get(req, {})
+                    req_name = req_data.get("name", req.replace("-", " ").title())
+                    missing_names.append(req_name)
+
+            return render_template(
+                "prerequisites_error.html",
+                subject=subject,
+                subtopic=subtopic,
+                missing_prerequisites=missing_names,
+                missing_ids=missing_prerequisites,
+            )
+
     # Clear previous session data for this subject/subtopic
     session_prefix = f"{subject}_{subtopic}"
     keys_to_remove = [key for key in session.keys() if key.startswith(session_prefix)]
@@ -364,7 +427,12 @@ def quiz_page(subject, subtopic):
     session["current_subject"] = subject
     session["current_subtopic"] = subtopic
 
-    return render_template("quiz.html", questions=quiz_questions, quiz_title=quiz_title)
+    return render_template(
+        "quiz.html",
+        questions=quiz_questions,
+        quiz_title=quiz_title,
+        admin_override=admin_override,
+    )
 
 
 # Legacy route for backward compatibility
@@ -1128,6 +1196,9 @@ def admin_delete_subject(subject):
             shutil.rmtree(subject_dir)
             app.logger.info(f"Removed subject directory: {subject_dir}")
 
+        # Clear cache to ensure fresh data is loaded
+        data_loader.clear_cache()
+
         return jsonify(
             {"success": True, "message": f"Subject '{subject}' deleted successfully"}
         )
@@ -1382,6 +1453,7 @@ def admin_create_subtopic():
         keywords = data.get("keywords", [])
         estimated_time = data.get("estimated_time", "")
         order = data.get("order", 1)
+        prerequisites = data.get("prerequisites", [])
 
         # Validation
         if not subject or not subtopic_id:
@@ -1423,6 +1495,22 @@ def admin_create_subtopic():
         if subtopic_id in subject_config.get("subtopics", {}):
             return jsonify({"error": "Subtopic already exists"}), 400
 
+        # Validate prerequisites exist in the same subject
+        if prerequisites:
+            existing_subtopics = set(subject_config.get("subtopics", {}).keys())
+            invalid_prerequisites = [
+                prereq for prereq in prerequisites if prereq not in existing_subtopics
+            ]
+            if invalid_prerequisites:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Invalid prerequisites: {', '.join(invalid_prerequisites)}"
+                        }
+                    ),
+                    400,
+                )
+
         # Create subtopic directory
         subtopic_dir = os.path.join(subject_dir, subtopic_id)
         os.makedirs(subtopic_dir, exist_ok=True)
@@ -1436,7 +1524,7 @@ def admin_create_subtopic():
             "description": description,
             "order": order,
             "status": "active",
-            "prerequisites": [],
+            "prerequisites": prerequisites,
             "estimated_time": estimated_time,
             "video_count": 0,
             "lesson_count": 0,
@@ -1484,6 +1572,9 @@ def admin_create_subtopic():
         with open(videos_path, "w", encoding="utf-8") as f:
             json.dump(videos_data, f, indent=2)
 
+        # Clear cache to ensure fresh data is loaded
+        data_loader.clear_cache()
+
         return jsonify(
             {
                 "success": True,
@@ -1506,6 +1597,7 @@ def admin_update_subtopic(subject, subtopic_id):
         keywords = data.get("keywords", [])
         estimated_time = data.get("estimated_time", "")
         order = data.get("order", 1)
+        prerequisites = data.get("prerequisites", [])
 
         # Load subject config
         subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
@@ -1521,6 +1613,29 @@ def admin_update_subtopic(subject, subtopic_id):
         if subtopic_id not in subject_config.get("subtopics", {}):
             return jsonify({"error": "Subtopic not found"}), 404
 
+        # Validate prerequisites exist in the same subject and don't create circular dependencies
+        if prerequisites:
+            existing_subtopics = set(subject_config.get("subtopics", {}).keys())
+            invalid_prerequisites = [
+                prereq for prereq in prerequisites if prereq not in existing_subtopics
+            ]
+            if invalid_prerequisites:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Invalid prerequisites: {', '.join(invalid_prerequisites)}"
+                        }
+                    ),
+                    400,
+                )
+
+            # Check for circular dependencies
+            if subtopic_id in prerequisites:
+                return (
+                    jsonify({"error": "A subtopic cannot be a prerequisite of itself"}),
+                    400,
+                )
+
         # Update subtopic information
         subject_config["subtopics"][subtopic_id].update(
             {
@@ -1528,6 +1643,7 @@ def admin_update_subtopic(subject, subtopic_id):
                 "description": description,
                 "estimated_time": estimated_time,
                 "order": order,
+                "prerequisites": prerequisites,
             }
         )
 
@@ -1547,6 +1663,9 @@ def admin_update_subtopic(subject, subtopic_id):
         # Save updated subject config
         with open(subject_config_path, "w", encoding="utf-8") as f:
             json.dump(subject_config, f, indent=2)
+
+        # Clear cache to ensure fresh data is loaded
+        data_loader.clear_cache()
 
         return jsonify(
             {
@@ -1605,6 +1724,27 @@ def admin_delete_subtopic(subject, subtopic_id):
     except Exception as e:
         app.logger.error(f"Error deleting subtopic: {e}")
         return jsonify({"error": "An error occurred while deleting the subtopic"}), 500
+
+
+@app.route("/admin/subjects/<subject>/keywords", methods=["GET"])
+def admin_get_subject_keywords(subject):
+    """Get keywords for a specific subject."""
+    try:
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+
+        if not os.path.exists(subject_config_path):
+            return jsonify({"error": "Subject configuration not found"}), 404
+
+        with open(subject_config_path, "r", encoding="utf-8") as f:
+            subject_config = json.load(f)
+
+        keywords = subject_config.get("allowed_keywords", [])
+        return jsonify({"keywords": keywords})
+
+    except Exception as e:
+        app.logger.error(f"Error getting subject keywords: {e}")
+        return jsonify({"error": "An error occurred while retrieving keywords"}), 500
 
 
 @app.route("/admin/subjects/<subject>/keywords", methods=["PUT"])
@@ -1842,6 +1982,33 @@ def admin_clear_cache():
         return jsonify({"success": True, "message": "Cache cleared successfully"})
     except Exception as e:
         app.logger.error(f"Error clearing cache: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/toggle-override", methods=["GET", "POST"])
+def admin_toggle_override():
+    """Toggle admin override for testing prerequisites."""
+    try:
+        if request.method == "GET":
+            # Return current override status
+            current_state = session.get("admin_override", False)
+            return jsonify({"success": True, "admin_override": current_state})
+
+        # POST - Toggle the override
+        current_state = session.get("admin_override", False)
+        new_state = not current_state
+        session["admin_override"] = new_state
+
+        status = "enabled" if new_state else "disabled"
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Admin override {status}",
+                "admin_override": new_state,
+            }
+        )
+    except Exception as e:
+        app.logger.error(f"Error toggling admin override: {e}")
         return jsonify({"error": str(e)}), 500
 
 

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prerequisites Required</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="prerequisites-error-page">
+    <div class="prerequisites-container">
+      <div class="prerequisites-card">
+        <div class="prerequisites-header">
+          <i class="fas fa-lock"></i>
+          <h1>Prerequisites Required</h1>
+        </div>
+
+        <div class="prerequisites-content">
+          <p>
+            You need to complete the following subtopics before accessing
+            <strong>{{ subtopic }}</strong>:
+          </p>
+
+          <div class="missing-prerequisites">
+            {% for prerequisite in missing_prerequisites %}
+            <div class="prerequisite-item">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>{{ prerequisite }}</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          <p class="help-text">
+            Complete these prerequisites first to unlock this subtopic and
+            ensure you have the necessary foundation knowledge.
+          </p>
+        </div>
+
+        <div class="prerequisites-actions">
+          <a href="/subjects/{{ subject }}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Subject
+          </a>
+          {% if missing_ids %}
+          <a
+            href="/quiz/{{ subject }}/{{ missing_ids[0] }}"
+            class="btn-primary"
+          >
+            <i class="fas fa-play"></i>
+            Start with {{ missing_prerequisites[0] }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .prerequisites-error-page {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        padding: 20px;
+      }
+
+      .prerequisites-container {
+        max-width: 600px;
+        width: 100%;
+      }
+
+      .prerequisites-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .prerequisites-header {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+      }
+
+      .prerequisites-header i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.9;
+      }
+
+      .prerequisites-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+      }
+
+      .prerequisites-content {
+        padding: 40px 30px;
+      }
+
+      .prerequisites-content p {
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 25px;
+        font-size: 1.1rem;
+      }
+
+      .missing-prerequisites {
+        background: #fff5f5;
+        border: 1px solid #fed7d7;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 25px 0;
+      }
+
+      .prerequisite-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #fed7d7;
+        color: #c53030;
+        font-weight: 600;
+      }
+
+      .prerequisite-item:last-child {
+        border-bottom: none;
+      }
+
+      .prerequisite-item i {
+        margin-right: 12px;
+        font-size: 1.2rem;
+      }
+
+      .help-text {
+        background: #f7fafc;
+        border-left: 4px solid #4299e1;
+        padding: 15px 20px;
+        margin: 25px 0;
+        border-radius: 0 8px 8px 0;
+        font-style: italic;
+        color: #2d3748;
+      }
+
+      .prerequisites-actions {
+        padding: 0 30px 40px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+
+      .btn-secondary,
+      .btn-primary {
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+      }
+
+      .btn-secondary:hover {
+        background: #cbd5e0;
+        transform: translateY(-2px);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      @media (max-width: 768px) {
+        .prerequisites-header {
+          padding: 30px 20px;
+        }
+
+        .prerequisites-header h1 {
+          font-size: 1.5rem;
+        }
+
+        .prerequisites-content {
+          padding: 30px 20px;
+        }
+
+        .prerequisites-actions {
+          padding: 0 20px 30px;
+          flex-direction: column;
+        }
+
+        .btn-secondary,
+        .btn-primary {
+          text-align: center;
+          justify-content: center;
+        }
+      }
+    </style>
+  </body>
+</html>

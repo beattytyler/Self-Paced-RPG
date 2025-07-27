@@ -9,7 +9,7 @@
     "functions": {
       "name": "Python Functions",
       "description": "Master function concepts, arguments, return values, and advanced techniques",
-      "order": 1,
+      "order": 3,
       "status": "active",
       "prerequisites": [],
       "estimated_time": "2 hours",

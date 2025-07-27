@@ -5,6 +5,36 @@
     "icon": "fas fa-globe",
     "color": "#4299e1"
   },
-  "subtopics": {},
-  "allowed_keywords": []
+  "subtopics": {
+    "test": {
+      "name": "test",
+      "description": "test",
+      "order": 1,
+      "status": "active",
+      "prerequisites": [],
+      "estimated_time": "2 hours",
+      "video_count": 0,
+      "lesson_count": 0,
+      "question_count": 0
+    },
+    "testt": {
+      "name": "testt",
+      "description": "testt",
+      "order": 2,
+      "status": "active",
+      "prerequisites": [
+        "test"
+      ],
+      "estimated_time": "2 hours",
+      "video_count": 0,
+      "lesson_count": 0,
+      "question_count": 0
+    }
+  },
+  "allowed_keywords": [
+    "test",
+    "test1",
+    "test2",
+    "test3"
+  ]
 }

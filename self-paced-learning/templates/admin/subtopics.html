@@ -65,10 +65,21 @@
               <h1>Manage Subtopics</h1>
               <p>Organize and manage subtopics for all subjects</p>
             </div>
-            <button id="addSubtopicBtn" class="action-btn primary">
-              <i class="fas fa-plus"></i>
-              Add New Subtopic
-            </button>
+            <div class="admin-actions">
+              <button
+                id="toggleOverrideBtn"
+                class="action-btn secondary"
+                onclick="toggleAdminOverride()"
+                title="Toggle admin override for testing prerequisites"
+              >
+                <i class="fas fa-shield-alt"></i>
+                <span id="overrideStatus">Enable Override</span>
+              </button>
+              <button id="addSubtopicBtn" class="action-btn primary">
+                <i class="fas fa-plus"></i>
+                Add New Subtopic
+              </button>
+            </div>
           </div>
         </header>
 
@@ -121,6 +132,15 @@
                   <span class="order-badge"
                     >Order: {{ subtopic_data.order }}</span
                   >
+                  {% endif %} {% if subtopic_data.prerequisites and
+                  subtopic_data.prerequisites|length > 0 %}
+                  <span
+                    class="prerequisites-badge"
+                    title="Has {{ subtopic_data.prerequisites|length }} prerequisite(s)"
+                  >
+                    <i class="fas fa-lock"></i>
+                    {{ subtopic_data.prerequisites|length }} prereq(s)
+                  </span>
                   {% endif %}
                 </div>
               </div>
@@ -322,6 +342,34 @@
               >
             </div>
 
+            <!-- Subject Keywords Selection -->
+            <div
+              id="subjectKeywordsSection"
+              class="form-group"
+              style="display: none"
+            >
+              <label>Select from existing subject keywords:</label>
+              <div id="subjectKeywordsCards" class="keywords-cards-container">
+                <!-- Keyword cards will be populated here -->
+              </div>
+              <div class="keywords-actions">
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="selectAllKeywords()"
+                >
+                  <i class="fas fa-check-double"></i> Select All
+                </button>
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="clearAllKeywords()"
+                >
+                  <i class="fas fa-times"></i> Clear All
+                </button>
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="estimatedTime">Estimated Time</label>
               <input
@@ -341,6 +389,24 @@
                 value="1"
               />
               <small>Display order within the subject</small>
+            </div>
+
+            <div class="form-group">
+              <label for="prerequisites">Prerequisites</label>
+              <div id="prerequisitesSection">
+                <div class="prerequisites-help">
+                  <small
+                    >Select subtopics that must be completed before this one can
+                    be accessed</small
+                  >
+                </div>
+                <div
+                  id="prerequisitesCards"
+                  class="prerequisites-cards-container"
+                >
+                  <!-- Prerequisites cards will be populated here -->
+                </div>
+              </div>
             </div>
 
             <div class="form-actions">
@@ -520,6 +586,112 @@
       </div>
     </div>
 
+    <!-- Subtopic Keywords Management Modal -->
+    <div id="subtopicKeywordsModal" class="modal">
+      <div class="modal-content large-modal">
+        <div class="modal-header">
+          <h2 id="subtopicKeywordsModalTitle">Manage Subtopic Keywords</h2>
+          <button class="modal-close" onclick="closeSubtopicKeywordsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="subtopic-keywords-manager">
+            <!-- Current Subtopic Keywords Section -->
+            <div class="keywords-section">
+              <h3><i class="fas fa-bookmark"></i> Current Subtopic Keywords</h3>
+              <p>
+                These keywords are specifically associated with this subtopic:
+              </p>
+              <div
+                id="currentSubtopicKeywordsList"
+                class="keywords-list-editable"
+              >
+                <!-- Current subtopic keywords will be populated here -->
+              </div>
+              <div class="add-keywords-form">
+                <input
+                  type="text"
+                  id="newSubtopicKeywordsInput"
+                  placeholder="Add new keywords for this subtopic (comma-separated)..."
+                  class="keywords-input"
+                />
+                <button
+                  type="button"
+                  class="btn-primary"
+                  onclick="addNewSubtopicKeywords()"
+                >
+                  <i class="fas fa-plus"></i> Add Keywords
+                </button>
+              </div>
+            </div>
+
+            <!-- Subject Keywords Pool Section -->
+            <div class="keywords-section">
+              <h3><i class="fas fa-tags"></i> Subject Keywords Pool</h3>
+              <p>
+                Select keywords from the subject's keyword pool to assign to
+                this subtopic:
+              </p>
+              <div class="keywords-search">
+                <input
+                  type="text"
+                  id="subjectKeywordsSearchInput"
+                  placeholder="Search subject keywords..."
+                  onkeyup="searchSubjectKeywords()"
+                />
+              </div>
+              <div id="subjectKeywordsPool" class="keywords-cards-container">
+                <!-- Subject keywords will be populated here as selectable cards -->
+              </div>
+              <div class="keywords-actions">
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="selectAllSubjectKeywords()"
+                >
+                  <i class="fas fa-check-double"></i> Select All
+                </button>
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="clearAllSubjectKeywords()"
+                >
+                  <i class="fas fa-times"></i> Clear All
+                </button>
+              </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="keywords-section">
+              <h3><i class="fas fa-eye"></i> Preview Final Keywords</h3>
+              <p>These keywords will be associated with this subtopic:</p>
+              <div id="finalKeywordsPreview" class="keywords-preview">
+                <!-- Final keywords preview will be shown here -->
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeSubtopicKeywordsModal()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              onclick="saveSubtopicKeywords()"
+            >
+              <i class="fas fa-save"></i> Save Keywords
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <style>
       .admin-body {
         background: #f8f9fa;
@@ -529,6 +701,34 @@
       .admin-layout {
         display: flex;
         min-height: 100vh;
+      }
+
+      .admin-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .admin-actions .action-btn.secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+      }
+
+      .admin-actions .action-btn.secondary:hover {
+        background: #e9ecef;
+        color: #495057;
+      }
+
+      .admin-actions .action-btn.secondary.override-active {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+      }
+
+      .admin-actions .action-btn.secondary.override-active:hover {
+        background: #218838;
+        border-color: #1e7e34;
       }
 
       .admin-sidebar {
@@ -749,6 +949,22 @@
         font-size: 0.8rem;
       }
 
+      .prerequisites-badge {
+        background: #fff3e0;
+        color: #f57c00;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .prerequisites-badge i {
+        font-size: 0.7rem;
+      }
+
       .time-estimate {
         display: flex;
         align-items: center;
@@ -886,6 +1102,8 @@
         max-height: 80vh;
         overflow: hidden;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
       }
 
       .modal-header {
@@ -895,6 +1113,7 @@
         justify-content: space-between;
         align-items: center;
         background: linear-gradient(135deg, #f7fafc, #edf2f7);
+        flex-shrink: 0;
       }
 
       .modal-header h2 {
@@ -918,6 +1137,29 @@
 
       .modal-body {
         padding: 30px;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Custom scrollbar for modal body */
+      .modal-body::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .modal-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+      }
+
+      .modal-body::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+      }
+
+      .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
       }
 
       .form-group {
@@ -964,6 +1206,31 @@
         gap: 12px;
         justify-content: flex-end;
         margin-top: 30px;
+        padding: 20px 30px;
+        background-color: white;
+        border-top: 1px solid #e2e8f0;
+        position: sticky;
+        bottom: 0;
+        margin-left: -30px;
+        margin-right: -30px;
+        margin-bottom: -30px;
+        flex-shrink: 0;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 30px;
+        padding: 20px 30px;
+        border-top: 1px solid #e2e8f0;
+        background-color: white;
+        position: sticky;
+        bottom: 0;
+        margin-left: -30px;
+        margin-right: -30px;
+        margin-bottom: -30px;
+        flex-shrink: 0;
       }
 
       .btn-primary,
@@ -1284,15 +1551,6 @@
         font-size: 0.9rem;
       }
 
-      .modal-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #e2e8f0;
-      }
-
       /* Responsive */
       @media (max-width: 768px) {
         .admin-layout {
@@ -1321,6 +1579,373 @@
           align-items: stretch;
         }
       }
+
+      /* Keyword Cards Styles */
+      .keywords-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .keyword-card {
+        position: relative;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 48px;
+      }
+
+      .keyword-card:hover {
+        border-color: #4285f4;
+        box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .keyword-card.selected {
+        border-color: #4285f4;
+        background-color: #e8f0fe;
+        color: #1565c0;
+      }
+
+      .keyword-card.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-weight: bold;
+        color: #4285f4;
+        font-size: 16px;
+      }
+
+      .keyword-card-text {
+        flex: 1;
+        margin-right: 24px;
+      }
+
+      .keyword-card-actions {
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .keyword-card:hover .keyword-card-actions {
+        opacity: 1;
+      }
+
+      .keyword-card-btn {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        border-radius: 4px;
+        color: #666;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .keyword-card-btn:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+        color: #333;
+      }
+
+      .keyword-card-btn.edit-btn:hover {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #f57c00;
+      }
+
+      .keyword-card-btn.delete-btn:hover {
+        background-color: rgba(244, 67, 54, 0.2);
+        color: #d32f2f;
+      }
+
+      .keywords-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .btn-link {
+        background: none;
+        border: none;
+        color: #4285f4;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+      }
+
+      .btn-link:hover {
+        background-color: rgba(66, 133, 244, 0.1);
+        text-decoration: none;
+      }
+
+      .btn-link i {
+        margin-right: 5px;
+      }
+
+      /* Keyword card edit modal */
+      .edit-keyword-modal,
+      .confirm-delete-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1001;
+      }
+
+      .edit-keyword-content,
+      .confirm-delete-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        min-width: 400px;
+        max-width: 90%;
+      }
+
+      .edit-keyword-header,
+      .confirm-delete-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .edit-keyword-header h3,
+      .confirm-delete-header h3 {
+        margin: 0;
+        color: #333;
+      }
+
+      .edit-keyword-body,
+      .confirm-delete-body {
+        margin-bottom: 20px;
+      }
+
+      .edit-keyword-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      .edit-keyword-actions,
+      .confirm-delete-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .confirm-delete-body p {
+        color: #666;
+        line-height: 1.5;
+      }
+
+      .keyword-name {
+        font-weight: bold;
+        color: #d32f2f;
+      }
+
+      .btn-danger {
+        background-color: #d32f2f;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+      }
+
+      .btn-danger:hover {
+        background-color: #b71c1c;
+      }
+
+      /* Subtopic Keywords Management Styles */
+      .subtopic-keywords-manager {
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+
+      .keywords-list-editable {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+        min-height: 40px;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .editable-keyword-tag {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #bbdefb;
+        transition: all 0.3s ease;
+      }
+
+      .editable-keyword-tag:hover {
+        background-color: #bbdefb;
+        transform: translateY(-1px);
+      }
+
+      .editable-keyword-tag .remove-keyword {
+        cursor: pointer;
+        color: #d32f2f;
+        font-weight: bold;
+        padding: 2px;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+      }
+
+      .editable-keyword-tag .remove-keyword:hover {
+        background-color: rgba(211, 47, 47, 0.1);
+      }
+
+      .keywords-preview {
+        min-height: 50px;
+        padding: 15px;
+        border: 2px dashed #e0e0e0;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .preview-keyword-tag {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        border: 1px solid #c8e6c9;
+      }
+
+      .keywords-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-right: 10px;
+      }
+
+      .add-keywords-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      /* Prerequisites Styles */
+      .prerequisites-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .prerequisite-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+
+      .prerequisite-card:hover {
+        border-color: #007bff;
+        background-color: #f0f7ff;
+      }
+
+      .prerequisite-card.selected {
+        border-color: #007bff;
+        background-color: #007bff;
+        color: white;
+      }
+
+      .prerequisite-card .card-text {
+        flex: 1;
+        font-weight: 500;
+      }
+
+      .prerequisite-card .card-check {
+        margin-left: 8px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .prerequisite-card.selected .card-check {
+        opacity: 1;
+      }
+
+      .prerequisites-help {
+        margin-bottom: 8px;
+      }
+
+      .prerequisites-help small {
+        color: #666;
+      }
     </style>
 
     <script>
@@ -1331,7 +1956,62 @@
           updateSubtopicCounts();
           setupEventListeners();
           updateEmptyState();
+          checkAdminOverrideStatus();
       });
+
+      function checkAdminOverrideStatus() {
+          // Check current override status and update UI
+          fetch('/admin/toggle-override', {
+              method: 'GET',
+              headers: {
+                  'Content-Type': 'application/json',
+              }
+          })
+          .then(response => response.json())
+          .then(data => {
+              updateOverrideButton(data.admin_override || false);
+          })
+          .catch(error => {
+              console.error('Error checking override status:', error);
+          });
+      }
+
+      function toggleAdminOverride() {
+          fetch('/admin/toggle-override', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              }
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  updateOverrideButton(data.admin_override);
+                  showNotification(data.message, 'success');
+              } else {
+                  showNotification('Error toggling admin override: ' + data.error, 'error');
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              showNotification('Error toggling admin override', 'error');
+          });
+      }
+
+      function updateOverrideButton(isActive) {
+          const btn = document.getElementById('toggleOverrideBtn');
+          const status = document.getElementById('overrideStatus');
+
+          if (isActive) {
+              btn.classList.add('override-active');
+              status.textContent = 'Disable Override';
+              btn.title = 'Admin override is active - prerequisites are bypassed';
+          } else {
+              btn.classList.remove('override-active');
+              status.textContent = 'Enable Override';
+              btn.title = 'Enable admin override to bypass prerequisites for testing';
+          }
+      }
 
       function setupEventListeners() {
           // Filter controls
@@ -1347,6 +2027,18 @@
           document.getElementById('subtopicForm').addEventListener('submit', function(e) {
               e.preventDefault();
               submitSubtopicForm();
+          });
+
+          // Subject dropdown change in modal
+          document.getElementById('subtopicSubject').addEventListener('change', function(e) {
+              const selectedSubject = e.target.value;
+              if (selectedSubject) {
+                  loadKeywordCards(selectedSubject);
+                  loadPrerequisitesCards(selectedSubject, []);
+              } else {
+                  hideKeywordsSection();
+                  hidePrerequisitesSection();
+              }
           });
       }
 
@@ -1422,6 +2114,12 @@
                   // Disable subject and ID fields in edit mode
                   document.getElementById('subtopicSubject').disabled = true;
                   document.getElementById('subtopicId').disabled = true;
+
+                  // Load keyword cards for editing
+                  loadKeywordCards(subjectId);
+
+                  // Load prerequisites for editing
+                  loadPrerequisitesCards(subjectId, subtopic.prerequisites || []);
               }
           } else {
               // Add mode
@@ -1435,6 +2133,10 @@
 
               if (subjectId) {
                   document.getElementById('subtopicSubject').value = subjectId;
+                  // Load keyword cards for the selected subject
+                  loadKeywordCards(subjectId);
+                  // Load prerequisites for the selected subject
+                  loadPrerequisitesCards(subjectId, []);
               }
           }
 
@@ -1447,6 +2149,298 @@
 
       function editSubtopic(subjectId, subtopicId) {
           openSubtopicModal(subjectId, subtopicId);
+      }
+
+      // Keyword management functions
+      function loadKeywordCards(subjectId) {
+          if (!subjectId) {
+              hideKeywordsSection();
+              return;
+          }
+
+          // Show the keywords section
+          const keywordsSection = document.getElementById('subjectKeywordsSection');
+          keywordsSection.style.display = 'block';
+
+          // Get keywords from current data or fetch from server
+          const keywords = currentSubjects[subjectId]?.allowed_keywords || [];
+          displayKeywordCards(keywords);
+      }
+
+      function hideKeywordsSection() {
+          const keywordsSection = document.getElementById('subjectKeywordsSection');
+          keywordsSection.style.display = 'none';
+      }
+
+      function displayKeywordCards(keywords) {
+          const container = document.getElementById('subjectKeywordsCards');
+          container.innerHTML = '';
+
+          keywords.forEach((keyword, index) => {
+              const card = createKeywordCard(keyword, index);
+              container.appendChild(card);
+          });
+      }
+
+      // Prerequisites management functions
+      function loadPrerequisitesCards(subjectId, selectedPrerequisites = []) {
+          const container = document.getElementById('prerequisitesCards');
+          container.innerHTML = '';
+
+          // Get all subtopics for the subject except the current one being edited
+          const subtopics = currentSubjects[subjectId]?.subtopics || {};
+          const currentSubtopicId = document.getElementById('subtopicId').value;
+
+          Object.keys(subtopics).forEach(subtopicId => {
+              // Don't include the current subtopic as a potential prerequisite
+              if (subtopicId !== currentSubtopicId) {
+                  const subtopic = subtopics[subtopicId];
+                  const isSelected = selectedPrerequisites.includes(subtopicId);
+                  const card = createPrerequisiteCard(subtopicId, subtopic, isSelected);
+                  container.appendChild(card);
+              }
+          });
+      }
+
+      function createPrerequisiteCard(subtopicId, subtopicData, isSelected = false) {
+          const card = document.createElement('div');
+          card.className = `prerequisite-card ${isSelected ? 'selected' : ''}`;
+          card.dataset.subtopicId = subtopicId;
+
+          card.innerHTML = `
+              <span class="card-text">${subtopicData.name || subtopicId.replace('-', ' ')}</span>
+              <span class="card-check"><i class="fas fa-check"></i></span>
+          `;
+
+          card.addEventListener('click', function() {
+              this.classList.toggle('selected');
+          });
+
+          return card;
+      }
+
+      function hidePrerequisitesSection() {
+          const container = document.getElementById('prerequisitesCards');
+          container.innerHTML = '';
+      }
+
+      function getSelectedPrerequisites() {
+          const selectedCards = document.querySelectorAll('#prerequisitesCards .prerequisite-card.selected');
+          return Array.from(selectedCards).map(card => card.dataset.subtopicId);
+      }
+
+      function createKeywordCard(keyword, index) {
+          const card = document.createElement('div');
+          card.className = 'keyword-card';
+          card.dataset.keyword = keyword;
+          card.dataset.index = index;
+
+          card.innerHTML = `
+              <div class="keyword-card-text">${keyword}</div>
+              <div class="keyword-card-actions">
+                  <button type="button" class="keyword-card-btn edit-btn" onclick="editKeywordCard(${index})" title="Edit keyword">
+                      <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="keyword-card-btn delete-btn" onclick="deleteKeywordCard(${index})" title="Delete keyword">
+                      <i class="fas fa-trash"></i>
+                  </button>
+              </div>
+          `;
+
+          // Add click handler for selection
+          card.addEventListener('click', function(e) {
+              if (!e.target.closest('.keyword-card-actions')) {
+                  toggleKeywordSelection(card);
+              }
+          });
+
+          return card;
+      }
+
+      function toggleKeywordSelection(card) {
+          card.classList.toggle('selected');
+          updateKeywordsInput();
+      }
+
+      function selectAllKeywords() {
+          const cards = document.querySelectorAll('.keyword-card');
+          cards.forEach(card => {
+              card.classList.add('selected');
+          });
+          updateKeywordsInput();
+      }
+
+      function clearAllKeywords() {
+          const cards = document.querySelectorAll('.keyword-card');
+          cards.forEach(card => {
+              card.classList.remove('selected');
+          });
+          updateKeywordsInput();
+      }
+
+      function updateKeywordsInput() {
+          const selectedCards = document.querySelectorAll('.keyword-card.selected');
+          const selectedKeywords = Array.from(selectedCards).map(card => card.dataset.keyword);
+          document.getElementById('subtopicKeywords').value = selectedKeywords.join(', ');
+      }
+
+      function editKeywordCard(index) {
+          const card = document.querySelector(`[data-index="${index}"]`);
+          const currentKeyword = card.dataset.keyword;
+
+          // Create and show edit modal
+          showEditKeywordModal(currentKeyword, index);
+      }
+
+      function deleteKeywordCard(index) {
+          const card = document.querySelector(`[data-index="${index}"]`);
+          const keyword = card.dataset.keyword;
+
+          showDeleteConfirmationModal(keyword, () => {
+              // Remove from subject keywords
+              const subjectId = document.getElementById('subtopicSubject').value;
+              removeKeywordFromSubject(subjectId, keyword);
+
+              // Remove card from display
+              card.remove();
+              updateKeywordsInput();
+          });
+      }
+
+      function showDeleteConfirmationModal(keyword, onConfirm) {
+          // Create modal HTML
+          const modalHTML = `
+              <div id="confirmDeleteModal" class="confirm-delete-modal">
+                  <div class="confirm-delete-content">
+                      <div class="confirm-delete-header">
+                          <h3>Delete Keyword</h3>
+                          <button type="button" onclick="closeDeleteConfirmationModal()">
+                              <i class="fas fa-times"></i>
+                          </button>
+                      </div>
+                      <div class="confirm-delete-body">
+                          <p>Are you sure you want to delete the keyword <span class="keyword-name">"${keyword}"</span>?</p>
+                          <p>This will remove it from the subject's keyword pool and may affect AI analysis for this subject.</p>
+                      </div>
+                      <div class="confirm-delete-actions">
+                          <button type="button" class="btn-secondary" onclick="closeDeleteConfirmationModal()">Cancel</button>
+                          <button type="button" class="btn-danger" onclick="confirmDeleteKeyword()">Delete</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          // Remove existing modal if any
+          const existingModal = document.getElementById('confirmDeleteModal');
+          if (existingModal) {
+              existingModal.remove();
+          }
+
+          // Add modal to body
+          document.body.insertAdjacentHTML('beforeend', modalHTML);
+          document.getElementById('confirmDeleteModal').style.display = 'block';
+
+          // Store the callback function
+          window.deleteKeywordCallback = onConfirm;
+      }
+
+      function closeDeleteConfirmationModal() {
+          const modal = document.getElementById('confirmDeleteModal');
+          if (modal) {
+              modal.remove();
+          }
+          window.deleteKeywordCallback = null;
+      }
+
+      function confirmDeleteKeyword() {
+          if (window.deleteKeywordCallback) {
+              window.deleteKeywordCallback();
+          }
+          closeDeleteConfirmationModal();
+      }
+
+      function showEditKeywordModal(currentKeyword, index) {
+          // Create modal HTML
+          const modalHTML = `
+              <div id="editKeywordModal" class="edit-keyword-modal">
+                  <div class="edit-keyword-content">
+                      <div class="edit-keyword-header">
+                          <h3>Edit Keyword</h3>
+                          <button type="button" onclick="closeEditKeywordModal()">
+                              <i class="fas fa-times"></i>
+                          </button>
+                      </div>
+                      <div class="edit-keyword-body">
+                          <label for="editKeywordInput">Keyword:</label>
+                          <input type="text" id="editKeywordInput" class="edit-keyword-input" value="${currentKeyword}">
+                      </div>
+                      <div class="edit-keyword-actions">
+                          <button type="button" class="btn-secondary" onclick="closeEditKeywordModal()">Cancel</button>
+                          <button type="button" class="btn-primary" onclick="saveEditedKeyword(${index})">Save</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          // Remove existing modal if any
+          const existingModal = document.getElementById('editKeywordModal');
+          if (existingModal) {
+              existingModal.remove();
+          }
+
+          // Add modal to body
+          document.body.insertAdjacentHTML('beforeend', modalHTML);
+          document.getElementById('editKeywordModal').style.display = 'block';
+          document.getElementById('editKeywordInput').focus();
+      }
+
+      function closeEditKeywordModal() {
+          const modal = document.getElementById('editKeywordModal');
+          if (modal) {
+              modal.remove();
+          }
+      }
+
+      function saveEditedKeyword(index) {
+          const newKeyword = document.getElementById('editKeywordInput').value.trim();
+          if (!newKeyword) {
+              alert('Please enter a valid keyword');
+              return;
+          }
+
+          const card = document.querySelector(`[data-index="${index}"]`);
+          const oldKeyword = card.dataset.keyword;
+
+          // Update the card
+          card.dataset.keyword = newKeyword;
+          card.querySelector('.keyword-card-text').textContent = newKeyword;
+
+          // Update subject keywords
+          const subjectId = document.getElementById('subtopicSubject').value;
+          updateKeywordInSubject(subjectId, oldKeyword, newKeyword);
+
+          closeEditKeywordModal();
+          updateKeywordsInput();
+      }
+
+      function removeKeywordFromSubject(subjectId, keyword) {
+          if (currentSubjects[subjectId] && currentSubjects[subjectId].allowed_keywords) {
+              const keywords = currentSubjects[subjectId].allowed_keywords;
+              const keywordIndex = keywords.indexOf(keyword);
+              if (keywordIndex > -1) {
+                  keywords.splice(keywordIndex, 1);
+              }
+          }
+      }
+
+      function updateKeywordInSubject(subjectId, oldKeyword, newKeyword) {
+          if (currentSubjects[subjectId] && currentSubjects[subjectId].allowed_keywords) {
+              const keywords = currentSubjects[subjectId].allowed_keywords;
+              const keywordIndex = keywords.indexOf(oldKeyword);
+              if (keywordIndex > -1) {
+                  keywords[keywordIndex] = newKeyword;
+              }
+          }
       }
 
       function deleteSubtopic(subjectId, subtopicId) {
@@ -1490,7 +2484,8 @@
                   .map(k => k.trim())
                   .filter(k => k.length > 0),
               estimated_time: document.getElementById('estimatedTime').value,
-              order: parseInt(document.getElementById('subtopicOrder').value) || 1
+              order: parseInt(document.getElementById('subtopicOrder').value) || 1,
+              prerequisites: getSelectedPrerequisites()
           };
 
           // Validation
@@ -1536,19 +2531,238 @@
       }
 
       // Keywords Management Functions
-      function manageKeywords(subjectId, subtopicId) {
-          const modal = document.getElementById('keywordsModal');
-          const title = document.getElementById('keywordsModalTitle');
+      let currentSubtopicKeywords = [];
 
-          title.textContent = `Manage Keywords - ${currentSubjects[subjectId]?.name || subjectId}`;
+      function manageKeywords(subjectId, subtopicId) {
+          const modal = document.getElementById('subtopicKeywordsModal');
+          const title = document.getElementById('subtopicKeywordsModalTitle');
+
+          const subjectName = currentSubjects[subjectId]?.name || subjectId;
+          const subtopicName = currentSubjects[subjectId]?.subtopics?.[subtopicId]?.name || subtopicId;
+
+          title.textContent = `Manage Keywords - ${subtopicName} (${subjectName})`;
           currentEditingSubject = subjectId;
           currentEditingSubtopic = subtopicId;
 
-          // Load current keywords
-          loadCurrentKeywords(subjectId);
-          loadSuggestedKeywords(subjectId);
+          // Initialize current subtopic keywords (load from existing data if available)
+          currentSubtopicKeywords = loadExistingSubtopicKeywords(subjectId, subtopicId);
+
+          // Load current subtopic keywords
+          loadCurrentSubtopicKeywords(subjectId, subtopicId);
+
+          // Load subject keywords pool
+          loadSubjectKeywordsPool(subjectId);
+
+          // Update preview
+          updateFinalKeywordsPreview();
 
           modal.style.display = 'block';
+      }
+
+      function closeSubtopicKeywordsModal() {
+          document.getElementById('subtopicKeywordsModal').style.display = 'none';
+          currentEditingSubtopic = null;
+          currentSubtopicKeywords = [];
+      }
+
+      function loadExistingSubtopicKeywords(subjectId, subtopicId) {
+          // For now, since keywords are stored at subject level, we'll return an empty array
+          // In a future implementation, you could store subtopic-specific keywords
+          // and load them here from the backend or local storage
+          return [];
+      }
+
+      function loadCurrentSubtopicKeywords(subjectId, subtopicId) {
+          const container = document.getElementById('currentSubtopicKeywordsList');
+          container.innerHTML = '';
+
+          // For now, we'll start with an empty set of subtopic-specific keywords
+          // In a real implementation, you'd fetch this from the backend
+          currentSubtopicKeywords.forEach((keyword, index) => {
+              const tag = createEditableKeywordTag(keyword, index);
+              container.appendChild(tag);
+          });
+
+          if (currentSubtopicKeywords.length === 0) {
+              container.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No specific keywords assigned to this subtopic yet.</p>';
+          }
+      }
+
+      function loadSubjectKeywordsPool(subjectId) {
+          const container = document.getElementById('subjectKeywordsPool');
+          container.innerHTML = '';
+
+          const subjectKeywords = currentSubjects[subjectId]?.allowed_keywords || [];
+
+          if (subjectKeywords.length === 0) {
+              container.innerHTML = '<p style="color: #666; font-style: italic; margin: 20px; text-align: center;">No keywords in subject pool yet. <br><a href="#" onclick="editSubjectKeywords(\'' + subjectId + '\'); closeSubtopicKeywordsModal();" style="color: #4285f4;">Click here to add keywords to the subject pool first.</a></p>';
+              return;
+          }
+
+          subjectKeywords.forEach((keyword, index) => {
+              const card = createSelectableKeywordCard(keyword, index);
+              container.appendChild(card);
+          });
+      }
+
+      function createEditableKeywordTag(keyword, index) {
+          const tag = document.createElement('div');
+          tag.className = 'editable-keyword-tag';
+          tag.innerHTML = `
+              <span>${keyword}</span>
+              <span class="remove-keyword" onclick="removeSubtopicKeyword(${index})" title="Remove keyword">×</span>
+          `;
+          return tag;
+      }
+
+      function createSelectableKeywordCard(keyword, index) {
+          const card = document.createElement('div');
+          card.className = 'keyword-card';
+          card.dataset.keyword = keyword;
+          card.dataset.index = index;
+
+          card.innerHTML = `
+              <div class="keyword-card-text">${keyword}</div>
+          `;
+
+          // Add click handler for selection
+          card.addEventListener('click', function() {
+              toggleSubjectKeywordSelection(card);
+          });
+
+          return card;
+      }
+
+      function toggleSubjectKeywordSelection(card) {
+          card.classList.toggle('selected');
+          updateFinalKeywordsPreview();
+      }
+
+      function selectAllSubjectKeywords() {
+          const cards = document.querySelectorAll('#subjectKeywordsPool .keyword-card');
+          cards.forEach(card => {
+              card.classList.add('selected');
+          });
+          updateFinalKeywordsPreview();
+      }
+
+      function clearAllSubjectKeywords() {
+          const cards = document.querySelectorAll('#subjectKeywordsPool .keyword-card');
+          cards.forEach(card => {
+              card.classList.remove('selected');
+          });
+          updateFinalKeywordsPreview();
+      }
+
+      function addNewSubtopicKeywords() {
+          const input = document.getElementById('newSubtopicKeywordsInput');
+          const newKeywords = input.value.split(',').map(k => k.trim()).filter(k => k.length > 0);
+
+          if (newKeywords.length === 0) {
+              alert('Please enter at least one keyword');
+              return;
+          }
+
+          // Add to current subtopic keywords if not already present
+          newKeywords.forEach(keyword => {
+              if (!currentSubtopicKeywords.includes(keyword)) {
+                  currentSubtopicKeywords.push(keyword);
+              }
+          });
+
+          // Clear input
+          input.value = '';
+
+          // Refresh display
+          loadCurrentSubtopicKeywords(currentEditingSubject, currentEditingSubtopic);
+          updateFinalKeywordsPreview();
+      }
+
+      function removeSubtopicKeyword(index) {
+          currentSubtopicKeywords.splice(index, 1);
+          loadCurrentSubtopicKeywords(currentEditingSubject, currentEditingSubtopic);
+          updateFinalKeywordsPreview();
+      }
+
+      function updateFinalKeywordsPreview() {
+          const preview = document.getElementById('finalKeywordsPreview');
+
+          // Get selected subject keywords
+          const selectedCards = document.querySelectorAll('#subjectKeywordsPool .keyword-card.selected');
+          const selectedSubjectKeywords = Array.from(selectedCards).map(card => card.dataset.keyword);
+
+          // Combine subtopic-specific keywords with selected subject keywords
+          const allKeywords = [...new Set([...currentSubtopicKeywords, ...selectedSubjectKeywords])];
+
+          if (allKeywords.length === 0) {
+              preview.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No keywords selected</p>';
+              return;
+          }
+
+          preview.innerHTML = allKeywords.map(keyword =>
+              `<span class="preview-keyword-tag">${keyword}</span>`
+          ).join('');
+      }
+
+      function searchSubjectKeywords() {
+          const searchTerm = document.getElementById('subjectKeywordsSearchInput').value.toLowerCase();
+          const cards = document.querySelectorAll('#subjectKeywordsPool .keyword-card');
+
+          cards.forEach(card => {
+              const keyword = card.dataset.keyword.toLowerCase();
+              if (keyword.includes(searchTerm)) {
+                  card.style.display = 'flex';
+              } else {
+                  card.style.display = 'none';
+              }
+          });
+      }
+
+      function saveSubtopicKeywords() {
+          // Get selected subject keywords
+          const selectedCards = document.querySelectorAll('#subjectKeywordsPool .keyword-card.selected');
+          const selectedSubjectKeywords = Array.from(selectedCards).map(card => card.dataset.keyword);
+
+          // Combine all keywords
+          const allKeywords = [...new Set([...currentSubtopicKeywords, ...selectedSubjectKeywords])];
+
+          // For now, we'll add these keywords to the subject's keyword pool
+          // In a full implementation, you'd save this association to the backend
+
+          // Add new subtopic-specific keywords to the subject pool
+          const subjectKeywords = currentSubjects[currentEditingSubject].allowed_keywords || [];
+          const newKeywords = currentSubtopicKeywords.filter(k => !subjectKeywords.includes(k));
+
+          if (newKeywords.length > 0) {
+              // Update subject keywords
+              fetch(`/admin/subjects/${currentEditingSubject}/keywords`, {
+                  method: 'PUT',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      keywords: [...subjectKeywords, ...newKeywords]
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Update local data
+                      currentSubjects[currentEditingSubject].allowed_keywords = [...subjectKeywords, ...newKeywords];
+                      showNotification(`Keywords saved successfully! Added ${newKeywords.length} new keywords to subject pool.`, 'success');
+                      closeSubtopicKeywordsModal();
+                  } else {
+                      showNotification(data.error || 'Failed to save keywords', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error saving keywords:', error);
+                  showNotification('Error saving keywords', 'error');
+              });
+          } else {
+              showNotification('Keywords selection saved!', 'success');
+              closeSubtopicKeywordsModal();
+          }
       }
 
       function editSubjectKeywords(subjectId) {
