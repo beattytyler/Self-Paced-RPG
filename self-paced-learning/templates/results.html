@@ -20,6 +20,11 @@
         <ul id="weak-topics-nav" class="topic-nav-list"></ul>
 
         <div class="sidebar-footer">
+          {% if is_admin %}
+          <button id="adminMarkCompleteButton" class="action-button admin-button" style="background: #dc3545; margin-bottom: 10px;">
+            Admin: Mark All Complete
+          </button>
+          {% endif %}
           <button id="continueButton" class="action-button hidden" disabled>
             Take Follow-up Quiz
           </button>
@@ -74,6 +79,7 @@
 
     <script>
       const LESSON_PLANS = {{ LESSON_PLANS | tojson | safe }};
+      const VIDEO_DATA = {{ VIDEO_DATA | tojson | safe }};
     </script>
 
     <script>
@@ -96,6 +102,7 @@
         const continueButton = document.getElementById("continueButton");
         const backToTopicsButton =
           document.getElementById("backToTopicsButton");
+        const adminMarkCompleteButton = document.getElementById("adminMarkCompleteButton");
 
         // --- State Tracking ---
         let completionState = {};
@@ -107,6 +114,13 @@
         window.onYouTubeIframeAPIReady = function () {
           console.log("YouTube Player API is ready.");
         };
+
+        // --- Helper Functions ---
+        function extractVideoIdFromUrl(url) {
+          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+          const match = url.match(regExp);
+          return (match && match[2].length === 11) ? match[2] : null;
+        }
 
         // --- Main Analysis Logic ---
         const answersFromSession = sessionStorage.getItem("quizAnswers");
@@ -249,6 +263,62 @@
           }
         });
 
+        // Admin mark complete functionality
+        if (adminMarkCompleteButton) {
+          adminMarkCompleteButton.addEventListener("click", async function () {
+            if (confirm("Mark all weak topics as complete? This will set all read and watch activities to 100% completion.")) {
+              try {
+                // Get all current weak topics
+                const weakTopics = Object.keys(completionState);
+                let completedCount = 0;
+
+                // Mark each topic as complete
+                for (const topic of weakTopics) {
+                  const response = await fetch("/api/admin/mark_complete", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ topic: topic }),
+                  });
+
+                  if (response.ok) {
+                    // Mark both read and watched as complete
+                    completionState[topic].read = true;
+                    completionState[topic].watched = true;
+                    completedCount++;
+                    
+                    // Update visual indicators for both read and watch
+                    const safeTopicId = topic.replace(/[^a-zA-Z0-9]/g, "_");
+                    
+                    // Mark read as complete
+                    const readElement = document.getElementById(`read-${safeTopicId}`);
+                    if (readElement) {
+                      readElement.classList.add("completed");
+                    }
+                    
+                    // Mark watch as complete
+                    const watchElement = document.getElementById(`watch-${safeTopicId}`);
+                    if (watchElement) {
+                      watchElement.classList.add("completed");
+                    }
+                  }
+                }
+
+                // Show success message
+                alert(`Successfully marked ${completedCount} topics as complete!`);
+                
+                // Check if all topics are now complete
+                checkCompletionAndToggleButton();
+
+              } catch (error) {
+                console.error("Error marking topics complete:", error);
+                alert("Error marking topics complete. Please try again.");
+              }
+            }
+          });
+        }
+
         /**
          * Renders the text-based lesson in the main content area.
          */
@@ -287,8 +357,8 @@
          * Renders the YouTube video player in the main content area.
          */
         function renderVideo(topic) {
-          const lesson = LESSON_PLANS[topic];
-          if (!lesson || !lesson.videoId) {
+          const videoData = VIDEO_DATA[topic];
+          if (!videoData) {
             lessonContentArea.innerHTML = `<h2>Video Not Found</h2><p>Sorry, we couldn't find a video for "${topic}".</p>`;
             return;
           }
@@ -305,11 +375,20 @@
 
           currentVideoTopic = topic; // Store current video topic
 
+          // Extract video ID from YouTube URL
+          const videoId = extractVideoIdFromUrl(videoData.url);
+          
+          if (!videoId) {
+            lessonContentArea.innerHTML = `<h2>Invalid Video</h2><p>The video URL for "${topic}" is not valid.</p>`;
+            return;
+          }
+
           // Create enhanced video player structure with loading state
           lessonContentArea.innerHTML = `
             <div id="video-player-container">
               <div class="video-header">
-                <div class="video-title">${lesson.title || topic}</div>
+                <div class="video-title">${videoData.title || topic}</div>
+                <div class="video-description">${videoData.description || ''}</div>
               </div>
               <div class="video-wrapper">
                 <div class="video-loading">Loading video...</div>
@@ -345,7 +424,7 @@
               currentPlayer = new YT.Player("youtube-player", {
                 height: "100%",
                 width: "100%",
-                videoId: lesson.videoId,
+                videoId: videoId,
                 playerVars: {
                   playsinline: 1,
                   autoplay: 0,

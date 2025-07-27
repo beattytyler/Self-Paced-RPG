@@ -72,58 +72,75 @@ h2 {
 
 .topic-card {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  display: flex; /* Added for flex column layout */
-  flex-direction: column; /* Added */
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .topic-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-8px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: rgba(0, 123, 255, 0.2);
 }
 
 .topic-header {
-  background-color: #3776ab; /* Medium blue */
   color: white;
-  padding: 15px 20px;
+  padding: 18px 24px;
   font-size: 1.3rem;
-  font-weight: bold;
+  font-weight: 600;
   position: relative;
+  letter-spacing: 0.025em;
+  /* Background will be set inline based on subject color */
 }
 
 .topic-content {
-  padding: 20px;
-  flex-grow: 1; /* Allow content to grow */
-  display: flex; /* Added */
-  flex-direction: column; /* Added */
-  justify-content: space-between; /* Added */
+  padding: 24px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .topic-description {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   min-height: 60px;
   color: #555;
-  flex-grow: 1; /* Allow description to take available space */
+  flex-grow: 1;
+  line-height: 1.6;
 }
 
 /* Progress Bar */
 .progress-container {
-  height: 10px;
-  background-color: #e0e0e0;
-  border-radius: 5px;
-  margin: 15px 0;
+  height: 8px;
+  background-color: #f1f3f4;
+  border-radius: 12px;
+  margin: 18px 0;
   overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .progress-bar {
   height: 100%;
-  background-color: #4caf50; /* Green */
-  border-radius: 5px;
+  background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+  border-radius: 12px;
   width: 0%;
-  transition: width 0.4s ease-in-out;
+  transition: width 0.5s ease-in-out;
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  border-radius: 12px;
 }
 
 /* General Button Styling - used as base for .action-button */
@@ -148,6 +165,25 @@ h2 {
 .action-button:hover {
   background-color: #2980b9;
   transform: translateY(-1px);
+}
+
+/* Admin Button Styling */
+.admin-button {
+  background-color: #dc3545 !important; /* Bootstrap danger red */
+  color: white !important;
+  border: 2px solid #dc3545 !important;
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+  font-size: 0.9em !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3) !important;
+}
+
+.admin-button:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4) !important;
 }
 
 /* Specific styles for results.html elements */
@@ -308,6 +344,17 @@ h2 {
   display: flex;
 }
 
+.modal-content {
+  background-color: #1c1c1c;
+  padding: 20px;
+  padding-top: 40px; /* Extra padding for close button */
+  border-radius: 8px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 840px;
+  position: relative;
+}
+
 .video-player-content {
   background-color: #1c1c1c;
   padding: 20px;
@@ -319,12 +366,33 @@ h2 {
   position: relative;
 }
 
-.video-player iframe {
+.video-player iframe,
+.video-player #youtube-player {
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
   border: none;
   border-radius: 4px;
+}
+
+/* Admin Override Button */
+.admin-override-button {
+  position: absolute !important;
+  top: 10px !important;
+  right: 50px !important;
+  background: #dc3545 !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  z-index: 1001 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.admin-override-button:hover {
+  background: #c82333 !important;
 }
 
 .close-button {

@@ -290,6 +290,15 @@ def subject_page(subject):
                 # No quiz data or empty quiz
                 subtopic_data["question_count"] = 0
 
+            # Update video counts dynamically by checking for video data
+            try:
+                video_data = get_video_data(subject, subtopic_id)
+                video_count = len(video_data) if video_data else 0
+                subtopic_data["video_count"] = video_count
+            except Exception as e:
+                app.logger.debug(f"No video data found for {subject}/{subtopic_id}: {e}")
+                subtopic_data["video_count"] = 0
+
         # Sort subtopics by order
         sorted_subtopics = dict(
             sorted(subtopics.items(), key=lambda x: x[1].get("order", 999))
@@ -384,6 +393,35 @@ def update_progress_api():
 def get_all_progress_api():
     user_progress = session.get("progress", {})
     return jsonify(user_progress)
+
+
+@app.route("/api/admin/status")
+def get_admin_status():
+    """Check if current user has admin privileges."""
+    is_admin = is_admin_override_active(session)
+    return jsonify({"is_admin": is_admin})
+
+
+@app.route("/api/admin/mark_complete", methods=["POST"])
+def admin_mark_complete():
+    """Admin endpoint to mark topics as complete."""
+    if not is_admin_override_active(session):
+        return jsonify({"success": False, "error": "Admin privileges required"}), 403
+    
+    data = request.get_json()
+    topic = data.get("topic")
+    
+    if not topic:
+        return jsonify({"success": False, "error": "Topic is required"}), 400
+    
+    # Get current progress
+    user_progress = session.get("progress", {})
+    
+    # Mark topic as 100% complete
+    user_progress[topic] = 100
+    session["progress"] = user_progress
+    
+    return jsonify({"success": True, "topic": topic, "progress": 100})
 
 
 @app.route("/quiz/<subject>/<subtopic>")
@@ -991,6 +1029,7 @@ def show_results_page():
         LESSON_PLANS=lesson_plans,
         current_subject=current_subject,
         current_subtopic=current_subtopic,
+        is_admin=is_admin_override_active(session),
     )
 
 
@@ -1535,6 +1574,7 @@ def admin_create_subtopic():
         estimated_time = data.get("estimated_time", "")
         order = data.get("order", 1)
         prerequisites = data.get("prerequisites", [])
+        video_data = data.get("video")  # New video data
 
         # Validation
         if not subject or not subtopic_id:
@@ -1647,8 +1687,17 @@ def admin_create_subtopic():
         with open(quiz_path, "w", encoding="utf-8") as f:
             json.dump(quiz_data, f, indent=2)
 
-        # Create empty videos file
+        # Create videos file with video data if provided
         videos_data = {"videos": {}}
+        if video_data:
+            videos_data["videos"][subtopic_id] = {
+                "title": video_data.get("title", ""),
+                "url": video_data.get("url", ""),
+                "description": video_data.get("description", "")
+            }
+            # Update video count in subtopic config
+            subject_config["subtopics"][subtopic_id]["video_count"] = 1
+        
         videos_path = os.path.join(subtopic_dir, "videos.json")
         with open(videos_path, "w", encoding="utf-8") as f:
             json.dump(videos_data, f, indent=2)
@@ -1679,6 +1728,7 @@ def admin_update_subtopic(subject, subtopic_id):
         estimated_time = data.get("estimated_time", "")
         order = data.get("order", 1)
         prerequisites = data.get("prerequisites", [])
+        video_data = data.get("video")  # New video data
 
         # Load subject config
         subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
@@ -1740,6 +1790,37 @@ def admin_update_subtopic(subject, subtopic_id):
                     k.lower() for k in existing_keywords
                 ]:
                     subject_config["allowed_keywords"].append(keyword.strip())
+
+        # Handle video data update
+        if video_data is not None:  # Check for None to allow clearing video data
+            subtopic_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject, subtopic_id)
+            videos_path = os.path.join(subtopic_dir, "videos.json")
+            
+            # Load existing videos or create new structure
+            videos_data = {"videos": {}}
+            if os.path.exists(videos_path):
+                try:
+                    with open(videos_path, "r", encoding="utf-8") as f:
+                        videos_data = json.load(f)
+                except:
+                    videos_data = {"videos": {}}
+            
+            # Update video data
+            if video_data:  # If video data provided
+                videos_data["videos"][subtopic_id] = {
+                    "title": video_data.get("title", ""),
+                    "url": video_data.get("url", ""),
+                    "description": video_data.get("description", "")
+                }
+                subject_config["subtopics"][subtopic_id]["video_count"] = 1
+            else:  # If video data is empty (clearing video)
+                if subtopic_id in videos_data.get("videos", {}):
+                    del videos_data["videos"][subtopic_id]
+                subject_config["subtopics"][subtopic_id]["video_count"] = 0
+            
+            # Save videos file
+            with open(videos_path, "w", encoding="utf-8") as f:
+                json.dump(videos_data, f, indent=2)
 
         # Save updated subject config
         with open(subject_config_path, "w", encoding="utf-8") as f:
@@ -2329,6 +2410,24 @@ def admin_toggle_override():
     except Exception as e:
         app.logger.error(f"Error toggling admin override: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/videos/<subject>/<subtopic>", methods=["GET"])
+def admin_get_video_data(subject, subtopic):
+    """Get video data for a specific subject/subtopic for editing."""
+    try:
+        # Load video data
+        video_data = get_video_data(subject, subtopic)
+        
+        # Check if video exists for this subtopic
+        if subtopic in video_data:
+            return jsonify({"success": True, "video": video_data[subtopic]})
+        else:
+            return jsonify({"success": True, "video": None})
+            
+    except Exception as e:
+        app.logger.error(f"Error loading video data for {subject}/{subtopic}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == "__main__":

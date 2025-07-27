@@ -34,7 +34,12 @@
       "order": 3,
       "status": "active",
       "prerequisites": [
-        "functions"
+        "dictionaries",
+        "functions",
+        "lists",
+        "loops",
+        "sets",
+        "test"
       ],
       "estimated_time": "2 hours",
       "video_count": 0,

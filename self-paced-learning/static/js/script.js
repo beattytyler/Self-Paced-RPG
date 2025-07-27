@@ -6,8 +6,17 @@ document.addEventListener("DOMContentLoaded", function () {
   const videoIframe = document.getElementById("video-iframe");
   const videoTitle = document.getElementById("current-video-title");
 
-  // Load progress from server hen page loads
+  // YouTube API variables
+  let ytPlayer = null;
+  let isAdminOverride = false;
+  let currentVideoId = null;
+  let currentTopic = null;
+
+  // Load progress from server when page loads
   loadProgress();
+
+  // Check if user is admin
+  checkAdminStatus();
 
   // Add click event to all topic buttons
   topicButtons.forEach((button) => {
@@ -29,6 +38,104 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // Check if user has admin privileges
+  function checkAdminStatus() {
+    fetch("/api/admin/status")
+      .then((response) => response.json())
+      .then((data) => {
+        isAdminOverride = data.is_admin || false;
+        if (isAdminOverride) {
+          console.log("Admin override enabled - video completion not required");
+        }
+      })
+      .catch((error) => {
+        console.log("Admin status check failed, assuming non-admin");
+        isAdminOverride = false;
+      });
+  }
+
+  // YouTube API ready callback
+  function onYouTubeIframeAPIReady() {
+    console.log("YouTube API Ready");
+  }
+
+  // Initialize YouTube player with enhanced tracking
+  function initializePlayer(videoId, elementId) {
+    if (ytPlayer) {
+      ytPlayer.destroy();
+    }
+
+    ytPlayer = new YT.Player(elementId, {
+      height: '400',
+      width: '100%',
+      videoId: videoId,
+      playerVars: {
+        'autoplay': 1,
+        'controls': 1,
+        'rel': 0,
+        'showinfo': 0,
+        'modestbranding': 1
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  }
+
+  function onPlayerReady(event) {
+    console.log("YouTube player ready");
+    startVideoProgressTracking();
+  }
+
+  function onPlayerStateChange(event) {
+    if (event.data == YT.PlayerState.ENDED) {
+      handleVideoComplete();
+    }
+  }
+
+  // Start enhanced video progress tracking
+  function startVideoProgressTracking() {
+    if (!ytPlayer || !currentTopic) return;
+
+    const trackingInterval = setInterval(() => {
+      if (!ytPlayer || ytPlayer.getPlayerState() === YT.PlayerState.UNSTARTED) {
+        clearInterval(trackingInterval);
+        return;
+      }
+
+      const currentTime = ytPlayer.getCurrentTime();
+      const duration = ytPlayer.getDuration();
+      
+      if (duration > 0) {
+        const progress = Math.min((currentTime / duration) * 100, 100);
+        updateVideoProgress(currentTopic, progress);
+
+        // Auto-complete for admins at 80% or if override enabled
+        if (isAdminOverride && progress >= 80) {
+          handleVideoComplete();
+          clearInterval(trackingInterval);
+        }
+      }
+    }, 2000); // Check every 2 seconds
+
+    // Store interval reference for cleanup
+    videoModal.dataset.trackingInterval = trackingInterval;
+  }
+
+  function handleVideoComplete() {
+    if (currentTopic) {
+      saveProgress(currentTopic, 100);
+      
+      // Redirect to quiz for functions topic
+      if (currentTopic === "functions") {
+        setTimeout(() => {
+          window.location.href = "/quiz/functions";
+        }, 1000);
+      }
+    }
+  }
+
   // Load progress from server API
   function loadProgress() {
     fetch("/api/progress")
@@ -44,50 +151,128 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Open video modal with selected topic
   function openVideo(topic) {
+    currentTopic = topic;
+    
+    // Determine the correct API endpoint based on page context
+    let apiUrl;
+    const currentPath = window.location.pathname;
+    
+    if (currentPath.startsWith('/subjects/')) {
+      // We're on a subject page, extract subject from URL
+      const pathParts = currentPath.split('/');
+      const subject = pathParts[2]; // /subjects/{subject}
+      const subtopic = topic; // The topic is actually the subtopic ID
+      
+      // For subject pages, we need to get the first video from the subtopic
+      // The API expects /api/video/{subject}/{subtopic}/{videoKey}
+      // We'll fetch the video data to get the available video keys
+      apiUrl = `/api/video/${subject}/${subtopic}/${subtopic}`; // Assuming video key matches subtopic
+    } else {
+      // Legacy behavior for results page
+      apiUrl = `/api/video/${topic}`;
+    }
+    
     // Get video data from API
-    fetch(`/api/video/${topic}`)
+    fetch(apiUrl)
       .then((response) => response.json())
       .then((data) => {
         // Set video title
         videoTitle.textContent = data.title;
 
-        // Set video iframe source
-        videoIframe.src = data.url;
+        // Extract video ID from YouTube URL
+        const videoId = extractVideoId(data.url);
+        currentVideoId = videoId;
 
-        if (topic === "functions") {
-          videoIframe.onload = function () {
-            videoIframe.contentWindow.postMessage(
-              JSON.stringify({ event: "listening" }),
-              "*"
-            );
+        if (videoId) {
+          // Create YouTube player container if it doesn't exist
+          if (!document.getElementById('youtube-player')) {
+            videoIframe.outerHTML = '<div id="youtube-player"></div>';
+          }
+          
+          // Initialize YouTube player with enhanced tracking
+          setTimeout(() => {
+            initializePlayer(videoId, 'youtube-player');
+          }, 100);
+        } else {
+          // Fallback to iframe for non-YouTube videos
+          videoIframe.src = data.url;
+          
+          // Legacy handling for functions topic
+          if (topic === "functions") {
+            videoIframe.onload = function () {
+              videoIframe.contentWindow.postMessage(
+                JSON.stringify({ event: "listening" }),
+                "*"
+              );
 
-            window.addEventListener("message", function onVideoEnd(event) {
-              let data;
-              try {
-                data =
-                  typeof event.data === "string"
-                    ? JSON.parse(event.data)
-                    : event.data;
-              } catch (e) {
-                return;
-              }
+              window.addEventListener("message", function onVideoEnd(event) {
+                let data;
+                try {
+                  data =
+                    typeof event.data === "string"
+                      ? JSON.parse(event.data)
+                      : event.data;
+                } catch (e) {
+                  return;
+                }
 
-              if (data.event === "onStateChange" && data.info === 0) {
-                // 0 = ended
-                window.removeEventListener("message", onVideoEnd);
-                window.location.href = "/quiz/functions";
-              }
-            });
-          };
+                if (data.event === "onStateChange" && data.info === 0) {
+                  // 0 = ended
+                  window.removeEventListener("message", onVideoEnd);
+                  window.location.href = "/quiz/functions";
+                }
+              });
+            };
+          }
         }
+
         // Show modal
         videoModal.style.display = "flex";
         videoModal.dataset.currentTopic = topic;
 
-        // Start tracking video progress
-        startTracking(topic);
+        // Add admin override button if user is admin
+        if (isAdminOverride) {
+          addAdminOverrideButton();
+        }
       })
       .catch((error) => console.error("Error loading video data:", error));
+  }
+
+  // Extract YouTube video ID from various URL formats
+  function extractVideoId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  }
+
+  // Add admin override button to video modal
+  function addAdminOverrideButton() {
+    if (document.getElementById('admin-override-btn')) return;
+
+    const overrideBtn = document.createElement('button');
+    overrideBtn.id = 'admin-override-btn';
+    overrideBtn.textContent = 'Admin: Mark Complete';
+    overrideBtn.className = 'admin-override-button';
+    overrideBtn.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 50px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      z-index: 1001;
+    `;
+    
+    overrideBtn.addEventListener('click', function() {
+      handleVideoComplete();
+      closeVideo();
+    });
+
+    videoModal.querySelector('.modal-content').appendChild(overrideBtn);
   }
 
   // Close video modal
@@ -96,10 +281,31 @@ document.addEventListener("DOMContentLoaded", function () {
     const topic = videoModal.dataset.currentTopic;
     console.log("Closing video modal for topic:", topic); // Debug log
 
+    // Stop YouTube player if it exists
+    if (ytPlayer) {
+      ytPlayer.stopVideo();
+    }
+
+    // Clear tracking intervals
+    const trackingInterval = videoModal.dataset.trackingInterval;
+    if (trackingInterval) {
+      clearInterval(trackingInterval);
+    }
+
+    // Remove admin override button
+    const overrideBtn = document.getElementById('admin-override-btn');
+    if (overrideBtn) {
+      overrideBtn.remove();
+    }
+
     // Stop video playback
     videoIframe.src = "";
     videoModal.style.display = "none";
     stopTracking();
+
+    // Reset current tracking variables
+    currentTopic = null;
+    currentVideoId = null;
 
     // Redirect to quiz page if topic is "functions"
     if (topic === "functions") {
@@ -151,6 +357,19 @@ document.addEventListener("DOMContentLoaded", function () {
   function stopTracking() {
     if (trackingInterval) {
       clearInterval(trackingInterval);
+    }
+  }
+
+  // Update video progress during playback
+  function updateVideoProgress(topic, progress) {
+    const videoProgressBar = document.getElementById("video-progress-bar");
+    if (videoProgressBar) {
+      videoProgressBar.style.width = `${progress}%`;
+    }
+
+    // Save progress every 10% increment to avoid too many API calls
+    if (Math.floor(progress) % 10 === 0) {
+      saveProgress(topic, progress);
     }
   }
 

@@ -12,6 +12,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
   </head>
   <body>
     <header>
@@ -56,7 +58,7 @@
         id="{{ subtopic_id }}-card"
         data-subtopic="{{ subtopic_id }}"
       >
-        <div class="topic-header">
+        <div class="topic-header" style="background: linear-gradient(135deg, {{ subject_info.color }} 0%, {{ subject_info.color }}cc 50%, {{ subject_info.color }}ee 100%); box-shadow: 0 4px 8px {{ subject_info.color }}33;">
           <h3>{{ subtopic_data.name }}</h3>
           <span class="completion-badge" id="{{ subtopic_id }}-badge">
             {% if subtopic_data.status == 'active' %} Available {% else %}
@@ -122,20 +124,22 @@
 
     <!-- Video Modal -->
     <div class="video-container" id="video-modal">
-      <div class="close-button">×</div>
-      <h2 class="video-title" id="current-video-title">Video Title</h2>
-      <div class="video-player">
-        <iframe
-          id="video-iframe"
-          width="800"
-          height="450"
-          src=""
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
-        <div class="progress-container" style="margin-top: 10px">
-          <div class="progress-bar" id="video-progress-bar"></div>
+      <div class="modal-content">
+        <div class="close-button">×</div>
+        <h2 class="video-title" id="current-video-title">Video Title</h2>
+        <div class="video-player">
+          <iframe
+            id="video-iframe"
+            width="800"
+            height="450"
+            src=""
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+          <div class="progress-container" style="margin-top: 10px">
+            <div class="progress-bar" id="video-progress-bar"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -204,31 +208,75 @@
 
       .topic-actions {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
         justify-content: center;
         flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      /* Modern Button Styling */
+      .watch-btn, .quiz-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 150px;
+        height: 44px;
+        justify-content: center;
+        letter-spacing: 0.025em;
+        box-sizing: border-box;
+        flex-shrink: 0;
       }
 
       .watch-btn {
-        background: #28a745;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         color: white;
       }
 
       .watch-btn:hover {
-        background: #218838;
+        background: linear-gradient(135deg, #218838 0%, #1ea080 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
       }
 
       .quiz-btn {
-        background: #007bff;
+        background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
         color: white;
         text-decoration: none;
-        align-items: center;
-        gap: 0.5rem;
       }
 
       .quiz-btn:hover {
-        background: #0056b3;
+        background: linear-gradient(135deg, #0056b3 0%, #5a0fc8 100%);
         text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+      }
+
+      /* Icon styling within buttons */
+      .watch-btn i, .quiz-btn i {
+        font-size: 1rem;
+        opacity: 0.9;
+      }
+
+      /* Responsive design for smaller screens */
+      @media (max-width: 768px) {
+        .topic-actions {
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .watch-btn, .quiz-btn {
+          width: 180px;
+          height: 44px;
+        }
       }
 
       /* Admin Override Styles */
