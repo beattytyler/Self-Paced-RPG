@@ -570,6 +570,20 @@
           "text": "<strong>Key takeaway:</strong> Wrap risky operations (like division, file access, or type conversions) in a `try...except` block to gracefully manage potential errors and make your functions more reliable."
         }
       ]
+    },
+    "python_syntax": {
+      "title": "python syntax",
+      "videoId": "",
+      "content": [
+        {
+          "type": "header",
+          "text": "asdf"
+        },
+        {
+          "type": "paragraph",
+          "text": "asdf"
+        }
+      ]
     }
   }
 }
