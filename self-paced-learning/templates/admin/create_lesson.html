@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if edit_mode %}Edit Lesson{% else %}Create Lesson{% endif %} - Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-body">
+    <div class="admin-layout">
+        <!-- Admin Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="admin-logo">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                <a href="/" class="back-to-site">← Back to Site</a>
+            </div>
+            
+            <ul class="admin-nav">
+                <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/subjects"><i class="fas fa-book-open"></i> Subjects</a></li>
+                <li><a href="/admin/lessons" class="active"><i class="fas fa-chalkboard-teacher"></i> Lessons</a></li>
+                <li><a href="/admin/questions"><i class="fas fa-question-circle"></i> Questions</a></li>
+                <li><a href="/admin/videos"><i class="fas fa-video"></i> Videos</a></li>
+                <li><a href="/admin/export"><i class="fas fa-download"></i> Export/Import</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <header class="admin-header">
+                <h1>{% if edit_mode %}Edit Lesson{% else %}Create New Lesson{% endif %}</h1>
+                <p>{% if edit_mode %}Modify the lesson content and structure{% else %}Create a comprehensive lesson with rich content{% endif %}</p>
+                <div class="breadcrumb">
+                    <a href="/admin/lessons">Lessons</a> > 
+                    {% if edit_mode %}
+                        <span>Edit: {{ lesson_data.title }}</span>
+                    {% else %}
+                        <span>Create New</span>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Lesson Form -->
+            <div class="lesson-form-container">
+                <form id="lessonForm" class="lesson-form">
+                    <!-- Basic Info Section -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="subject">Subject *</label>
+                                <select id="subject" name="subject" required {% if edit_mode %}disabled{% endif %}>
+                                    <option value="">Select Subject</option>
+                                    {% for subject_id, subject_data in subjects.items() %}
+                                        <option value="{{ subject_id }}" 
+                                                {% if edit_mode and subject == subject_id %}selected{% endif %}>
+                                            {{ subject_data.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="subtopic">Subtopic *</label>
+                                <input type="text" id="subtopic" name="subtopic" required 
+                                       placeholder="e.g., functions, loops, data-structures"
+                                       {% if edit_mode %}value="{{ subtopic }}" readonly{% endif %}>
+                                <small>Use lowercase with hyphens for multi-word subtopics</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lesson_id">Lesson ID *</label>
+                                <input type="text" id="lesson_id" name="lesson_id" required 
+                                       placeholder="e.g., python-basics, advanced-functions"
+                                       {% if edit_mode %}value="{{ lesson_id }}" readonly{% endif %}>
+                                <small>Unique identifier for this lesson (lowercase, hyphens only)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="title">Lesson Title *</label>
+                                <input type="text" id="title" name="title" required 
+                                       placeholder="e.g., A Comprehensive Guide to Python Functions"
+                                       {% if edit_mode %}value="{{ lesson_data.title }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="videoId">YouTube Video ID</label>
+                            <input type="text" id="videoId" name="videoId" 
+                                   placeholder="e.g., kvO_nHnvPtQ (from youtube.com/watch?v=kvO_nHnvPtQ)"
+                                   {% if edit_mode %}value="{{ lesson_data.videoId or '' }}"{% endif %}>
+                            <small>Optional: YouTube video ID to embed with this lesson</small>
+                        </div>
+                    </div>
+
+                    <!-- Content Section -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-edit"></i> Lesson Content</h3>
+                        <p>Build your lesson using different content types. Drag to reorder.</p>
+                        
+                        <div class="content-toolbar">
+                            <button type="button" class="btn-add-content" data-type="header">
+                                <i class="fas fa-heading"></i> Add Header
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="paragraph">
+                                <i class="fas fa-paragraph"></i> Add Paragraph
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="code">
+                                <i class="fas fa-code"></i> Add Code
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="list">
+                                <i class="fas fa-list-ul"></i> Add List
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="summary">
+                                <i class="fas fa-lightbulb"></i> Add Summary
+                            </button>
+                        </div>
+                        
+                        <div id="contentBlocks" class="content-blocks">
+                            <!-- Content blocks will be dynamically added here -->
+                        </div>
+                        
+                        <div class="content-empty-state" id="contentEmptyState">
+                            <i class="fas fa-plus-circle"></i>
+                            <p>No content blocks yet. Use the buttons above to add content.</p>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" class="action-btn secondary" onclick="window.history.back()">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </button>
+                        <button type="button" id="previewBtn" class="action-btn tertiary">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                        <button type="submit" class="action-btn primary">
+                            <i class="fas fa-save"></i> {% if edit_mode %}Update Lesson{% else %}Create Lesson{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lesson Preview</h2>
+                <button class="modal-close" onclick="closePreview()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <!-- Preview content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .lesson-form-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .lesson-form {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .form-section {
+            padding: 30px;
+            border-bottom: 1px solid #e3e6f0;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+        }
+
+        .form-section h3 {
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.9em;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+
+        .content-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .btn-add-content {
+            padding: 8px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-add-content:hover {
+            background: #0056b3;
+        }
+
+        .content-blocks {
+            min-height: 200px;
+        }
+
+        .content-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .content-block:hover {
+            border-color: #007bff;
+        }
+
+        .content-block-header {
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-block-type {
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .content-block-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-block-action {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .btn-move-up, .btn-move-down {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-delete-block {
+            background: #dc3545;
+            color: white;
+        }
+
+        .content-block-body {
+            padding: 15px;
+        }
+
+        .content-block-body textarea {
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .content-block-body input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .list-items {
+            margin-top: 10px;
+        }
+
+        .list-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: flex-start;
+        }
+
+        .list-item textarea {
+            min-height: 60px;
+        }
+
+        .btn-add-list-item {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-remove-list-item {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .content-empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+        }
+
+        .content-empty-state i {
+            font-size: 2em;
+            margin-bottom: 10px;
+            color: #dee2e6;
+        }
+
+        .form-actions {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .breadcrumb {
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .breadcrumb a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .modal-body {
+            padding: 20px 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .content-toolbar {
+                flex-direction: column;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+
+    <script>
+        let contentBlockCounter = 0;
+        
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if edit_mode and lesson_data.content %}
+                // Load existing content for editing
+                const existingContent = {{ lesson_data.content | tojson }};
+                existingContent.forEach(contentItem => {
+                    addContentBlock(contentItem.type, contentItem);
+                });
+            {% endif %}
+            
+            updateContentVisibility();
+        });
+
+        // Add event listeners for content type buttons
+        document.querySelectorAll('.btn-add-content').forEach(button => {
+            button.addEventListener('click', function() {
+                const type = this.dataset.type;
+                addContentBlock(type);
+            });
+        });
+
+        function addContentBlock(type, existingData = null) {
+            const contentBlocks = document.getElementById('contentBlocks');
+            const blockId = ++contentBlockCounter;
+            
+            let blockHTML = `
+                <div class="content-block" data-block-id="${blockId}" data-type="${type}">
+                    <div class="content-block-header">
+                        <div class="content-block-type">
+                            <i class="${getTypeIcon(type)}"></i>
+                            ${type.charAt(0).toUpperCase() + type.slice(1)} Block
+                        </div>
+                        <div class="content-block-actions">
+                            <button type="button" class="btn-block-action btn-move-up" onclick="moveBlock(${blockId}, 'up')">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn-block-action btn-move-down" onclick="moveBlock(${blockId}, 'down')">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn-block-action btn-delete-block" onclick="deleteBlock(${blockId})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="content-block-body">
+                        ${generateBlockContent(type, existingData)}
+                    </div>
+                </div>
+            `;
+            
+            contentBlocks.insertAdjacentHTML('beforeend', blockHTML);
+            updateContentVisibility();
+        }
+
+        function getTypeIcon(type) {
+            const icons = {
+                'header': 'fas fa-heading',
+                'paragraph': 'fas fa-paragraph',
+                'code': 'fas fa-code',
+                'list': 'fas fa-list-ul',
+                'summary': 'fas fa-lightbulb'
+            };
+            return icons[type] || 'fas fa-file-text';
+        }
+
+        function generateBlockContent(type, existingData) {
+            switch(type) {
+                case 'header':
+                    return `<input type="text" placeholder="Enter header text..." value="${existingData ? existingData.text || '' : ''}">`;
+                
+                case 'paragraph':
+                    return `<textarea placeholder="Enter paragraph content...">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'code':
+                    return `<textarea placeholder="Enter code content..." style="font-family: monospace;">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'summary':
+                    return `<textarea placeholder="Enter summary content...">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'list':
+                    let listHTML = '<div class="list-items">';
+                    if (existingData && existingData.items) {
+                        existingData.items.forEach(item => {
+                            listHTML += `
+                                <div class="list-item">
+                                    <textarea placeholder="List item content...">${item}</textarea>
+                                    <button type="button" class="btn-remove-list-item" onclick="removeListItem(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        listHTML += `
+                            <div class="list-item">
+                                <textarea placeholder="List item content..."></textarea>
+                                <button type="button" class="btn-remove-list-item" onclick="removeListItem(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                    listHTML += '</div>';
+                    listHTML += '<button type="button" class="btn-add-list-item" onclick="addListItem(this)"><i class="fas fa-plus"></i> Add Item</button>';
+                    return listHTML;
+            }
+        }
+
+        function addListItem(button) {
+            const listItems = button.previousElementSibling;
+            const newItem = document.createElement('div');
+            newItem.className = 'list-item';
+            newItem.innerHTML = `
+                <textarea placeholder="List item content..."></textarea>
+                <button type="button" class="btn-remove-list-item" onclick="removeListItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            listItems.appendChild(newItem);
+        }
+
+        function removeListItem(button) {
+            const listItem = button.parentElement;
+            const listItems = listItem.parentElement;
+            
+            if (listItems.children.length > 1) {
+                listItem.remove();
+            } else {
+                showNotification('At least one list item is required', 'error');
+            }
+        }
+
+        function moveBlock(blockId, direction) {
+            const block = document.querySelector(`[data-block-id="${blockId}"]`);
+            const sibling = direction === 'up' ? block.previousElementSibling : block.nextElementSibling;
+            
+            if (sibling) {
+                if (direction === 'up') {
+                    block.parentNode.insertBefore(block, sibling);
+                } else {
+                    block.parentNode.insertBefore(sibling, block);
+                }
+            }
+        }
+
+        function deleteBlock(blockId) {
+            if (confirm('Are you sure you want to delete this content block?')) {
+                const block = document.querySelector(`[data-block-id="${blockId}"]`);
+                block.remove();
+                updateContentVisibility();
+            }
+        }
+
+        function updateContentVisibility() {
+            const contentBlocks = document.getElementById('contentBlocks');
+            const emptyState = document.getElementById('contentEmptyState');
+            
+            if (contentBlocks.children.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+
+        // Form submission
+        document.getElementById('lessonForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                subject: document.getElementById('subject').value,
+                subtopic: document.getElementById('subtopic').value,
+                lesson_id: document.getElementById('lesson_id').value,
+                title: document.getElementById('title').value,
+                videoId: document.getElementById('videoId').value,
+                content: collectContentData()
+            };
+
+            // Validation
+            if (!formData.subject || !formData.subtopic || !formData.lesson_id || !formData.title) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            // Submit form
+            const url = {% if edit_mode %}
+                `/admin/lessons/{{ subject }}/{{ subtopic }}/{{ lesson_id }}/edit`
+            {% else %}
+                '/admin/lessons/create'
+            {% endif %};
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/lessons';
+                    }, 1500);
+                } else {
+                    showNotification(data.error || 'An error occurred', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('An error occurred while saving the lesson', 'error');
+            });
+        });
+
+        function collectContentData() {
+            const blocks = document.querySelectorAll('.content-block');
+            const content = [];
+
+            blocks.forEach(block => {
+                const type = block.dataset.type;
+                const blockData = { type: type };
+
+                switch(type) {
+                    case 'header':
+                    case 'paragraph':
+                    case 'code':
+                    case 'summary':
+                        const textElement = block.querySelector('input, textarea');
+                        blockData.text = textElement ? textElement.value : '';
+                        break;
+                    
+                    case 'list':
+                        const listItems = block.querySelectorAll('.list-item textarea');
+                        blockData.items = Array.from(listItems)
+                            .map(textarea => textarea.value)
+                            .filter(value => value.trim() !== '');
+                        break;
+                }
+
+                if ((type === 'list' && blockData.items.length > 0) || 
+                    (type !== 'list' && blockData.text && blockData.text.trim() !== '')) {
+                    content.push(blockData);
+                }
+            });
+
+            return content;
+        }
+
+        // Preview functionality
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            const content = collectContentData();
+            const title = document.getElementById('title').value;
+            
+            if (!title) {
+                showNotification('Please enter a lesson title first', 'error');
+                return;
+            }
+
+            showPreview(title, content);
+        });
+
+        function showPreview(title, content) {
+            const previewContent = document.getElementById('previewContent');
+            
+            let html = `<h1>${title}</h1>`;
+            
+            content.forEach(block => {
+                switch(block.type) {
+                    case 'header':
+                        html += `<h2>${block.text}</h2>`;
+                        break;
+                    case 'paragraph':
+                        html += `<p>${block.text}</p>`;
+                        break;
+                    case 'code':
+                        html += `<pre><code>${block.text}</code></pre>`;
+                        break;
+                    case 'list':
+                        html += '<ul>';
+                        block.items.forEach(item => {
+                            html += `<li>${item}</li>`;
+                        });
+                        html += '</ul>';
+                        break;
+                    case 'summary':
+                        html += `<div class="summary-box"><strong>Summary:</strong> ${block.text}</div>`;
+                        break;
+                }
+            });
+
+            previewContent.innerHTML = html;
+            document.getElementById('previewModal').style.display = 'block';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                closePreview();
+            }
+        });
+
+        // Notification function
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                ${type === 'success' ? 'background-color: #28a745;' : 'background-color: #dc3545;'}
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Add CSS for notification animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            .summary-box {
+                background: #e8f4f8;
+                border-left: 4px solid #17a2b8;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 4px;
+            }
+            pre {
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 15px;
+                overflow-x: auto;
+            }
+            code {
+                font-family: 'Courier New', monospace;
+                color: #e83e8c;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

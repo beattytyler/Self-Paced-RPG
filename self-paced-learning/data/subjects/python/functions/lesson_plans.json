@@ -10,7 +10,7 @@
         },
         {
           "type": "paragraph",
-          "text": "At its core, a function is a named, reusable block of code designed to perform a single, related action. Think of them as mini-programs within your main program. Their primary purpose is to promote code organization, reduce repetition (following the DRY principle: Don't Repeat Yourself), and improve readability."
+          "text": "At its core, a function is a named, reusable block of code designed to perform a single, related action. Think of them as mini-programs within your main program. Their primary purpose is to promote code organization, reduce repetition (following the DRY principle: Don't Repeat Yourself), and improve readability.\n"
         },
         {
           "type": "header",
