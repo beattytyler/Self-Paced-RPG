@@ -2,7 +2,7 @@
   "subjects": {
     "python": {
       "name": "Python Programming",
-      "description": "Master Python from basics to advanced topics including functions, loops, data structures, and more.",
+      "description": "Complete Python learning path from basics to advanced concepts",
       "icon": "fab fa-python",
       "color": "#3776ab",
       "status": "active",

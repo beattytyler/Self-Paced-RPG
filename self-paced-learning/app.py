@@ -2080,6 +2080,18 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             with open(subjects_path, "r", encoding="utf-8") as f:
                 subjects = json.load(f).get("subjects", {})
 
+        # Get subtopics for the current subject
+        subject_subtopics = {}
+        subject_config = data_loader.load_subject_config(subject)
+        if subject_config and "subtopics" in subject_config:
+            for subtopic_id, subtopic_data in subject_config["subtopics"].items():
+                subject_subtopics[subtopic_id] = {
+                    "name": subtopic_data.get(
+                        "name", subtopic_id.replace("-", " ").title()
+                    ),
+                    "order": subtopic_data.get("order", 0),
+                }
+
         return render_template(
             "admin/create_lesson.html",
             subjects=subjects,
@@ -2088,6 +2100,7 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             subject=subject,
             subtopic=subtopic,
             lesson_id=lesson_id,
+            subject_subtopics=subject_subtopics,
         )
 
     except Exception as e:
@@ -2107,6 +2120,30 @@ def admin_delete_lesson(subject, subtopic, lesson_id):
     except Exception as e:
         app.logger.error(f"Error deleting lesson: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/subjects/<subject_id>/subtopics", methods=["GET"])
+def get_subject_subtopics(subject_id):
+    """Get subtopics for a specific subject."""
+    try:
+        subject_config = data_loader.load_subject_config(subject_id)
+        if not subject_config or "subtopics" not in subject_config:
+            return jsonify({"subtopics": {}})
+
+        # Return only the subtopic names and IDs for the dropdown
+        subtopics = {}
+        for subtopic_id, subtopic_data in subject_config["subtopics"].items():
+            subtopics[subtopic_id] = {
+                "name": subtopic_data.get(
+                    "name", subtopic_id.replace("-", " ").title()
+                ),
+                "order": subtopic_data.get("order", 0),
+            }
+
+        return jsonify({"subtopics": subtopics})
+    except Exception as e:
+        app.logger.error(f"Error loading subtopics for subject {subject_id}: {e}")
+        return jsonify({"error": "Failed to load subtopics"}), 500
 
 
 @app.route("/admin/lessons/<subject>/<subtopic>")

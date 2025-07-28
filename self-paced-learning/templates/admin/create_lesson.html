@@ -64,10 +64,18 @@
                             
                             <div class="form-group">
                                 <label for="subtopic">Subtopic *</label>
-                                <input type="text" id="subtopic" name="subtopic" required 
-                                       placeholder="e.g., functions, loops, data-structures"
-                                       {% if edit_mode %}value="{{ subtopic }}" readonly{% endif %}>
-                                <small>Use lowercase with hyphens for multi-word subtopics</small>
+                                <select id="subtopic" name="subtopic" required {% if edit_mode %}disabled{% endif %}>
+                                    <option value="">Select Subtopic</option>
+                                    {% if edit_mode and subject_subtopics %}
+                                        {% for subtopic_id, subtopic_data in subject_subtopics.items() %}
+                                            <option value="{{ subtopic_id }}" 
+                                                    {% if subtopic_id == subtopic %}selected{% endif %}>
+                                                {{ subtopic_data.name }}
+                                            </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <small>Choose from available subtopics for the selected subject</small>
                             </div>
                         </div>
                         
@@ -705,6 +713,57 @@
             {% endif %}
             
             updateContentVisibility();
+            
+            // Add subject change handler
+            const subjectSelect = document.getElementById('subject');
+            const subtopicSelect = document.getElementById('subtopic');
+            
+            subjectSelect.addEventListener('change', function() {
+                const selectedSubject = this.value;
+                
+                // Clear subtopic dropdown
+                subtopicSelect.innerHTML = '<option value="">Select Subtopic</option>';
+                subtopicSelect.disabled = !selectedSubject;
+                
+                if (selectedSubject) {
+                    // Fetch subtopics for the selected subject
+                    fetch(`/api/subjects/${selectedSubject}/subtopics`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.subtopics) {
+                                // Sort subtopics by order
+                                const sortedSubtopics = Object.entries(data.subtopics)
+                                    .sort(([,a], [,b]) => (a.order || 0) - (b.order || 0));
+                                
+                                sortedSubtopics.forEach(([subtopicId, subtopicData]) => {
+                                    const option = document.createElement('option');
+                                    option.value = subtopicId;
+                                    option.textContent = subtopicData.name;
+                                    subtopicSelect.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading subtopics:', error);
+                            alert('Error loading subtopics. Please try again.');
+                        });
+                }
+            });
+            
+            // Initially disable subtopic if no subject is selected
+            {% if not edit_mode %}
+                if (!subjectSelect.value) {
+                    subtopicSelect.disabled = true;
+                }
+            {% endif %}
+            
+            // For edit mode, populate subtopics on initial load if subject is already selected
+            {% if edit_mode and subject %}
+                if (subjectSelect.value) {
+                    // The subtopics are already populated via Jinja template in edit mode
+                    subtopicSelect.disabled = false;
+                }
+            {% endif %}
         });
 
         // Add event listeners for content type buttons
