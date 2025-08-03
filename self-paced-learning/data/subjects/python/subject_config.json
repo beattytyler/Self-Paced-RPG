@@ -11,7 +11,9 @@
       "description": "Master function concepts, arguments, return values, and advanced techniques",
       "order": 3,
       "status": "active",
-      "prerequisites": [],
+      "prerequisites": [
+        "test"
+      ],
       "estimated_time": "2 hours",
       "video_count": 1,
       "lesson_count": 14,
@@ -93,6 +95,28 @@
       "video_count": 0,
       "lesson_count": 0,
       "question_count": 0
+    },
+    "testtt": {
+      "name": "test",
+      "description": "test",
+      "order": 1,
+      "status": "active",
+      "prerequisites": [],
+      "estimated_time": "",
+      "video_count": 0,
+      "lesson_count": 0,
+      "question_count": 0
+    },
+    "test123": {
+      "name": "test123",
+      "description": "",
+      "order": 1,
+      "status": "active",
+      "prerequisites": [],
+      "estimated_time": "",
+      "video_count": 0,
+      "lesson_count": 0,
+      "question_count": 0
     }
   },
   "allowed_keywords": [
@@ -109,7 +133,6 @@
     "function return values",
     "recursive functions",
     "error handling",
-    "test",
     "python syntax"
   ]
 }

@@ -1,0 +1,18 @@
+{
+  "quiz_title": "Python Lists Quiz",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "sdfgf",
+      "tags": [
+        "test",
+        "test2"
+      ],
+      "options": [
+        "sdfg",
+        "gfsd"
+      ],
+      "answer_index": 1
+    }
+  ]
+}

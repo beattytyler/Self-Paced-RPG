@@ -1682,13 +1682,17 @@ def admin_create_subtopic():
             json.dump(lesson_plans_data, f, indent=2)
 
         # Create empty question pool file
-        question_pool_data = {"questions": {}}
+        question_pool_data = {"questions": []}
         question_pool_path = os.path.join(subtopic_dir, "question_pool.json")
         with open(question_pool_path, "w", encoding="utf-8") as f:
             json.dump(question_pool_data, f, indent=2)
 
         # Create empty quiz data file
-        quiz_data = {"quizzes": {}}
+        subtopic_title = name or subtopic_id.replace("-", " ").title()
+        quiz_data = {
+            "quiz_title": f"{subject.title()} {subtopic_title} Quiz",
+            "questions": []
+        }
         quiz_path = os.path.join(subtopic_dir, "quiz_data.json")
         with open(quiz_path, "w", encoding="utf-8") as f:
             json.dump(quiz_data, f, indent=2)

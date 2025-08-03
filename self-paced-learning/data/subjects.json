@@ -9,29 +9,11 @@
       "created_date": "2025-01-01",
       "subtopic_count": 6
     },
-    "test": {
-      "name": "Test Subject Updated",
-      "description": "This is an updated test description",
-      "icon": "fas fa-book",
-      "color": "#ff5733",
-      "status": "active",
-      "created_date": "2025-01-01",
-      "subtopic_count": 0
-    },
-    "test2": {
-      "name": "test2",
-      "description": "test2",
+    "calculus": {
+      "name": "Calculus",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
       "icon": "fas fa-calculator",
-      "color": "#67db3d",
-      "status": "active",
-      "created_date": "2025-01-01",
-      "subtopic_count": 0
-    },
-    "josh": {
-      "name": "josh",
-      "description": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\"",
-      "icon": "fas fa-book",
-      "color": "#aa27ce",
+      "color": "#c242be",
       "status": "active",
       "created_date": "2025-01-01",
       "subtopic_count": 0
