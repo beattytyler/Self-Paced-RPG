@@ -269,14 +269,11 @@ def call_openai_api(
 def subject_selection():
     """New home page showing all available subjects."""
     try:
-        # Load subjects from subjects.json
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects_data = json.load(f)
-                subjects = subjects_data.get("subjects", {})
-        else:
-            # Fallback to default Python subject if file doesn't exist
+        # Auto-discover subjects from individual subject_info.json files
+        subjects = data_loader.discover_subjects()
+        
+        # Fallback to default Python subject if no subjects found
+        if not subjects:
             subjects = {
                 "python": {
                     "name": "Python Programming",
@@ -1133,14 +1130,8 @@ def show_results_page():
 def admin_dashboard():
     """Admin dashboard overview."""
     try:
-        # Load subjects data
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects_data = json.load(f)
-                subjects = subjects_data.get("subjects", {})
-        else:
-            subjects = {}
+        # Auto-discover subjects
+        subjects = data_loader.discover_subjects()
 
         # Calculate stats
         total_subjects = len(subjects)
@@ -1178,13 +1169,8 @@ def admin_dashboard():
 def admin_subjects():
     """Manage subjects."""
     try:
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects_data = json.load(f)
-                subjects = subjects_data.get("subjects", {})
-        else:
-            subjects = {}
+        # Auto-discover subjects
+        subjects = data_loader.discover_subjects()
 
         return render_template("admin/subjects.html", subjects=subjects)
     except Exception as e:
@@ -1207,44 +1193,30 @@ def admin_create_subject():
             if not subject_id or not subject_name:
                 return jsonify({"error": "Subject ID and name are required"}), 400
 
-            # Load existing subjects
-            subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-            if os.path.exists(subjects_path):
-                with open(subjects_path, "r", encoding="utf-8") as f:
-                    subjects_data = json.load(f)
-            else:
-                subjects_data = {"subjects": {}}
-
-            # Check if subject already exists
-            if subject_id in subjects_data["subjects"]:
+            # Check if subject already exists by checking for directory
+            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
+            if os.path.exists(subject_dir):
                 return jsonify({"error": "Subject already exists"}), 400
 
-            # Add new subject
-            subjects_data["subjects"][subject_id] = {
+            # Create subject directory
+            os.makedirs(subject_dir, exist_ok=True)
+
+            # Create subject_info.json
+            subject_info = {
                 "name": subject_name,
                 "description": description,
                 "icon": icon,
                 "color": color,
                 "status": "active",
                 "created_date": "2025-01-01",
-                "subtopic_count": 0,
             }
 
-            # Save subjects.json
-            with open(subjects_path, "w", encoding="utf-8") as f:
-                json.dump(subjects_data, f, indent=2)
+            info_path = os.path.join(subject_dir, "subject_info.json")
+            with open(info_path, "w", encoding="utf-8") as f:
+                json.dump(subject_info, f, indent=2)
 
-            # Create subject directory and config
-            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
-            os.makedirs(subject_dir, exist_ok=True)
-
+            # Create subject_config.json
             subject_config = {
-                "subject_info": {
-                    "name": subject_name,
-                    "description": description,
-                    "icon": icon,
-                    "color": color,
-                },
                 "subtopics": {},
                 "allowed_keywords": [],
             }
@@ -1269,12 +1241,29 @@ def admin_create_subject():
 def admin_edit_subject(subject):
     """Edit a subject."""
     try:
+        # Load both subject_info.json and subject_config.json
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        
+        # Load subject_info.json
+        info_path = os.path.join(subject_dir, "subject_info.json")
+        subject_info = {}
+        if os.path.exists(info_path):
+            with open(info_path, "r", encoding="utf-8") as f:
+                subject_info = json.load(f)
+        
+        # Load subject_config.json
         subject_config = data_loader.load_subject_config(subject)
         if not subject_config:
             return f"Subject '{subject}' not found", 404
 
+        # Merge the data for the template (backward compatibility)
+        merged_config = {
+            **subject_config,
+            "subject_info": subject_info
+        }
+
         return render_template(
-            "admin/edit_subject.html", subject=subject, config=subject_config
+            "admin/edit_subject.html", subject=subject, config=merged_config
         )
     except Exception as e:
         app.logger.error(f"Error loading subject editor for {subject}: {e}")
@@ -1295,50 +1284,41 @@ def admin_update_subject(subject):
         if not subject_name:
             return jsonify({"error": "Subject name is required"}), 400
 
-        # Update subjects.json
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects_data = json.load(f)
-        else:
-            return jsonify({"error": "Subjects file not found"}), 404
-
-        if subject not in subjects_data["subjects"]:
+        # Check if subject directory exists
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        if not os.path.exists(subject_dir):
             return jsonify({"error": "Subject not found"}), 404
 
-        # Update subject in subjects.json
-        subjects_data["subjects"][subject].update(
-            {
-                "name": subject_name,
-                "description": description,
-                "icon": icon,
-                "color": color,
-            }
-        )
+        # Update subject_info.json
+        info_path = os.path.join(subject_dir, "subject_info.json")
+        if os.path.exists(info_path):
+            with open(info_path, "r", encoding="utf-8") as f:
+                subject_info = json.load(f)
+        else:
+            # Create new subject_info.json if it doesn't exist
+            subject_info = {"status": "active", "created_date": "2025-01-01"}
 
-        # Save subjects.json
-        with open(subjects_path, "w", encoding="utf-8") as f:
-            json.dump(subjects_data, f, indent=2)
+        # Update subject info
+        subject_info.update({
+            "name": subject_name,
+            "description": description,
+            "icon": icon,
+            "color": color,
+        })
+
+        # Save subject_info.json
+        with open(info_path, "w", encoding="utf-8") as f:
+            json.dump(subject_info, f, indent=2)
 
         # Update subject_config.json
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
         config_path = os.path.join(subject_dir, "subject_config.json")
-
         if os.path.exists(config_path):
             with open(config_path, "r", encoding="utf-8") as f:
                 subject_config = json.load(f)
         else:
             return jsonify({"error": "Subject config not found"}), 404
 
-        # Update subject config
-        subject_config["subject_info"].update(
-            {
-                "name": subject_name,
-                "description": description,
-                "icon": icon,
-                "color": color,
-            }
-        )
+        # Update allowed keywords
         subject_config["allowed_keywords"] = allowed_keywords
 
         # Save subject config
@@ -1388,30 +1368,14 @@ def admin_edit_subtopic(subject, subtopic):
 def admin_delete_subject(subject):
     """Delete a subject and all its associated data."""
     try:
-        # Load existing subjects
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if not os.path.exists(subjects_path):
-            return jsonify({"error": "Subjects file not found"}), 404
-
-        with open(subjects_path, "r", encoding="utf-8") as f:
-            subjects_data = json.load(f)
-
-        # Check if subject exists
-        if subject not in subjects_data.get("subjects", {}):
+        # Check if subject directory exists
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        if not os.path.exists(subject_dir):
             return jsonify({"error": "Subject not found"}), 404
 
-        # Remove subject from subjects.json
-        del subjects_data["subjects"][subject]
-
-        # Save subjects.json
-        with open(subjects_path, "w", encoding="utf-8") as f:
-            json.dump(subjects_data, f, indent=2)
-
         # Remove subject directory and all its contents
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        if os.path.exists(subject_dir):
-            shutil.rmtree(subject_dir)
-            app.logger.info(f"Removed subject directory: {subject_dir}")
+        shutil.rmtree(subject_dir)
+        app.logger.info(f"Removed subject directory: {subject_dir}")
 
         # Clear cache to ensure fresh data is loaded
         data_loader.clear_cache()
@@ -1435,12 +1399,8 @@ def get_all_lessons():
     lessons_data = []
 
     try:
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if not os.path.exists(subjects_path):
-            return lessons_data
-
-        with open(subjects_path, "r", encoding="utf-8") as f:
-            subjects = json.load(f).get("subjects", {})
+        # Auto-discover subjects
+        subjects = data_loader.discover_subjects()
 
         for subject_id in subjects.keys():
             subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
@@ -1545,14 +1505,8 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
 def admin_subtopics():
     """Manage subtopics across all subjects."""
     try:
-        # Load subjects data
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        subjects = {}
-
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects_data = json.load(f)
-                subjects = subjects_data.get("subjects", {})
+        # Auto-discover subjects
+        subjects = data_loader.discover_subjects()
 
         # Enhance subjects data with subtopic information from subject_config.json
         for subject_id, subject_info in subjects.items():
@@ -1688,24 +1642,15 @@ def admin_create_subtopic():
                 400,
             )
 
-        # Check if subject exists
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        if not os.path.exists(subjects_path):
-            return jsonify({"error": "Subjects file not found"}), 404
-
-        with open(subjects_path, "r", encoding="utf-8") as f:
-            subjects_data = json.load(f)
-
-        if subject not in subjects_data.get("subjects", {}):
+        # Check if subject exists by checking for subject directory and files
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        subject_config_path = os.path.join(subject_dir, "subject_config.json")
+        subject_info_path = os.path.join(subject_dir, "subject_info.json")
+        
+        if not (os.path.exists(subject_config_path) and os.path.exists(subject_info_path)):
             return jsonify({"error": "Subject not found"}), 404
 
         # Load subject config
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
-
-        if not os.path.exists(subject_config_path):
-            return jsonify({"error": "Subject configuration not found"}), 404
-
         with open(subject_config_path, "r", encoding="utf-8") as f:
             subject_config = json.load(f)
 
@@ -2053,12 +1998,8 @@ def admin_lessons():
     """List all lessons across all subjects."""
     lessons = get_all_lessons()
 
-    # Get subjects for dropdown
-    subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-    subjects = {}
-    if os.path.exists(subjects_path):
-        with open(subjects_path, "r", encoding="utf-8") as f:
-            subjects = json.load(f).get("subjects", {})
+    # Get subjects for dropdown using auto-discovery
+    subjects = data_loader.discover_subjects()
 
     return render_template("admin/lessons.html", lessons=lessons, subjects=subjects)
 
@@ -2133,12 +2074,8 @@ def admin_create_lesson():
             app.logger.error(f"Error creating lesson: {e}")
             return jsonify({"error": str(e)}), 500
 
-    # GET request - show create form
-    subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-    subjects = {}
-    if os.path.exists(subjects_path):
-        with open(subjects_path, "r", encoding="utf-8") as f:
-            subjects = json.load(f).get("subjects", {})
+    # GET request - show create form using auto-discovery
+    subjects = data_loader.discover_subjects()
 
     return render_template(
         "admin/create_lesson.html", subjects=subjects, edit_mode=False
@@ -2212,12 +2149,8 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
         if not lesson_data:
             return "Lesson not found", 404
 
-        # Get subjects for context
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        subjects = {}
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects = json.load(f).get("subjects", {})
+        # Get subjects for context using auto-discovery
+        subjects = data_loader.discover_subjects()
 
         # Get subtopics for the current subject
         subject_subtopics = {}
@@ -2327,8 +2260,7 @@ def admin_lessons_by_subtopic(subject, subtopic):
 def admin_questions():
     """Questions management page."""
     try:
-        # Load all subjects and their subtopics with quiz data
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        # Auto-discover subjects and load their subtopics with quiz data
         subjects_data = {}
         stats = {
             "total_initial_questions": 0,
@@ -2337,44 +2269,42 @@ def admin_questions():
             "subtopics_without_questions": 0,
         }
 
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                all_subjects = json.load(f).get("subjects", {})
+        # Get all subjects using auto-discovery
+        all_subjects = data_loader.discover_subjects()
 
-            for subject_id, subject_data in all_subjects.items():
-                # Load subject config to get subtopics
-                subject_config = data_loader.load_subject_config(subject_id)
-                if subject_config and "subtopics" in subject_config:
-                    subject_data["subtopics"] = {}
+        for subject_id, subject_info in all_subjects.items():
+            # Load subject config to get subtopics
+            subject_config = data_loader.load_subject_config(subject_id)
+            if subject_config and "subtopics" in subject_config:
+                subject_data = {
+                    **subject_info,
+                    "subtopics": {}
+                }
 
-                    for subtopic_id, subtopic_data in subject_config[
-                        "subtopics"
-                    ].items():
-                        # Load quiz data and question pool to get counts
-                        quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
-                        pool_data = data_loader.load_question_pool(
-                            subject_id, subtopic_id
-                        )
+                for subtopic_id, subtopic_data in subject_config["subtopics"].items():
+                    # Load quiz data and question pool to get counts
+                    quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
+                    pool_data = data_loader.load_question_pool(subject_id, subtopic_id)
 
-                        quiz_count = (
-                            len(quiz_data.get("questions", [])) if quiz_data else 0
-                        )
-                        pool_count = (
-                            len(pool_data.get("questions", [])) if pool_data else 0
-                        )
+                    quiz_count = (
+                        len(quiz_data.get("questions", [])) if quiz_data else 0
+                    )
+                    pool_count = (
+                        len(pool_data.get("questions", [])) if pool_data else 0
+                    )
 
-                        subtopic_data["quiz_questions_count"] = quiz_count
-                        subtopic_data["pool_questions_count"] = pool_count
+                    subtopic_data["quiz_questions_count"] = quiz_count
+                    subtopic_data["pool_questions_count"] = pool_count
 
-                        # Update statistics
-                        stats["total_initial_questions"] += quiz_count
-                        stats["total_pool_questions"] += pool_count
-                        stats["total_subtopics"] += 1
+                    # Update statistics
+                    stats["total_initial_questions"] += quiz_count
+                    stats["total_pool_questions"] += pool_count
+                    stats["total_subtopics"] += 1
 
-                        if quiz_count == 0 and pool_count == 0:
-                            stats["subtopics_without_questions"] += 1
+                    if quiz_count == 0 and pool_count == 0:
+                        stats["subtopics_without_questions"] += 1
 
-                        subject_data["subtopics"][subtopic_id] = subtopic_data
+                    subject_data["subtopics"][subtopic_id] = subtopic_data
 
                 subjects_data[subject_id] = subject_data
 

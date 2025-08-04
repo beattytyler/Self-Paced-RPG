@@ -1,10 +1,4 @@
 {
-  "subject_info": {
-    "name": "Python Programming",
-    "description": "Complete Python learning path from basics to advanced concepts",
-    "icon": "fab fa-python",
-    "color": "#3776ab"
-  },
   "subtopics": {
     "functions": {
       "name": "Python Functions",

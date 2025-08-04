@@ -351,3 +351,64 @@ class DataLoader:
             current_app.logger.error(f"Error finding lessons by tags: {e}")
 
         return matching_lessons
+
+    def discover_subjects(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Auto-discover subjects by scanning the subjects directory for folders
+        containing subject_info.json files.
+
+        Returns:
+            Dictionary of subjects in the same format as subjects.json
+        """
+        subjects = {}
+        subjects_dir = os.path.join(self.data_root, "subjects")
+        
+        if not os.path.exists(subjects_dir):
+            if current_app:
+                current_app.logger.warning(f"Subjects directory not found: {subjects_dir}")
+            return subjects
+
+        try:
+            # Scan all directories in the subjects folder
+            for item in os.listdir(subjects_dir):
+                subject_path = os.path.join(subjects_dir, item)
+                
+                # Skip if not a directory
+                if not os.path.isdir(subject_path):
+                    continue
+                
+                # Look for subject_info.json
+                subject_info_path = os.path.join(subject_path, "subject_info.json")
+                subject_config_path = os.path.join(subject_path, "subject_config.json")
+                
+                # Subject must have both files to be valid
+                if os.path.exists(subject_info_path) and os.path.exists(subject_config_path):
+                    subject_info = self._load_json_file(subject_info_path)
+                    subject_config = self._load_json_file(subject_config_path)
+                    
+                    if subject_info and subject_config:
+                        # Calculate subtopic count
+                        subtopic_count = len(subject_config.get("subtopics", {}))
+                        
+                        # Merge info and add calculated fields
+                        subjects[item] = {
+                            **subject_info,
+                            "subtopic_count": subtopic_count,
+                            "status": subject_info.get("status", "active"),
+                            "created_date": subject_info.get("created_date", "2025-01-01")
+                        }
+                        
+                        if current_app:
+                            current_app.logger.info(f"Discovered subject: {item} - {subject_info.get('name', 'Unknown')}")
+                    else:
+                        if current_app:
+                            current_app.logger.warning(f"Invalid subject files in directory: {item}")
+                else:
+                    if current_app:
+                        current_app.logger.debug(f"Skipping directory (missing required files): {item}")
+                        
+        except Exception as e:
+            if current_app:
+                current_app.logger.error(f"Error discovering subjects: {e}")
+        
+        return subjects
