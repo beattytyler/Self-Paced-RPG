@@ -299,3 +299,55 @@ class DataLoader:
         # Check if at least quiz_data.json exists
         quiz_path = os.path.join(subtopic_path, "quiz_data.json")
         return os.path.exists(quiz_path)
+
+    def find_lessons_by_tags(
+        self, subject: str, target_tags: List[str]
+    ) -> List[Dict[str, Any]]:
+        """
+        Find lessons that match any of the target tags.
+
+        Args:
+            subject: Subject name (e.g., "python")
+            target_tags: List of tags to search for
+
+        Returns:
+            List of matching lessons with metadata
+        """
+        matching_lessons = []
+
+        try:
+            # Get all subtopics for the subject
+            subject_config = self.load_subject_config(subject)
+            if not subject_config or "subtopics" not in subject_config:
+                return matching_lessons
+
+            # Search through all subtopics
+            for subtopic_id in subject_config["subtopics"].keys():
+                lesson_plans = self.load_lesson_plans(subject, subtopic_id)
+                if not lesson_plans or "lessons" not in lesson_plans:
+                    continue
+
+                # Check each lesson in the subtopic
+                for lesson_id, lesson_data in lesson_plans["lessons"].items():
+                    lesson_tags = set(lesson_data.get("tags", []))
+                    target_tags_set = set(target_tags)
+
+                    # If any lesson tags match target tags
+                    if not lesson_tags.isdisjoint(target_tags_set):
+                        matching_lessons.append(
+                            {
+                                "subject": subject,
+                                "subtopic": subtopic_id,
+                                "lesson_id": lesson_id,
+                                "title": lesson_data.get("title", ""),
+                                "tags": lesson_data.get("tags", []),
+                                "matching_tags": list(
+                                    lesson_tags.intersection(target_tags_set)
+                                ),
+                            }
+                        )
+
+        except Exception as e:
+            current_app.logger.error(f"Error finding lessons by tags: {e}")
+
+        return matching_lessons

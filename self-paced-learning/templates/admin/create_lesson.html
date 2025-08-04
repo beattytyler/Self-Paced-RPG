@@ -103,6 +103,17 @@
                                    {% if edit_mode %}value="{{ lesson_data.videoId or '' }}"{% endif %}>
                             <small>Optional: YouTube video ID to embed with this lesson</small>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="lessonTags">Lesson Tags *</label>
+                            <input type="text" id="lessonTags" name="lessonTags" 
+                                   placeholder="e.g., python function basics, function definition, syntax"
+                                   {% if edit_mode and lesson_data.tags %}value="{{ lesson_data.tags | join(', ') }}"{% endif %}
+                                   required>
+                            <small>Enter tags separated by commas. Tags help the AI match lessons to student needs</small>
+                            <div class="tags-preview" id="lessonTagsPreview"></div>
+                            <div class="error-message" id="lessonTagsError"></div>
+                        </div>
                     </div>
 
                     <!-- Content Section -->
@@ -357,6 +368,49 @@
             margin-top: 8px;
             color: #718096;
             font-size: 0.85rem;
+        }
+
+        .tags-preview {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tag-preview {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tag-preview .remove-tag {
+            cursor: pointer;
+            color: #718096;
+            font-weight: bold;
+        }
+
+        .tag-preview .remove-tag:hover {
+            color: #e53e3e;
+        }
+
+        .error-message {
+            display: none;
+            color: #e53e3e;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #fed7d7;
+            border-radius: 4px;
+            border-left: 3px solid #e53e3e;
+        }
+
+        .error-message.show {
+            display: block;
         }
 
         .content-toolbar {
@@ -714,6 +768,16 @@
             
             updateContentVisibility();
             
+            // Add tags preview functionality
+            document.getElementById('lessonTags').addEventListener('input', function() {
+                updateTagsPreview();
+            });
+            
+            // Initialize tags preview for edit mode
+            {% if edit_mode and lesson_data.tags %}
+                updateTagsPreview();
+            {% endif %}
+            
             // Add subject change handler
             const subjectSelect = document.getElementById('subject');
             const subtopicSelect = document.getElementById('subtopic');
@@ -927,12 +991,18 @@
                 lesson_id: document.getElementById('lesson_id').value,
                 title: document.getElementById('title').value,
                 videoId: document.getElementById('videoId').value,
+                tags: document.getElementById('lessonTags').value.split(',').map(tag => tag.trim()).filter(tag => tag),
                 content: collectContentData()
             };
 
             // Validation
             if (!formData.subject || !formData.subtopic || !formData.lesson_id || !formData.title) {
                 showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            if (!formData.tags || formData.tags.length === 0) {
+                showNotification('Please add at least one tag to the lesson', 'error');
                 return;
             }
 
@@ -1082,6 +1152,27 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+        }
+
+        // Tags preview functionality
+        function updateTagsPreview() {
+            const input = document.getElementById('lessonTags');
+            const preview = document.getElementById('lessonTagsPreview');
+            const tags = input.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+            preview.innerHTML = tags.map(tag => `
+                <span class="tag-preview">
+                    ${tag}
+                    <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
+                </span>
+            `).join('');
+        }
+
+        function removeTag(tagToRemove) {
+            const input = document.getElementById('lessonTags');
+            const tags = input.value.split(',').map(tag => tag.trim()).filter(tag => tag && tag !== tagToRemove);
+            input.value = tags.join(', ');
+            updateTagsPreview();
         }
 
         // Add CSS for notification animation

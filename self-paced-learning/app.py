@@ -62,6 +62,11 @@ def get_subject_keywords(subject: str) -> list:
     return data_loader.get_subject_keywords(subject)
 
 
+def get_lessons_by_tags(subject: str, tags: list) -> list:
+    """Get lessons that match the given tags."""
+    return data_loader.find_lessons_by_tags(subject, tags)
+
+
 def get_quiz_data(subject: str, subtopic: str) -> list:
     """Get quiz questions for a subject/subtopic."""
     return data_loader.get_quiz_questions(subject, subtopic)
@@ -199,37 +204,61 @@ def parse_ai_json_from_text(ai_response_string, expected_type_is_list=True):
 
 
 def call_openai_api(
-    prompt_text, system_message, model="gpt-4", max_tokens=800, expect_json_output=False
+    prompt_text,
+    system_message="",
+    model="gpt-4-0613",
+    max_tokens=1500,
+    expect_json_output=False,
 ):
-    """Helper function to call the OpenAI API."""
-    if not client:
-        app.logger.error("OpenAI client not initialized. Cannot make API call.")
-        return None  # Or raise an exception
-    try:
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": prompt_text},
-        ]
+    """
+    Clean helper function to call OpenAI API with proper error handling.
 
+    Args:
+        prompt_text: The user prompt/question
+        system_message: System instructions for the AI
+        model: OpenAI model to use (default: gpt-4o)
+        max_tokens: Maximum tokens for response
+        expect_json_output: Whether to request JSON format response
+
+    Returns:
+        str: AI response content or None if failed
+    """
+
+    # Validate client
+    if not client:
+        app.logger.error("OpenAI client not initialized.")
+        return None
+
+    try:
+
+        # Build messages
+        messages = []
+        if system_message:
+            messages.append({"role": "system", "content": system_message})
+        messages.append({"role": "user", "content": prompt_text})
+
+        # Build request args
         completion_args = {
             "model": model,
             "messages": messages,
             "max_tokens": max_tokens,
         }
 
-        # For newer models that support JSON mode directly
-        # Check OpenAI documentation for the latest models supporting this.
-        # E.g., "gpt-4-1106-preview", "gpt-3.5-turbo-1106", "gpt-4-turbo-preview", "gpt-4o"
-        if expect_json_output and (
-            "1106" in model
-            or "turbo-preview" in model
-            or "gpt-4o" in model
-            or "gpt-4-turbo" in model
-        ):
+        # Add JSON mode for supported models (gpt-4o only)
+        if expect_json_output and "gpt-4o" in model:
             completion_args["response_format"] = {"type": "json_object"}
 
+        # Make API call
+        app.logger.info(f"Making OpenAI API call with model: {model}")
         response = client.chat.completions.create(**completion_args)
-        return response.choices[0].message.content.strip()
+
+        content = response.choices[0].message.content.strip()
+        app.logger.info(
+            f"OpenAI API call successful. Response length: {len(content)} chars"
+        )
+
+        return content
+
     except Exception as e:
         app.logger.error(f"OpenAI API call failed: {e}")
         return None
@@ -596,6 +625,10 @@ def analyze_quiz():
     allowed_topic_keywords = get_subject_keywords(current_subject)
     allowed_keywords_str = json.dumps(allowed_topic_keywords)
 
+    # DEBUG: Log available keywords
+    app.logger.info(f"[DEBUG] Available keywords for {current_subject}: {allowed_topic_keywords}")
+    app.logger.info(f"[DEBUG] Total keywords available: {len(allowed_topic_keywords)}")
+
     prompt = (
         "You are analyzing a student's quiz submission which includes multiple choice, fill-in-the-blank, and coding questions.\n"
         "Based on the incorrect answers and their submitted code, identify the concepts they are weak in.\n"
@@ -617,10 +650,13 @@ def analyze_quiz():
     ai_response_content = call_openai_api(
         prompt,
         system_message,
-        model="gpt-4",
+        model="gpt-4-0613",
         max_tokens=1500,  # Increased tokens for more detailed feedback
         expect_json_output=True,
     )
+
+    # DEBUG: Log AI response
+    app.logger.info(f"[DEBUG] AI response content: {ai_response_content}")
 
     if not ai_response_content:
         return (
@@ -654,9 +690,19 @@ def analyze_quiz():
             "detailed_feedback", "No detailed feedback provided."
         )
         weak_topics = parsed_ai_response.get("weak_concept_tags", [])
+        
+        # DEBUG: Log AI's chosen keywords before validation
+        app.logger.info(f"[DEBUG] AI chose these keywords: {weak_topics}")
+        
         validated_weak_topics = [
             topic for topic in weak_topics if topic in allowed_topic_keywords
         ]
+
+        # DEBUG: Log validation results
+        app.logger.info(f"[DEBUG] Validated keywords: {validated_weak_topics}")
+        if len(weak_topics) != len(validated_weak_topics):
+            rejected_topics = [topic for topic in weak_topics if topic not in allowed_topic_keywords]
+            app.logger.warning(f"[DEBUG] Rejected keywords (not in allowed list): {rejected_topics}")
 
         # Store weak topics with subject/subtopic prefix
         session[get_session_key(current_subject, current_subtopic, "weak_topics")] = (
@@ -700,151 +746,7 @@ def analyze_quiz():
         )
 
 
-@app.route("/api/recommend_videos", methods=["GET"])
-def recommend_videos_api():
-    weak_topics_str = request.args.get("topics", "")
-
-    if not weak_topics_str:
-        return (
-            jsonify({"error": "No weak topics provided for video recommendation"}),
-            400,
-        )
-
-    weak_topics_list = [
-        topic.strip().lower() for topic in weak_topics_str.split(",") if topic.strip()
-    ]
-    if not weak_topics_list:
-        app.logger.info("Empty list of weak topics received for video recommendation.")
-        return jsonify({"recommended_video_keys": []})
-
-    # Use the legacy VIDEO_DATA structure for compatibility
-    VIDEO_DATA = {
-        "loops": {
-            "title": "Python Loops: For and While",
-            "url": "https://www.youtube.com/watch?v=94UHCEmprCY",
-            "description": "Learn how to automate repetitive tasks using for and while loops, understand iterables, and control flow statements.",
-        },
-        "functions": {
-            "title": "Python Functions Masterclass",
-            "url": "https://www.youtube.com/embed/94UHCEmprCY?enablejsapi=1",
-            "description": "Master Python functions, parameters, return values, and scope. Learn how to write reusable code blocks.",
-        },
-        "arrays": {
-            "title": "Understanding NumPy Arrays",
-            "url": "#",
-            "description": "Discover how to use NumPy arrays for efficient numerical computations and data processing in Python.",
-        },
-        "lists": {
-            "title": "Python Lists and List Comprehensions",
-            "url": "#",
-            "description": "Understand Python's built-in list data structure, methods, and operations for storing collections of items.",
-        },
-        "sets": {
-            "title": "Working with Python Sets",
-            "url": "#",
-            "description": "Learn about Python's unordered collection of unique elements and set operations like union and intersection.",
-        },
-        "dictionaries": {
-            "title": "Python Dictionaries and Dictionary Comprehensions",
-            "url": "#",
-            "description": "Explore key-value mappings in Python dictionaries, methods for accessing, modifying, and iterating through data.",
-        },
-    }
-
-    video_data_for_prompt = ""
-    for key, video_info in VIDEO_DATA.items():
-        video_data_for_prompt += f"Video Key: \"{key}\"\nTitle: \"{video_info['title']}\"\nDescription: \"{video_info['description']}\"\n\n"
-
-    system_message = "You assist by recommending relevant educational video keys based on topic keywords and video descriptions. Output only a JSON list of video keys."
-    prompt = (
-        "Based on the following list of weak programming concepts a student has, "
-        "and the provided list of available video materials (with their keys, titles, and descriptions), "
-        "identify which video *keys* are most relevant for the student to review. "
-        "Focus solely on matching the weak concepts to the video descriptions.\n\n"
-        f"Weak Concepts:\n{', '.join(weak_topics_list)}\n\n"
-        "Available Video Materials:\n"
-        f"{video_data_for_prompt}\n"
-        'Return your answer ONLY as a JSON formatted list of unique Video Keys. For example: ["key1", "key2"]. '
-        "If no videos seem relevant for a particular concept, do not force a recommendation. "
-        "If multiple videos seem relevant for the same concept, you can include all of them."
-    )
-
-    ai_response_content = call_openai_api(
-        prompt,
-        system_message,
-        model="gpt-3.5-turbo",
-        max_tokens=250,
-        expect_json_output=True,
-    )
-
-    recommended_keys = None
-    if ai_response_content:
-        try:
-            parsed_data = json.loads(ai_response_content)
-            if isinstance(parsed_data, list):
-                recommended_keys = parsed_data
-            elif isinstance(parsed_data, dict):  # Handle if AI wraps in an object
-                for key_in_dict in ["recommended_video_keys", "video_keys", "keys"]:
-                    if isinstance(parsed_data.get(key_in_dict), list):
-                        recommended_keys = parsed_data[key_in_dict]
-                        break
-            if (
-                recommended_keys is None
-            ):  # If direct parsing and common dict keys failed
-                recommended_keys = parse_ai_json_from_text(
-                    ai_response_content, expected_type_is_list=True
-                )
-        except json.JSONDecodeError:
-            recommended_keys = parse_ai_json_from_text(
-                ai_response_content, expected_type_is_list=True
-            )
-
-        if recommended_keys is not None and isinstance(recommended_keys, list):
-            valid_recommended_keys = sorted(
-                list(
-                    set(
-                        key
-                        for key in recommended_keys
-                        if key in VIDEO_DATA and isinstance(key, str)
-                    )
-                )
-            )
-
-            # Get current subject/subtopic from session for storage key
-            current_subject = session.get("current_subject", "python")
-            current_subtopic = session.get("current_subtopic", "functions")
-            session[
-                get_session_key(
-                    current_subject,
-                    current_subtopic,
-                    "recommended_videos_for_weak_topics",
-                )
-            ] = valid_recommended_keys
-
-            return jsonify({"recommended_video_keys": valid_recommended_keys})
-        else:
-            app.logger.error(
-                f"Could not parse valid JSON list of video keys from AI (recommend_videos). Raw AI response: {ai_response_content}"
-            )
-
-    # Store empty result with prefix
-    current_subject = session.get("current_subject", "python")
-    current_subtopic = session.get("current_subtopic", "functions")
-    session[
-        get_session_key(
-            current_subject, current_subtopic, "recommended_videos_for_weak_topics"
-        )
-    ] = []
-
-    return (
-        jsonify(
-            {
-                "error": "AI did not return valid video recommendations",
-                "details": ai_response_content or "No response from AI",
-            }
-        ),
-        500,
-    )
+# Video recommendation removed - videos are tied to lessons, only recommend lessons by tags
 
 
 @app.route("/generate_remedial_quiz", methods=["GET"])
@@ -871,6 +773,9 @@ def generate_remedial_quiz():
         get_session_key(current_subject, current_subtopic, "weak_topics"), []
     )
 
+    # DEBUG: Log weak topics being used for lesson search
+    app.logger.info(f"[DEBUG] Searching for lessons with weak topics: {weak_topics}")
+
     if not weak_topics:
         app.logger.info(
             f"No weak topics in session for {current_subject}/{current_subtopic}; cannot generate remedial quiz."
@@ -882,6 +787,14 @@ def generate_remedial_quiz():
 
     # Get question pool for current subject/subtopic
     question_pool = get_question_pool(current_subject, current_subtopic)
+
+    # Get matching lessons for weak topics
+    matching_lessons = get_lessons_by_tags(current_subject, weak_topics)
+
+    # DEBUG: Log lesson search results
+    app.logger.info(f"[DEBUG] Found {len(matching_lessons)} matching lessons for weak topics")
+    for lesson in matching_lessons:
+        app.logger.info(f"[DEBUG] - Lesson: {lesson.get('title', 'No title')} (tags: {lesson.get('tags', [])})")
 
     # Select questions from the pool that match the weak topics
     remedial_questions = []
@@ -909,12 +822,15 @@ def generate_remedial_quiz():
         )
         return redirect(url_for("show_results_page"))
 
-    # Store the selected questions with subject/subtopic prefixes
+    # Store the selected questions and lessons with subject/subtopic prefixes
     session[
         get_session_key(
             current_subject, current_subtopic, "current_remedial_quiz_questions"
         )
     ] = remedial_questions
+    session[
+        get_session_key(current_subject, current_subtopic, "recommended_lessons")
+    ] = matching_lessons
     session[
         get_session_key(
             current_subject, current_subtopic, "questions_served_for_analysis"
@@ -931,6 +847,9 @@ def generate_remedial_quiz():
 
     app.logger.info(
         f"Selected {len(remedial_questions)} questions for the remedial quiz in {current_subject}/{current_subtopic}."
+    )
+    app.logger.info(
+        f"Found {len(matching_lessons)} matching lessons for weak topics: {weak_topics}"
     )
 
     return redirect(url_for("take_remedial_quiz_page"))
@@ -1691,7 +1610,7 @@ def admin_create_subtopic():
         subtopic_title = name or subtopic_id.replace("-", " ").title()
         quiz_data = {
             "quiz_title": f"{subject.title()} {subtopic_title} Quiz",
-            "questions": []
+            "questions": [],
         }
         quiz_path = os.path.join(subtopic_dir, "quiz_data.json")
         with open(quiz_path, "w", encoding="utf-8") as f:
@@ -1984,12 +1903,29 @@ def admin_create_lesson():
             title = data.get("title", "")
             video_id = data.get("videoId", "")
             content = data.get("content", [])
+            tags = data.get("tags", [])
 
             if not all([subject, subtopic, lesson_id, title]):
                 return (
                     jsonify(
                         {
                             "error": "Subject, subtopic, lesson ID, and title are required"
+                        }
+                    ),
+                    400,
+                )
+
+            # Validate tags against allowed keywords
+            if not tags:
+                return jsonify({"error": "At least one tag is required"}), 400
+
+            allowed_keywords = get_subject_keywords(subject)
+            invalid_tags = [tag for tag in tags if tag not in allowed_keywords]
+            if invalid_tags:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Invalid tags: {', '.join(invalid_tags)}. Must use allowed keywords for this subject."
                         }
                     ),
                     400,
@@ -2006,7 +1942,12 @@ def admin_create_lesson():
                     return jsonify({"error": "Lesson ID already exists"}), 400
 
             # Create lesson data
-            lesson_data = {"title": title, "videoId": video_id, "content": content}
+            lesson_data = {
+                "title": title,
+                "videoId": video_id,
+                "content": content,
+                "tags": tags,
+            }
 
             # Save lesson
             if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
@@ -2043,12 +1984,34 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             title = data.get("title", "")
             video_id = data.get("videoId", "")
             content = data.get("content", [])
+            tags = data.get("tags", [])
 
             if not title:
                 return jsonify({"error": "Title is required"}), 400
 
+            # Validate tags against allowed keywords
+            if not tags:
+                return jsonify({"error": "At least one tag is required"}), 400
+
+            allowed_keywords = get_subject_keywords(subject)
+            invalid_tags = [tag for tag in tags if tag not in allowed_keywords]
+            if invalid_tags:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Invalid tags: {', '.join(invalid_tags)}. Must use allowed keywords for this subject."
+                        }
+                    ),
+                    400,
+                )
+
             # Create lesson data
-            lesson_data = {"title": title, "videoId": video_id, "content": content}
+            lesson_data = {
+                "title": title,
+                "videoId": video_id,
+                "content": content,
+                "tags": tags,
+            }
 
             # Save lesson
             if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):

@@ -157,6 +157,13 @@
                 </p>
                 {% endif %}
               </div>
+              {% endif %} {% if lesson_data.tags %}
+              <div class="lesson-tags">
+                <strong>Tags:</strong>
+                {% for tag in lesson_data.tags %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+              </div>
               {% endif %}
             </div>
 
@@ -543,6 +550,25 @@
         color: #718096;
         font-style: italic;
         font-size: 0.85em;
+      }
+
+      .lesson-tags {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.9em;
+      }
+
+      .lesson-tags .tag {
+        display: inline-block;
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-right: 8px;
+        margin-top: 5px;
       }
 
       .lesson-actions {

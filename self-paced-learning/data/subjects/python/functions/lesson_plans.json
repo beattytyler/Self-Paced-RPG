@@ -3,6 +3,7 @@
     "python function basics": {
       "title": "A Comprehensive Guide to Python Functions",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["python function basics", "function definition", "syntax"],
       "content": [
         {
           "type": "header",
@@ -54,6 +55,7 @@
     "function definition": {
       "title": "Defining Functions: Syntax and Terminology",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["function definition", "syntax", "terminology"],
       "content": [
         {
           "type": "header",
@@ -106,6 +108,7 @@
     "syntax": {
       "title": "Reviewing Core Function Syntax",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["syntax", "python syntax", "function definition"],
       "content": [
         {
           "type": "header",
@@ -140,6 +143,7 @@
     "terminology": {
       "title": "Function Terminology and Concepts",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["terminology", "function definition"],
       "content": [
         {
           "type": "header",
@@ -176,6 +180,7 @@
     "passing function arguments": {
       "title": "Advanced Argument Passing Techniques",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["passing function arguments", "function definition"],
       "content": [
         {
           "type": "header",
@@ -212,6 +217,7 @@
     "keyword arguments": {
       "title": "Using Keyword Arguments Effectively",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["keyword arguments", "passing function arguments"],
       "content": [
         {
           "type": "header",
@@ -251,6 +257,7 @@
     "default parameter values": {
       "title": "Using Default Parameter Values",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["default parameter values", "passing function arguments"],
       "content": [
         {
           "type": "header",
@@ -297,6 +304,7 @@
     "*args and **kwargs": {
       "title": "Mastering *args and **kwargs",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["*args and **kwargs", "passing function arguments"],
       "content": [
         {
           "type": "header",
@@ -347,6 +355,10 @@
     "positional-only and keyword-only arguments": {
       "title": "Controlling Argument Types",
       "videoId": "kvO_nHnvPtQ",
+      "tags": [
+        "positional-only and keyword-only arguments",
+        "passing function arguments"
+      ],
       "content": [
         {
           "type": "header",
@@ -401,6 +413,7 @@
     "return values": {
       "title": "Understanding Return Values",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["return values", "function return values"],
       "content": [
         {
           "type": "header",
@@ -443,6 +456,7 @@
     "function return values": {
       "title": "Understanding Return Values",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["function return values", "return values"],
       "content": [
         {
           "type": "header",
@@ -477,6 +491,7 @@
     "recursive functions": {
       "title": "The Concept of Recursive Functions",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["recursive functions"],
       "content": [
         {
           "type": "header",
@@ -526,6 +541,7 @@
     "error handling": {
       "title": "Error Handling in Functions",
       "videoId": "kvO_nHnvPtQ",
+      "tags": ["error handling"],
       "content": [
         {
           "type": "header",
