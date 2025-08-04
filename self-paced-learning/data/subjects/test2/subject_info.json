@@ -1,0 +1,8 @@
+{
+  "name": "Test Subject 2",
+  "description": "Another test subject for development purposes",
+  "icon": "fas fa-bug",
+  "color": "#dc3545",
+  "status": "development",
+  "created_date": "2025-01-01"
+}
