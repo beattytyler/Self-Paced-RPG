@@ -75,7 +75,12 @@
     "definite integrals": {
       "title": "Understanding Definite Integrals",
       "videoId": "5yfh5cf4-0w&t=2661s",
-      "tags": ["definite integrals", "fundamental theorem", "calculus", "integration"],
+      "tags": [
+        "definite integrals",
+        "fundamental theorem",
+        "calculus",
+        "integration"
+      ],
       "content": [
         {
           "type": "header",

@@ -718,6 +718,76 @@ def analyze_quiz():
             f"AI identified weak topics for {current_subject}/{current_subtopic}: {validated_weak_topics}"
         )
 
+        # Also find and store recommended lessons immediately after analysis
+        if validated_weak_topics:
+            try:
+                app.logger.info(
+                    f"[DEBUG] Searching for lessons across ALL subtopics in subject '{current_subject}' for weak topics: {validated_weak_topics}"
+                )
+                matching_lessons = get_lessons_by_tags(
+                    current_subject, validated_weak_topics
+                )
+                session[
+                    get_session_key(
+                        current_subject, current_subtopic, "recommended_lessons"
+                    )
+                ] = matching_lessons
+                app.logger.info(
+                    f"[DEBUG] Found and stored {len(matching_lessons)} recommended lessons for weak topics: {validated_weak_topics}"
+                )
+
+                # Detailed logging of found lessons
+                if matching_lessons:
+                    for lesson in matching_lessons:
+                        lesson_subject = lesson.get("subject", "Unknown")
+                        lesson_subtopic = lesson.get("subtopic", "Unknown")
+                        lesson_title = lesson.get("title", "No title")
+                        lesson_tags = lesson.get("tags", [])
+                        matching_tags = lesson.get("matching_tags", [])
+                        app.logger.info(
+                            f"[DEBUG] - Found lesson: '{lesson_title}' in {lesson_subject}/{lesson_subtopic}"
+                        )
+                        app.logger.info(f"[DEBUG]   - All lesson tags: {lesson_tags}")
+                        app.logger.info(
+                            f"[DEBUG]   - Matching weak topic tags: {matching_tags}"
+                        )
+                else:
+                    app.logger.warning(
+                        f"[DEBUG] No lessons found for any weak topics: {validated_weak_topics}"
+                    )
+                    # Let's also check what lessons exist in the current subject
+                    try:
+                        all_current_lessons = get_lesson_plans(
+                            current_subject, current_subtopic
+                        )
+                        app.logger.info(
+                            f"[DEBUG] Available lessons in current subtopic {current_subject}/{current_subtopic}: {list(all_current_lessons.keys())}"
+                        )
+                        for lesson_id, lesson_data in all_current_lessons.items():
+                            lesson_tags = lesson_data.get("tags", [])
+                            app.logger.info(
+                                f"[DEBUG]   - Lesson '{lesson_id}' has tags: {lesson_tags}"
+                            )
+                    except Exception as e2:
+                        app.logger.error(
+                            f"[DEBUG] Error checking available lessons: {e2}"
+                        )
+
+            except Exception as e:
+                app.logger.error(
+                    f"Error finding lessons for weak topics {validated_weak_topics}: {e}"
+                )
+                # Even if lesson search fails, we should log what lessons exist
+                try:
+                    all_current_lessons = get_lesson_plans(
+                        current_subject, current_subtopic
+                    )
+                    app.logger.info(
+                        f"[DEBUG] Fallback: Available lessons in {current_subject}/{current_subtopic}: {list(all_current_lessons.keys())}"
+                    )
+                except Exception as e2:
+                    app.logger.error(f"[DEBUG] Error in fallback lesson check: {e2}")
+
         # Calculate score percentage
         score_percentage = (
             round((correct_answers / total_questions) * 100)
@@ -947,11 +1017,103 @@ def show_results_page():
         app.logger.error(f"Error loading video data for results page: {e}")
         VIDEO_DATA = {}
 
-    # Try to get lesson plans from the new system
-    try:
-        lesson_plans = get_lesson_plans(current_subject, current_subtopic)
-    except Exception:
-        lesson_plans = {}
+    # Get recommended lessons from session if they exist
+    recommended_lessons = session.get(
+        get_session_key(current_subject, current_subtopic, "recommended_lessons"), []
+    )
+
+    # Get weak topics from session to organize lessons by topic
+    weak_topics = session.get(
+        get_session_key(current_subject, current_subtopic, "weak_topics"), []
+    )
+
+    # Transform recommended lessons into the format expected by the template
+    # The template expects LESSON_PLANS[topic] to contain lesson data
+    lesson_plans = {}
+
+    if recommended_lessons and weak_topics:
+        app.logger.info(
+            f"[DEBUG] Processing {len(recommended_lessons)} recommended lessons for weak topics: {weak_topics}"
+        )
+
+        # Group lessons by weak topic - collect ALL matching lessons for each topic
+        lessons_by_topic = {}
+        for topic in weak_topics:
+            lessons_by_topic[topic] = []
+
+        # Load the actual lesson content for recommended lessons
+        for lesson_info in recommended_lessons:
+            subject = lesson_info.get("subject")
+            subtopic = lesson_info.get("subtopic")
+            lesson_id = lesson_info.get("lesson_id")
+            matching_tags = lesson_info.get("matching_tags", [])
+
+            # Load the full lesson data
+            try:
+                full_lesson_plans = get_lesson_plans(subject, subtopic)
+                if lesson_id in full_lesson_plans:
+                    lesson_data = full_lesson_plans[lesson_id]
+
+                    # Add this lesson to ALL matching weak topics
+                    for tag in matching_tags:
+                        if tag in weak_topics:
+                            lessons_by_topic[tag].append(lesson_data)
+                            app.logger.info(
+                                f"[DEBUG] Added lesson '{lesson_data.get('title', 'No title')}' for topic '{tag}'"
+                            )
+
+            except Exception as e:
+                app.logger.error(
+                    f"Error loading lesson content for {subject}/{subtopic}/{lesson_id}: {e}"
+                )
+
+        # For the template, we'll use the best lesson for each topic
+        for topic, lessons_list in lessons_by_topic.items():
+            if lessons_list:
+                # Sort lessons by relevance - prefer lessons with more specific matches to the topic
+                def lesson_relevance(lesson_data):
+                    lesson_tags = set(lesson_data.get("tags", []))
+                    # Count how many times the current topic appears in the lesson's tags
+                    topic_matches = sum(
+                        1
+                        for tag in lesson_tags
+                        if topic.lower() in tag.lower() or tag.lower() in topic.lower()
+                    )
+                    # Prefer lessons with more topic-specific matches
+                    return topic_matches
+
+                # Sort by relevance (descending) and take the most relevant lesson
+                sorted_lessons = sorted(
+                    lessons_list, key=lesson_relevance, reverse=True
+                )
+                lesson_plans[topic] = sorted_lessons[0]
+
+                app.logger.info(
+                    f"[DEBUG] Topic '{topic}' has {len(lessons_list)} available lessons, selected most relevant: '{sorted_lessons[0].get('title', 'No title')}'"
+                )
+                if len(lessons_list) > 1:
+                    other_titles = [
+                        lesson.get("title", "No title") for lesson in sorted_lessons[1:]
+                    ]
+                    app.logger.info(
+                        f"[DEBUG] Other available lessons for '{topic}': {other_titles}"
+                    )
+            else:
+                app.logger.warning(
+                    f"[DEBUG] No lessons found for weak topic: '{topic}'"
+                )
+
+    # If no recommended lessons found, fall back to all lessons from current subtopic
+    if not lesson_plans:
+        app.logger.info(
+            f"[DEBUG] No recommended lessons found, falling back to all lessons from {current_subject}/{current_subtopic}"
+        )
+        try:
+            lesson_plans = get_lesson_plans(current_subject, current_subtopic)
+        except Exception:
+            lesson_plans = {}
+
+    app.logger.info(f"[DEBUG] Final lesson_plans keys: {list(lesson_plans.keys())}")
 
     return render_template(
         "results.html",
