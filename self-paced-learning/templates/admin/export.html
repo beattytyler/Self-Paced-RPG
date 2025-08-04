@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Export/Import - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export" class="active"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-main">
+        <div class="admin-header">
+          <div class="admin-breadcrumb">
+            <span><i class="fas fa-download"></i></span>
+            <span>Export/Import</span>
+          </div>
+        </div>
+
+        <div class="admin-content">
+          <div class="admin-card">
+            <div class="card-header">
+              <h2><i class="fas fa-download"></i> Export/Import Data</h2>
+              <p>Backup and restore your learning platform data</p>
+            </div>
+
+            <div class="card-content">
+              <div class="coming-soon">
+                <i class="fas fa-tools"></i>
+                <h3>Coming Soon</h3>
+                <p>Export and import functionality is under development.</p>
+                <p>This feature will allow you to:</p>
+                <ul>
+                  <li>Export all subjects and data to JSON files</li>
+                  <li>Import data from backup files</li>
+                  <li>Migrate content between environments</li>
+                  <li>Create data templates for new subjects</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <style>
+      .coming-soon {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+      }
+
+      .coming-soon i {
+        font-size: 4rem;
+        color: #ddd;
+        margin-bottom: 1rem;
+      }
+
+      .coming-soon h3 {
+        color: #333;
+        margin-bottom: 1rem;
+      }
+
+      .coming-soon ul {
+        text-align: left;
+        display: inline-block;
+        margin-top: 1rem;
+      }
+
+      .coming-soon li {
+        margin: 0.5rem 0;
+      }
+    </style>
+  </body>
+</html>

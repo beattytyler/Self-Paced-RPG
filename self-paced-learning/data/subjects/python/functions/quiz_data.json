@@ -1,5 +1,5 @@
 {
-  "quiz_title": "Python Functions Quiz",
+  "quiz_title": "Python - Functions Quiz",
   "questions": [
     {
       "answer_index": 1,
@@ -201,6 +201,20 @@
         "passing function arguments"
       ],
       "type": "coding"
+    },
+    {
+      "type": "multiple_choice",
+      "question": "test test",
+      "tags": [
+        "test",
+        "test2"
+      ],
+      "options": [
+        "test",
+        "sets"
+      ],
+      "answer_index": 0
     }
-  ]
+  ],
+  "updated_date": "2025-01-01"
 }

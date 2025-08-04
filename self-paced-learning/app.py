@@ -30,11 +30,11 @@ if not app.secret_key:
     )
 
 #  OpenAI Client Initialization
-# Ensure OPEN_API_KEY is set in your .env file
+# Ensure OPENAI_API_KEY is set in your .env file
 try:
-    api_key = os.getenv("OPEN_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("OPEN_API_KEY not found in environment variables.")
+        raise ValueError("OPENAI_API_KEY not found in environment variables.")
     # Simple initialization without extra parameters
     client = OpenAI(api_key=api_key)
     # Test the client
@@ -62,53 +62,9 @@ def get_subject_keywords(subject: str) -> list:
     return data_loader.get_subject_keywords(subject)
 
 
-def get_lessons_by_tags(subject: str, tags: list) -> list:
-    """Get lessons that match the given tags."""
-    return data_loader.find_lessons_by_tags(subject, tags)
-
-
 def get_quiz_data(subject: str, subtopic: str) -> list:
     """Get quiz questions for a subject/subtopic."""
     return data_loader.get_quiz_questions(subject, subtopic)
-
-
-def check_prerequisites(
-    subject: str, subtopic: str, user_progress: dict = None
-) -> tuple[bool, list]:
-    """Check if user has completed all prerequisites for a subtopic.
-
-    Args:
-        subject: Subject ID
-        subtopic: Subtopic ID
-        user_progress: User's completion progress (for future implementation)
-
-    Returns:
-        tuple: (prerequisites_met, missing_prerequisites)
-    """
-    try:
-        subject_config = data_loader.load_subject_config(subject)
-        if not subject_config:
-            return True, []
-
-        subtopic_data = subject_config.get("subtopics", {}).get(subtopic, {})
-        prerequisites = subtopic_data.get("prerequisites", [])
-
-        if not prerequisites:
-            return True, []
-
-        # For now, we'll assume no progress tracking is implemented
-        # In the future, this would check actual user completion data
-        # For testing purposes, we'll return that prerequisites are not met
-        return False, prerequisites
-
-    except Exception as e:
-        app.logger.error(f"Error checking prerequisites for {subject}/{subtopic}: {e}")
-        return True, []  # Default to allowing access if there's an error
-
-
-def is_admin_override_active(session_data: dict) -> bool:
-    """Check if admin override is active for current session."""
-    return session_data.get("admin_override", False)
 
 
 def get_question_pool(subject: str, subtopic: str) -> list:
@@ -204,61 +160,37 @@ def parse_ai_json_from_text(ai_response_string, expected_type_is_list=True):
 
 
 def call_openai_api(
-    prompt_text,
-    system_message="",
-    model="gpt-4-0613",
-    max_tokens=1500,
-    expect_json_output=False,
+    prompt_text, system_message, model="gpt-4", max_tokens=800, expect_json_output=False
 ):
-    """
-    Clean helper function to call OpenAI API with proper error handling.
-
-    Args:
-        prompt_text: The user prompt/question
-        system_message: System instructions for the AI
-        model: OpenAI model to use (default: gpt-4o)
-        max_tokens: Maximum tokens for response
-        expect_json_output: Whether to request JSON format response
-
-    Returns:
-        str: AI response content or None if failed
-    """
-
-    # Validate client
+    """Helper function to call the OpenAI API."""
     if not client:
-        app.logger.error("OpenAI client not initialized.")
-        return None
-
+        app.logger.error("OpenAI client not initialized. Cannot make API call.")
+        return None  # Or raise an exception
     try:
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt_text},
+        ]
 
-        # Build messages
-        messages = []
-        if system_message:
-            messages.append({"role": "system", "content": system_message})
-        messages.append({"role": "user", "content": prompt_text})
-
-        # Build request args
         completion_args = {
             "model": model,
             "messages": messages,
             "max_tokens": max_tokens,
         }
 
-        # Add JSON mode for supported models (gpt-4o only)
-        if expect_json_output and "gpt-4o" in model:
+        # For newer models that support JSON mode directly
+        # Check OpenAI documentation for the latest models supporting this.
+        # E.g., "gpt-4-1106-preview", "gpt-3.5-turbo-1106", "gpt-4-turbo-preview", "gpt-4o"
+        if expect_json_output and (
+            "1106" in model
+            or "turbo-preview" in model
+            or "gpt-4o" in model
+            or "gpt-4-turbo" in model
+        ):
             completion_args["response_format"] = {"type": "json_object"}
 
-        # Make API call
-        app.logger.info(f"Making OpenAI API call with model: {model}")
         response = client.chat.completions.create(**completion_args)
-
-        content = response.choices[0].message.content.strip()
-        app.logger.info(
-            f"OpenAI API call successful. Response length: {len(content)} chars"
-        )
-
-        return content
-
+        return response.choices[0].message.content.strip()
     except Exception as e:
         app.logger.error(f"OpenAI API call failed: {e}")
         return None
@@ -269,11 +201,14 @@ def call_openai_api(
 def subject_selection():
     """New home page showing all available subjects."""
     try:
-        # Auto-discover subjects from individual subject_info.json files
-        subjects = data_loader.discover_subjects()
-        
-        # Fallback to default Python subject if no subjects found
-        if not subjects:
+        # Load subjects from subjects.json
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects_data = json.load(f)
+                subjects = subjects_data.get("subjects", {})
+        else:
+            # Fallback to default Python subject if file doesn't exist
             subjects = {
                 "python": {
                     "name": "Python Programming",
@@ -304,28 +239,6 @@ def subject_page(subject):
 
         subject_info = subject_config.get("subject_info", {})
         subtopics = subject_config.get("subtopics", {})
-
-        # Update question counts dynamically by checking for quiz data
-        for subtopic_id, subtopic_data in subtopics.items():
-            quiz_data = data_loader.load_quiz_data(subject, subtopic_id)
-            if quiz_data and quiz_data.get("questions"):
-                # Count questions in the initial quiz
-                question_count = len(quiz_data.get("questions", []))
-                subtopic_data["question_count"] = question_count
-            else:
-                # No quiz data or empty quiz
-                subtopic_data["question_count"] = 0
-
-            # Update video counts dynamically by checking for video data
-            try:
-                video_data = get_video_data(subject, subtopic_id)
-                video_count = len(video_data) if video_data else 0
-                subtopic_data["video_count"] = video_count
-            except Exception as e:
-                app.logger.debug(
-                    f"No video data found for {subject}/{subtopic_id}: {e}"
-                )
-                subtopic_data["video_count"] = 0
 
         # Sort subtopics by order
         sorted_subtopics = dict(
@@ -423,65 +336,12 @@ def get_all_progress_api():
     return jsonify(user_progress)
 
 
-@app.route("/api/admin/status")
-def get_admin_status():
-    """Check if current user has admin privileges."""
-    is_admin = is_admin_override_active(session)
-    return jsonify({"is_admin": is_admin})
-
-
-@app.route("/api/admin/mark_complete", methods=["POST"])
-def admin_mark_complete():
-    """Admin endpoint to mark topics as complete."""
-    if not is_admin_override_active(session):
-        return jsonify({"success": False, "error": "Admin privileges required"}), 403
-
-    data = request.get_json()
-    topic = data.get("topic")
-
-    if not topic:
-        return jsonify({"success": False, "error": "Topic is required"}), 400
-
-    # Get current progress
-    user_progress = session.get("progress", {})
-
-    # Mark topic as 100% complete
-    user_progress[topic] = 100
-    session["progress"] = user_progress
-
-    return jsonify({"success": True, "topic": topic, "progress": 100})
-
-
 @app.route("/quiz/<subject>/<subtopic>")
 def quiz_page(subject, subtopic):
     """Serves the initial quiz for any subject/subtopic."""
     # Validate that the subject/subtopic exists
     if not data_loader.validate_subject_subtopic(subject, subtopic):
         return f"Error: Subject '{subject}' with subtopic '{subtopic}' not found.", 404
-
-    # Check prerequisites unless admin override is active
-    admin_override = is_admin_override_active(session)
-    if not admin_override:
-        prerequisites_met, missing_prerequisites = check_prerequisites(
-            subject, subtopic
-        )
-        if not prerequisites_met:
-            # Get subject config for display names
-            subject_config = data_loader.load_subject_config(subject)
-            missing_names = []
-            if subject_config and "subtopics" in subject_config:
-                for req in missing_prerequisites:
-                    req_data = subject_config["subtopics"].get(req, {})
-                    req_name = req_data.get("name", req.replace("-", " ").title())
-                    missing_names.append(req_name)
-
-            return render_template(
-                "prerequisites_error.html",
-                subject=subject,
-                subtopic=subtopic,
-                missing_prerequisites=missing_names,
-                missing_ids=missing_prerequisites,
-            )
 
     # Clear previous session data for this subject/subtopic
     session_prefix = f"{subject}_{subtopic}"
@@ -504,12 +364,7 @@ def quiz_page(subject, subtopic):
     session["current_subject"] = subject
     session["current_subtopic"] = subtopic
 
-    return render_template(
-        "quiz.html",
-        questions=quiz_questions,
-        quiz_title=quiz_title,
-        admin_override=admin_override,
-    )
+    return render_template("quiz.html", questions=quiz_questions, quiz_title=quiz_title)
 
 
 # Legacy route for backward compatibility
@@ -622,12 +477,6 @@ def analyze_quiz():
     allowed_topic_keywords = get_subject_keywords(current_subject)
     allowed_keywords_str = json.dumps(allowed_topic_keywords)
 
-    # DEBUG: Log available keywords
-    app.logger.info(
-        f"[DEBUG] Available keywords for {current_subject}: {allowed_topic_keywords}"
-    )
-    app.logger.info(f"[DEBUG] Total keywords available: {len(allowed_topic_keywords)}")
-
     prompt = (
         "You are analyzing a student's quiz submission which includes multiple choice, fill-in-the-blank, and coding questions.\n"
         "Based on the incorrect answers and their submitted code, identify the concepts they are weak in.\n"
@@ -649,13 +498,10 @@ def analyze_quiz():
     ai_response_content = call_openai_api(
         prompt,
         system_message,
-        model="gpt-4-0613",
+        model="gpt-4",
         max_tokens=1500,  # Increased tokens for more detailed feedback
         expect_json_output=True,
     )
-
-    # DEBUG: Log AI response
-    app.logger.info(f"[DEBUG] AI response content: {ai_response_content}")
 
     if not ai_response_content:
         return (
@@ -689,23 +535,9 @@ def analyze_quiz():
             "detailed_feedback", "No detailed feedback provided."
         )
         weak_topics = parsed_ai_response.get("weak_concept_tags", [])
-
-        # DEBUG: Log AI's chosen keywords before validation
-        app.logger.info(f"[DEBUG] AI chose these keywords: {weak_topics}")
-
         validated_weak_topics = [
             topic for topic in weak_topics if topic in allowed_topic_keywords
         ]
-
-        # DEBUG: Log validation results
-        app.logger.info(f"[DEBUG] Validated keywords: {validated_weak_topics}")
-        if len(weak_topics) != len(validated_weak_topics):
-            rejected_topics = [
-                topic for topic in weak_topics if topic not in allowed_topic_keywords
-            ]
-            app.logger.warning(
-                f"[DEBUG] Rejected keywords (not in allowed list): {rejected_topics}"
-            )
 
         # Store weak topics with subject/subtopic prefix
         session[get_session_key(current_subject, current_subtopic, "weak_topics")] = (
@@ -714,76 +546,6 @@ def analyze_quiz():
         app.logger.info(
             f"AI identified weak topics for {current_subject}/{current_subtopic}: {validated_weak_topics}"
         )
-
-        # Also find and store recommended lessons immediately after analysis
-        if validated_weak_topics:
-            try:
-                app.logger.info(
-                    f"[DEBUG] Searching for lessons across ALL subtopics in subject '{current_subject}' for weak topics: {validated_weak_topics}"
-                )
-                matching_lessons = get_lessons_by_tags(
-                    current_subject, validated_weak_topics
-                )
-                session[
-                    get_session_key(
-                        current_subject, current_subtopic, "recommended_lessons"
-                    )
-                ] = matching_lessons
-                app.logger.info(
-                    f"[DEBUG] Found and stored {len(matching_lessons)} recommended lessons for weak topics: {validated_weak_topics}"
-                )
-
-                # Detailed logging of found lessons
-                if matching_lessons:
-                    for lesson in matching_lessons:
-                        lesson_subject = lesson.get("subject", "Unknown")
-                        lesson_subtopic = lesson.get("subtopic", "Unknown")
-                        lesson_title = lesson.get("title", "No title")
-                        lesson_tags = lesson.get("tags", [])
-                        matching_tags = lesson.get("matching_tags", [])
-                        app.logger.info(
-                            f"[DEBUG] - Found lesson: '{lesson_title}' in {lesson_subject}/{lesson_subtopic}"
-                        )
-                        app.logger.info(f"[DEBUG]   - All lesson tags: {lesson_tags}")
-                        app.logger.info(
-                            f"[DEBUG]   - Matching weak topic tags: {matching_tags}"
-                        )
-                else:
-                    app.logger.warning(
-                        f"[DEBUG] No lessons found for any weak topics: {validated_weak_topics}"
-                    )
-                    # Let's also check what lessons exist in the current subject
-                    try:
-                        all_current_lessons = get_lesson_plans(
-                            current_subject, current_subtopic
-                        )
-                        app.logger.info(
-                            f"[DEBUG] Available lessons in current subtopic {current_subject}/{current_subtopic}: {list(all_current_lessons.keys())}"
-                        )
-                        for lesson_id, lesson_data in all_current_lessons.items():
-                            lesson_tags = lesson_data.get("tags", [])
-                            app.logger.info(
-                                f"[DEBUG]   - Lesson '{lesson_id}' has tags: {lesson_tags}"
-                            )
-                    except Exception as e2:
-                        app.logger.error(
-                            f"[DEBUG] Error checking available lessons: {e2}"
-                        )
-
-            except Exception as e:
-                app.logger.error(
-                    f"Error finding lessons for weak topics {validated_weak_topics}: {e}"
-                )
-                # Even if lesson search fails, we should log what lessons exist
-                try:
-                    all_current_lessons = get_lesson_plans(
-                        current_subject, current_subtopic
-                    )
-                    app.logger.info(
-                        f"[DEBUG] Fallback: Available lessons in {current_subject}/{current_subtopic}: {list(all_current_lessons.keys())}"
-                    )
-                except Exception as e2:
-                    app.logger.error(f"[DEBUG] Error in fallback lesson check: {e2}")
 
         # Calculate score percentage
         score_percentage = (
@@ -819,7 +581,151 @@ def analyze_quiz():
         )
 
 
-# Video recommendation removed - videos are tied to lessons, only recommend lessons by tags
+@app.route("/api/recommend_videos", methods=["GET"])
+def recommend_videos_api():
+    weak_topics_str = request.args.get("topics", "")
+
+    if not weak_topics_str:
+        return (
+            jsonify({"error": "No weak topics provided for video recommendation"}),
+            400,
+        )
+
+    weak_topics_list = [
+        topic.strip().lower() for topic in weak_topics_str.split(",") if topic.strip()
+    ]
+    if not weak_topics_list:
+        app.logger.info("Empty list of weak topics received for video recommendation.")
+        return jsonify({"recommended_video_keys": []})
+
+    # Use the legacy VIDEO_DATA structure for compatibility
+    VIDEO_DATA = {
+        "loops": {
+            "title": "Python Loops: For and While",
+            "url": "https://www.youtube.com/watch?v=94UHCEmprCY",
+            "description": "Learn how to automate repetitive tasks using for and while loops, understand iterables, and control flow statements.",
+        },
+        "functions": {
+            "title": "Python Functions Masterclass",
+            "url": "https://www.youtube.com/embed/94UHCEmprCY?enablejsapi=1",
+            "description": "Master Python functions, parameters, return values, and scope. Learn how to write reusable code blocks.",
+        },
+        "arrays": {
+            "title": "Understanding NumPy Arrays",
+            "url": "#",
+            "description": "Discover how to use NumPy arrays for efficient numerical computations and data processing in Python.",
+        },
+        "lists": {
+            "title": "Python Lists and List Comprehensions",
+            "url": "#",
+            "description": "Understand Python's built-in list data structure, methods, and operations for storing collections of items.",
+        },
+        "sets": {
+            "title": "Working with Python Sets",
+            "url": "#",
+            "description": "Learn about Python's unordered collection of unique elements and set operations like union and intersection.",
+        },
+        "dictionaries": {
+            "title": "Python Dictionaries and Dictionary Comprehensions",
+            "url": "#",
+            "description": "Explore key-value mappings in Python dictionaries, methods for accessing, modifying, and iterating through data.",
+        },
+    }
+
+    video_data_for_prompt = ""
+    for key, video_info in VIDEO_DATA.items():
+        video_data_for_prompt += f"Video Key: \"{key}\"\nTitle: \"{video_info['title']}\"\nDescription: \"{video_info['description']}\"\n\n"
+
+    system_message = "You assist by recommending relevant educational video keys based on topic keywords and video descriptions. Output only a JSON list of video keys."
+    prompt = (
+        "Based on the following list of weak programming concepts a student has, "
+        "and the provided list of available video materials (with their keys, titles, and descriptions), "
+        "identify which video *keys* are most relevant for the student to review. "
+        "Focus solely on matching the weak concepts to the video descriptions.\n\n"
+        f"Weak Concepts:\n{', '.join(weak_topics_list)}\n\n"
+        "Available Video Materials:\n"
+        f"{video_data_for_prompt}\n"
+        'Return your answer ONLY as a JSON formatted list of unique Video Keys. For example: ["key1", "key2"]. '
+        "If no videos seem relevant for a particular concept, do not force a recommendation. "
+        "If multiple videos seem relevant for the same concept, you can include all of them."
+    )
+
+    ai_response_content = call_openai_api(
+        prompt,
+        system_message,
+        model="gpt-3.5-turbo",
+        max_tokens=250,
+        expect_json_output=True,
+    )
+
+    recommended_keys = None
+    if ai_response_content:
+        try:
+            parsed_data = json.loads(ai_response_content)
+            if isinstance(parsed_data, list):
+                recommended_keys = parsed_data
+            elif isinstance(parsed_data, dict):  # Handle if AI wraps in an object
+                for key_in_dict in ["recommended_video_keys", "video_keys", "keys"]:
+                    if isinstance(parsed_data.get(key_in_dict), list):
+                        recommended_keys = parsed_data[key_in_dict]
+                        break
+            if (
+                recommended_keys is None
+            ):  # If direct parsing and common dict keys failed
+                recommended_keys = parse_ai_json_from_text(
+                    ai_response_content, expected_type_is_list=True
+                )
+        except json.JSONDecodeError:
+            recommended_keys = parse_ai_json_from_text(
+                ai_response_content, expected_type_is_list=True
+            )
+
+        if recommended_keys is not None and isinstance(recommended_keys, list):
+            valid_recommended_keys = sorted(
+                list(
+                    set(
+                        key
+                        for key in recommended_keys
+                        if key in VIDEO_DATA and isinstance(key, str)
+                    )
+                )
+            )
+
+            # Get current subject/subtopic from session for storage key
+            current_subject = session.get("current_subject", "python")
+            current_subtopic = session.get("current_subtopic", "functions")
+            session[
+                get_session_key(
+                    current_subject,
+                    current_subtopic,
+                    "recommended_videos_for_weak_topics",
+                )
+            ] = valid_recommended_keys
+
+            return jsonify({"recommended_video_keys": valid_recommended_keys})
+        else:
+            app.logger.error(
+                f"Could not parse valid JSON list of video keys from AI (recommend_videos). Raw AI response: {ai_response_content}"
+            )
+
+    # Store empty result with prefix
+    current_subject = session.get("current_subject", "python")
+    current_subtopic = session.get("current_subtopic", "functions")
+    session[
+        get_session_key(
+            current_subject, current_subtopic, "recommended_videos_for_weak_topics"
+        )
+    ] = []
+
+    return (
+        jsonify(
+            {
+                "error": "AI did not return valid video recommendations",
+                "details": ai_response_content or "No response from AI",
+            }
+        ),
+        500,
+    )
 
 
 @app.route("/generate_remedial_quiz", methods=["GET"])
@@ -846,9 +752,6 @@ def generate_remedial_quiz():
         get_session_key(current_subject, current_subtopic, "weak_topics"), []
     )
 
-    # DEBUG: Log weak topics being used for lesson search
-    app.logger.info(f"[DEBUG] Searching for lessons with weak topics: {weak_topics}")
-
     if not weak_topics:
         app.logger.info(
             f"No weak topics in session for {current_subject}/{current_subtopic}; cannot generate remedial quiz."
@@ -860,18 +763,6 @@ def generate_remedial_quiz():
 
     # Get question pool for current subject/subtopic
     question_pool = get_question_pool(current_subject, current_subtopic)
-
-    # Get matching lessons for weak topics
-    matching_lessons = get_lessons_by_tags(current_subject, weak_topics)
-
-    # DEBUG: Log lesson search results
-    app.logger.info(
-        f"[DEBUG] Found {len(matching_lessons)} matching lessons for weak topics"
-    )
-    for lesson in matching_lessons:
-        app.logger.info(
-            f"[DEBUG] - Lesson: {lesson.get('title', 'No title')} (tags: {lesson.get('tags', [])})"
-        )
 
     # Select questions from the pool that match the weak topics
     remedial_questions = []
@@ -899,15 +790,12 @@ def generate_remedial_quiz():
         )
         return redirect(url_for("show_results_page"))
 
-    # Store the selected questions and lessons with subject/subtopic prefixes
+    # Store the selected questions with subject/subtopic prefixes
     session[
         get_session_key(
             current_subject, current_subtopic, "current_remedial_quiz_questions"
         )
     ] = remedial_questions
-    session[
-        get_session_key(current_subject, current_subtopic, "recommended_lessons")
-    ] = matching_lessons
     session[
         get_session_key(
             current_subject, current_subtopic, "questions_served_for_analysis"
@@ -924,9 +812,6 @@ def generate_remedial_quiz():
 
     app.logger.info(
         f"Selected {len(remedial_questions)} questions for the remedial quiz in {current_subject}/{current_subtopic}."
-    )
-    app.logger.info(
-        f"Found {len(matching_lessons)} matching lessons for weak topics: {weak_topics}"
     )
 
     return redirect(url_for("take_remedial_quiz_page"))
@@ -1014,103 +899,11 @@ def show_results_page():
         app.logger.error(f"Error loading video data for results page: {e}")
         VIDEO_DATA = {}
 
-    # Get recommended lessons from session if they exist
-    recommended_lessons = session.get(
-        get_session_key(current_subject, current_subtopic, "recommended_lessons"), []
-    )
-
-    # Get weak topics from session to organize lessons by topic
-    weak_topics = session.get(
-        get_session_key(current_subject, current_subtopic, "weak_topics"), []
-    )
-
-    # Transform recommended lessons into the format expected by the template
-    # The template expects LESSON_PLANS[topic] to contain lesson data
-    lesson_plans = {}
-
-    if recommended_lessons and weak_topics:
-        app.logger.info(
-            f"[DEBUG] Processing {len(recommended_lessons)} recommended lessons for weak topics: {weak_topics}"
-        )
-
-        # Group lessons by weak topic - collect ALL matching lessons for each topic
-        lessons_by_topic = {}
-        for topic in weak_topics:
-            lessons_by_topic[topic] = []
-
-        # Load the actual lesson content for recommended lessons
-        for lesson_info in recommended_lessons:
-            subject = lesson_info.get("subject")
-            subtopic = lesson_info.get("subtopic")
-            lesson_id = lesson_info.get("lesson_id")
-            matching_tags = lesson_info.get("matching_tags", [])
-
-            # Load the full lesson data
-            try:
-                full_lesson_plans = get_lesson_plans(subject, subtopic)
-                if lesson_id in full_lesson_plans:
-                    lesson_data = full_lesson_plans[lesson_id]
-
-                    # Add this lesson to ALL matching weak topics
-                    for tag in matching_tags:
-                        if tag in weak_topics:
-                            lessons_by_topic[tag].append(lesson_data)
-                            app.logger.info(
-                                f"[DEBUG] Added lesson '{lesson_data.get('title', 'No title')}' for topic '{tag}'"
-                            )
-
-            except Exception as e:
-                app.logger.error(
-                    f"Error loading lesson content for {subject}/{subtopic}/{lesson_id}: {e}"
-                )
-
-        # For the template, we'll use the best lesson for each topic
-        for topic, lessons_list in lessons_by_topic.items():
-            if lessons_list:
-                # Sort lessons by relevance - prefer lessons with more specific matches to the topic
-                def lesson_relevance(lesson_data):
-                    lesson_tags = set(lesson_data.get("tags", []))
-                    # Count how many times the current topic appears in the lesson's tags
-                    topic_matches = sum(
-                        1
-                        for tag in lesson_tags
-                        if topic.lower() in tag.lower() or tag.lower() in topic.lower()
-                    )
-                    # Prefer lessons with more topic-specific matches
-                    return topic_matches
-
-                # Sort by relevance (descending) and take the most relevant lesson
-                sorted_lessons = sorted(
-                    lessons_list, key=lesson_relevance, reverse=True
-                )
-                lesson_plans[topic] = sorted_lessons[0]
-
-                app.logger.info(
-                    f"[DEBUG] Topic '{topic}' has {len(lessons_list)} available lessons, selected most relevant: '{sorted_lessons[0].get('title', 'No title')}'"
-                )
-                if len(lessons_list) > 1:
-                    other_titles = [
-                        lesson.get("title", "No title") for lesson in sorted_lessons[1:]
-                    ]
-                    app.logger.info(
-                        f"[DEBUG] Other available lessons for '{topic}': {other_titles}"
-                    )
-            else:
-                app.logger.warning(
-                    f"[DEBUG] No lessons found for weak topic: '{topic}'"
-                )
-
-    # If no recommended lessons found, fall back to all lessons from current subtopic
-    if not lesson_plans:
-        app.logger.info(
-            f"[DEBUG] No recommended lessons found, falling back to all lessons from {current_subject}/{current_subtopic}"
-        )
-        try:
-            lesson_plans = get_lesson_plans(current_subject, current_subtopic)
-        except Exception:
-            lesson_plans = {}
-
-    app.logger.info(f"[DEBUG] Final lesson_plans keys: {list(lesson_plans.keys())}")
+    # Try to get lesson plans from the new system
+    try:
+        lesson_plans = get_lesson_plans(current_subject, current_subtopic)
+    except Exception:
+        lesson_plans = {}
 
     return render_template(
         "results.html",
@@ -1119,7 +912,6 @@ def show_results_page():
         LESSON_PLANS=lesson_plans,
         current_subject=current_subject,
         current_subtopic=current_subtopic,
-        is_admin=is_admin_override_active(session),
     )
 
 
@@ -1127,11 +919,18 @@ def show_results_page():
 
 
 @app.route("/admin")
+@app.route("/admin/")
 def admin_dashboard():
     """Admin dashboard overview."""
     try:
-        # Auto-discover subjects
-        subjects = data_loader.discover_subjects()
+        # Load subjects data
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects_data = json.load(f)
+                subjects = subjects_data.get("subjects", {})
+        else:
+            subjects = {}
 
         # Calculate stats
         total_subjects = len(subjects)
@@ -1169,8 +968,13 @@ def admin_dashboard():
 def admin_subjects():
     """Manage subjects."""
     try:
-        # Auto-discover subjects
-        subjects = data_loader.discover_subjects()
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects_data = json.load(f)
+                subjects = subjects_data.get("subjects", {})
+        else:
+            subjects = {}
 
         return render_template("admin/subjects.html", subjects=subjects)
     except Exception as e:
@@ -1193,30 +997,44 @@ def admin_create_subject():
             if not subject_id or not subject_name:
                 return jsonify({"error": "Subject ID and name are required"}), 400
 
-            # Check if subject already exists by checking for directory
-            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
-            if os.path.exists(subject_dir):
+            # Load existing subjects
+            subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+            if os.path.exists(subjects_path):
+                with open(subjects_path, "r", encoding="utf-8") as f:
+                    subjects_data = json.load(f)
+            else:
+                subjects_data = {"subjects": {}}
+
+            # Check if subject already exists
+            if subject_id in subjects_data["subjects"]:
                 return jsonify({"error": "Subject already exists"}), 400
 
-            # Create subject directory
-            os.makedirs(subject_dir, exist_ok=True)
-
-            # Create subject_info.json
-            subject_info = {
+            # Add new subject
+            subjects_data["subjects"][subject_id] = {
                 "name": subject_name,
                 "description": description,
                 "icon": icon,
                 "color": color,
                 "status": "active",
                 "created_date": "2025-01-01",
+                "subtopic_count": 0,
             }
 
-            info_path = os.path.join(subject_dir, "subject_info.json")
-            with open(info_path, "w", encoding="utf-8") as f:
-                json.dump(subject_info, f, indent=2)
+            # Save subjects.json
+            with open(subjects_path, "w", encoding="utf-8") as f:
+                json.dump(subjects_data, f, indent=2)
 
-            # Create subject_config.json
+            # Create subject directory and config
+            subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
+            os.makedirs(subject_dir, exist_ok=True)
+
             subject_config = {
+                "subject_info": {
+                    "name": subject_name,
+                    "description": description,
+                    "icon": icon,
+                    "color": color,
+                },
                 "subtopics": {},
                 "allowed_keywords": [],
             }
@@ -1224,9 +1042,6 @@ def admin_create_subject():
             config_path = os.path.join(subject_dir, "subject_config.json")
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(subject_config, f, indent=2)
-
-            # Clear cache to ensure fresh data is loaded
-            data_loader.clear_cache()
 
             return jsonify({"success": True, "message": "Subject created successfully"})
 
@@ -1241,98 +1056,16 @@ def admin_create_subject():
 def admin_edit_subject(subject):
     """Edit a subject."""
     try:
-        # Load both subject_info.json and subject_config.json
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        
-        # Load subject_info.json
-        info_path = os.path.join(subject_dir, "subject_info.json")
-        subject_info = {}
-        if os.path.exists(info_path):
-            with open(info_path, "r", encoding="utf-8") as f:
-                subject_info = json.load(f)
-        
-        # Load subject_config.json
         subject_config = data_loader.load_subject_config(subject)
         if not subject_config:
             return f"Subject '{subject}' not found", 404
 
-        # Merge the data for the template (backward compatibility)
-        merged_config = {
-            **subject_config,
-            "subject_info": subject_info
-        }
-
         return render_template(
-            "admin/edit_subject.html", subject=subject, config=merged_config
+            "admin/edit_subject.html", subject=subject, config=subject_config
         )
     except Exception as e:
         app.logger.error(f"Error loading subject editor for {subject}: {e}")
         return f"Error: {e}", 500
-
-
-@app.route("/admin/subjects/<subject>/update", methods=["POST"])
-def admin_update_subject(subject):
-    """Update an existing subject."""
-    try:
-        data = request.json
-        subject_name = data.get("name", "")
-        description = data.get("description", "")
-        icon = data.get("icon", "fas fa-book")
-        color = data.get("color", "#007bff")
-        allowed_keywords = data.get("allowed_keywords", [])
-
-        if not subject_name:
-            return jsonify({"error": "Subject name is required"}), 400
-
-        # Check if subject directory exists
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        if not os.path.exists(subject_dir):
-            return jsonify({"error": "Subject not found"}), 404
-
-        # Update subject_info.json
-        info_path = os.path.join(subject_dir, "subject_info.json")
-        if os.path.exists(info_path):
-            with open(info_path, "r", encoding="utf-8") as f:
-                subject_info = json.load(f)
-        else:
-            # Create new subject_info.json if it doesn't exist
-            subject_info = {"status": "active", "created_date": "2025-01-01"}
-
-        # Update subject info
-        subject_info.update({
-            "name": subject_name,
-            "description": description,
-            "icon": icon,
-            "color": color,
-        })
-
-        # Save subject_info.json
-        with open(info_path, "w", encoding="utf-8") as f:
-            json.dump(subject_info, f, indent=2)
-
-        # Update subject_config.json
-        config_path = os.path.join(subject_dir, "subject_config.json")
-        if os.path.exists(config_path):
-            with open(config_path, "r", encoding="utf-8") as f:
-                subject_config = json.load(f)
-        else:
-            return jsonify({"error": "Subject config not found"}), 404
-
-        # Update allowed keywords
-        subject_config["allowed_keywords"] = allowed_keywords
-
-        # Save subject config
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(subject_config, f, indent=2)
-
-        # Clear cache to ensure fresh data is loaded
-        data_loader.clear_cache()
-
-        return jsonify({"success": True, "message": "Subject updated successfully"})
-
-    except Exception as e:
-        app.logger.error(f"Error updating subject: {e}")
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/admin/subjects/<subject>/<subtopic>")
@@ -1368,17 +1101,30 @@ def admin_edit_subtopic(subject, subtopic):
 def admin_delete_subject(subject):
     """Delete a subject and all its associated data."""
     try:
-        # Check if subject directory exists
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        if not os.path.exists(subject_dir):
+        # Load existing subjects
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if not os.path.exists(subjects_path):
+            return jsonify({"error": "Subjects file not found"}), 404
+
+        with open(subjects_path, "r", encoding="utf-8") as f:
+            subjects_data = json.load(f)
+
+        # Check if subject exists
+        if subject not in subjects_data.get("subjects", {}):
             return jsonify({"error": "Subject not found"}), 404
 
-        # Remove subject directory and all its contents
-        shutil.rmtree(subject_dir)
-        app.logger.info(f"Removed subject directory: {subject_dir}")
+        # Remove subject from subjects.json
+        del subjects_data["subjects"][subject]
 
-        # Clear cache to ensure fresh data is loaded
-        data_loader.clear_cache()
+        # Save subjects.json
+        with open(subjects_path, "w", encoding="utf-8") as f:
+            json.dump(subjects_data, f, indent=2)
+
+        # Remove subject directory and all its contents
+        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
+        if os.path.exists(subject_dir):
+            shutil.rmtree(subject_dir)
+            app.logger.info(f"Removed subject directory: {subject_dir}")
 
         return jsonify(
             {"success": True, "message": f"Subject '{subject}' deleted successfully"}
@@ -1399,8 +1145,12 @@ def get_all_lessons():
     lessons_data = []
 
     try:
-        # Auto-discover subjects
-        subjects = data_loader.discover_subjects()
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        if not os.path.exists(subjects_path):
+            return lessons_data
+
+        with open(subjects_path, "r", encoding="utf-8") as f:
+            subjects = json.load(f).get("subjects", {})
 
         for subject_id in subjects.keys():
             subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject_id)
@@ -1461,9 +1211,6 @@ def save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
         with open(lesson_plans_path, "w", encoding="utf-8") as f:
             json.dump(lesson_plans, f, indent=2)
 
-        # Clear cache for this subject/subtopic to ensure fresh data is loaded
-        data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
-
         return True
     except Exception as e:
         app.logger.error(f"Error saving lesson {lesson_id}: {e}")
@@ -1489,8 +1236,6 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
             with open(lesson_plans_path, "w", encoding="utf-8") as f:
                 json.dump(lesson_plans, f, indent=2)
 
-            # Clear cache for this subject/subtopic to ensure fresh data is loaded
-            data_loader.clear_cache_for_subject_subtopic(subject, subtopic)
             return True
         return False
     except Exception as e:
@@ -1498,15 +1243,170 @@ def delete_lesson_from_file(subject, subtopic, lesson_id):
         return False
 
 
-# ==================== SUBTOPICS ADMIN ROUTES ====================
+@app.route("/admin/lessons")
+def admin_lessons():
+    """List all lessons across all subjects."""
+    lessons = get_all_lessons()
+
+    # Get subjects for dropdown
+    subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+    subjects = {}
+    if os.path.exists(subjects_path):
+        with open(subjects_path, "r", encoding="utf-8") as f:
+            subjects = json.load(f).get("subjects", {})
+
+    return render_template("admin/lessons.html", lessons=lessons, subjects=subjects)
+
+
+@app.route("/admin/lessons/create", methods=["GET", "POST"])
+def admin_create_lesson():
+    """Create a new lesson."""
+    if request.method == "POST":
+        try:
+            data = request.json
+            subject = data.get("subject")
+            subtopic = data.get("subtopic")
+            lesson_id = data.get("id", "").lower().replace(" ", "_")
+            lesson_title = data.get("title", "")
+            video_id = data.get("videoId", "")
+            content = data.get("content", [])
+            tags = data.get("tags", [])
+
+            if not all([subject, subtopic, lesson_id, lesson_title]):
+                return jsonify({"error": "Subject, subtopic, lesson ID, and title are required"}), 400
+
+            # Validate subject and subtopic exist
+            if not data_loader.validate_subject_subtopic(subject, subtopic):
+                return jsonify({"error": f"Subject '{subject}' with subtopic '{subtopic}' not found"}), 404
+
+            # Check if lesson already exists
+            existing_lessons = get_lesson_plans(subject, subtopic)
+            if lesson_id in existing_lessons:
+                return jsonify({"error": "Lesson already exists"}), 400
+
+            # Create lesson data
+            lesson_data = {
+                "title": lesson_title,
+                "videoId": video_id,
+                "content": content,
+                "tags": tags,
+                "created_date": "2025-01-01",
+            }
+
+            # Save lesson
+            if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
+                return jsonify({"success": True, "message": "Lesson created successfully"})
+            else:
+                return jsonify({"error": "Failed to save lesson"}), 500
+
+        except Exception as e:
+            app.logger.error(f"Error creating lesson: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # GET request - show form
+    try:
+        # Get subjects for dropdown
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        subjects = {}
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects = json.load(f).get("subjects", {})
+
+        return render_template("admin/create_lesson.html", subjects=subjects)
+    except Exception as e:
+        app.logger.error(f"Error loading lesson creation form: {e}")
+        return f"Error: {e}", 500
+
+
+@app.route("/admin/lessons/<subject>/<subtopic>/<lesson_id>/edit", methods=["GET", "POST"])
+def admin_edit_lesson(subject, subtopic, lesson_id):
+    """Edit an existing lesson."""
+    if request.method == "POST":
+        try:
+            data = request.json
+            lesson_title = data.get("title", "")
+            video_id = data.get("videoId", "")
+            content = data.get("content", [])
+            tags = data.get("tags", [])
+
+            if not lesson_title:
+                return jsonify({"error": "Lesson title is required"}), 400
+
+            # Update lesson data
+            lesson_data = {
+                "title": lesson_title,
+                "videoId": video_id,
+                "content": content,
+                "tags": tags,
+                "updated_date": "2025-01-01",
+            }
+
+            # Save lesson
+            if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
+                return jsonify({"success": True, "message": "Lesson updated successfully"})
+            else:
+                return jsonify({"error": "Failed to update lesson"}), 500
+
+        except Exception as e:
+            app.logger.error(f"Error updating lesson: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    # GET request - show edit form
+    try:
+        # Load existing lesson
+        lessons = get_lesson_plans(subject, subtopic)
+        if lesson_id not in lessons:
+            return f"Lesson '{lesson_id}' not found", 404
+
+        lesson_data = lessons[lesson_id]
+
+        # Get subjects for context
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        subjects = {}
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects = json.load(f).get("subjects", {})
+
+        return render_template(
+            "admin/create_lesson.html",
+            subjects=subjects,
+            edit_mode=True,
+            subject=subject,
+            subtopic=subtopic,
+            lesson_id=lesson_id,
+            lesson_data=lesson_data
+        )
+    except Exception as e:
+        app.logger.error(f"Error loading lesson editor: {e}")
+        return f"Error: {e}", 500
+
+
+@app.route("/admin/lessons/<subject>/<subtopic>/<lesson_id>/delete", methods=["DELETE"])
+def admin_delete_lesson(subject, subtopic, lesson_id):
+    """Delete a lesson."""
+    try:
+        if delete_lesson_from_file(subject, subtopic, lesson_id):
+            return jsonify({"success": True, "message": "Lesson deleted successfully"})
+        else:
+            return jsonify({"error": "Lesson not found or could not be deleted"}), 404
+
+    except Exception as e:
+        app.logger.error(f"Error deleting lesson: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/admin/subtopics")
 def admin_subtopics():
     """Manage subtopics across all subjects."""
     try:
-        # Auto-discover subjects
-        subjects = data_loader.discover_subjects()
+        # Load subjects data
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
+        subjects = {}
+
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                subjects_data = json.load(f)
+                subjects = subjects_data.get("subjects", {})
 
         # Enhance subjects data with subtopic information from subject_config.json
         for subject_id, subject_info in subjects.items():
@@ -1522,77 +1422,7 @@ def admin_subtopics():
                     config_subtopics = config.get("subtopics", {})
                     allowed_keywords = config.get("allowed_keywords", [])
 
-                    # Also check actual directory structure for any additional subtopics
-                    actual_subtopics = {}
-                    if os.path.exists(subject_dir):
-                        for item in os.listdir(subject_dir):
-                            subtopic_dir = os.path.join(subject_dir, item)
-                            if os.path.isdir(subtopic_dir) and item != "__pycache__":
-                                # Count lessons and questions
-                                lesson_plans_path = os.path.join(
-                                    subtopic_dir, "lesson_plans.json"
-                                )
-                                question_pool_path = os.path.join(
-                                    subtopic_dir, "question_pool.json"
-                                )
-
-                                lesson_count = 0
-                                question_count = 0
-
-                                if os.path.exists(lesson_plans_path):
-                                    try:
-                                        with open(
-                                            lesson_plans_path, "r", encoding="utf-8"
-                                        ) as f:
-                                            lessons = json.load(f)
-                                            lesson_count = len(
-                                                lessons.get("lessons", {})
-                                            )
-                                    except:
-                                        pass
-
-                                if os.path.exists(question_pool_path):
-                                    try:
-                                        with open(
-                                            question_pool_path, "r", encoding="utf-8"
-                                        ) as f:
-                                            questions = json.load(f)
-                                            question_count = len(
-                                                questions.get("questions", {})
-                                            )
-                                    except:
-                                        pass
-
-                                actual_subtopics[item] = {
-                                    "lesson_count": lesson_count,
-                                    "question_count": question_count,
-                                }
-
-                    # Merge config subtopics with actual directory info
-                    merged_subtopics = {}
-                    for subtopic_id, subtopic_info in config_subtopics.items():
-                        merged_info = dict(subtopic_info)  # Copy config info
-                        if subtopic_id in actual_subtopics:
-                            merged_info.update(actual_subtopics[subtopic_id])
-                        else:
-                            merged_info.update({"lesson_count": 0, "question_count": 0})
-                        merged_subtopics[subtopic_id] = merged_info
-
-                    # Add any directory-only subtopics not in config
-                    for subtopic_id, counts in actual_subtopics.items():
-                        if subtopic_id not in merged_subtopics:
-                            merged_subtopics[subtopic_id] = {
-                                "name": subtopic_id.replace("-", " ").title(),
-                                "description": "",
-                                "order": 999,
-                                "status": "active",
-                                "prerequisites": [],
-                                "estimated_time": "",
-                                "video_count": 0,
-                                **counts,
-                            }
-
-                    subjects[subject_id]["subtopics"] = merged_subtopics
+                    subjects[subject_id]["subtopics"] = config_subtopics
                     subjects[subject_id]["allowed_keywords"] = allowed_keywords
 
                 except Exception as e:
@@ -1612,655 +1442,12 @@ def admin_subtopics():
         return render_template("admin/subtopics.html", subjects={})
 
 
-@app.route("/admin/subtopics", methods=["POST"])
-def admin_create_subtopic():
-    """Create a new subtopic."""
-    try:
-        data = request.get_json()
-        subject = data.get("subject")
-        subtopic_id = data.get("subtopic_id")
-        name = data.get("name", "")
-        description = data.get("description", "")
-        keywords = data.get("keywords", [])
-        estimated_time = data.get("estimated_time", "")
-        order = data.get("order", 1)
-        prerequisites = data.get("prerequisites", [])
-        video_data = data.get("video")  # New video data
-
-        # Validation
-        if not subject or not subtopic_id:
-            return jsonify({"error": "Subject and subtopic ID are required"}), 400
-
-        # Validate subtopic ID format
-        if not re.match(r"^[a-z0-9-]+$", subtopic_id):
-            return (
-                jsonify(
-                    {
-                        "error": "Subtopic ID can only contain lowercase letters, numbers, and hyphens"
-                    }
-                ),
-                400,
-            )
-
-        # Check if subject exists by checking for subject directory and files
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
-        subject_info_path = os.path.join(subject_dir, "subject_info.json")
-        
-        if not (os.path.exists(subject_config_path) and os.path.exists(subject_info_path)):
-            return jsonify({"error": "Subject not found"}), 404
-
-        # Load subject config
-        with open(subject_config_path, "r", encoding="utf-8") as f:
-            subject_config = json.load(f)
-
-        # Check if subtopic already exists
-        if subtopic_id in subject_config.get("subtopics", {}):
-            return jsonify({"error": "Subtopic already exists"}), 400
-
-        # Validate prerequisites exist in the same subject
-        if prerequisites:
-            existing_subtopics = set(subject_config.get("subtopics", {}).keys())
-            invalid_prerequisites = [
-                prereq for prereq in prerequisites if prereq not in existing_subtopics
-            ]
-            if invalid_prerequisites:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Invalid prerequisites: {', '.join(invalid_prerequisites)}"
-                        }
-                    ),
-                    400,
-                )
-
-        # Create subtopic directory
-        subtopic_dir = os.path.join(subject_dir, subtopic_id)
-        os.makedirs(subtopic_dir, exist_ok=True)
-
-        # Add subtopic to subject config
-        if "subtopics" not in subject_config:
-            subject_config["subtopics"] = {}
-
-        subject_config["subtopics"][subtopic_id] = {
-            "name": name or subtopic_id.replace("-", " ").title(),
-            "description": description,
-            "order": order,
-            "status": "active",
-            "prerequisites": prerequisites,
-            "estimated_time": estimated_time,
-            "video_count": 0,
-            "lesson_count": 0,
-            "question_count": 0,
-        }
-
-        # Update allowed keywords if provided
-        if keywords:
-            if "allowed_keywords" not in subject_config:
-                subject_config["allowed_keywords"] = []
-
-            # Add new keywords that don't already exist
-            existing_keywords = set(subject_config["allowed_keywords"])
-            for keyword in keywords:
-                if keyword.strip() and keyword.strip().lower() not in [
-                    k.lower() for k in existing_keywords
-                ]:
-                    subject_config["allowed_keywords"].append(keyword.strip())
-
-        # Save updated subject config
-        with open(subject_config_path, "w", encoding="utf-8") as f:
-            json.dump(subject_config, f, indent=2)
-
-        # Create empty lesson plans file
-        lesson_plans_data = {"lessons": {}}
-        lesson_plans_path = os.path.join(subtopic_dir, "lesson_plans.json")
-        with open(lesson_plans_path, "w", encoding="utf-8") as f:
-            json.dump(lesson_plans_data, f, indent=2)
-
-        # Create empty question pool file
-        question_pool_data = {"questions": []}
-        question_pool_path = os.path.join(subtopic_dir, "question_pool.json")
-        with open(question_pool_path, "w", encoding="utf-8") as f:
-            json.dump(question_pool_data, f, indent=2)
-
-        # Create empty quiz data file
-        subtopic_title = name or subtopic_id.replace("-", " ").title()
-        quiz_data = {
-            "quiz_title": f"{subject.title()} {subtopic_title} Quiz",
-            "questions": [],
-        }
-        quiz_path = os.path.join(subtopic_dir, "quiz_data.json")
-        with open(quiz_path, "w", encoding="utf-8") as f:
-            json.dump(quiz_data, f, indent=2)
-
-        # Create videos file with video data if provided
-        videos_data = {"videos": {}}
-        if video_data:
-            videos_data["videos"][subtopic_id] = {
-                "title": video_data.get("title", ""),
-                "url": video_data.get("url", ""),
-                "description": video_data.get("description", ""),
-            }
-            # Update video count in subtopic config
-            subject_config["subtopics"][subtopic_id]["video_count"] = 1
-
-        videos_path = os.path.join(subtopic_dir, "videos.json")
-        with open(videos_path, "w", encoding="utf-8") as f:
-            json.dump(videos_data, f, indent=2)
-
-        # Clear cache to ensure fresh data is loaded
-        data_loader.clear_cache()
-
-        return jsonify(
-            {
-                "success": True,
-                "message": f"Subtopic '{subject_config['subtopics'][subtopic_id]['name']}' created successfully",
-            }
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error creating subtopic: {e}")
-        return jsonify({"error": "An error occurred while creating the subtopic"}), 500
-
-
-@app.route("/admin/subtopics/<subject>/<subtopic_id>", methods=["PUT"])
-def admin_update_subtopic(subject, subtopic_id):
-    """Update an existing subtopic."""
-    try:
-        data = request.get_json()
-        name = data.get("name", "")
-        description = data.get("description", "")
-        keywords = data.get("keywords", [])
-        estimated_time = data.get("estimated_time", "")
-        order = data.get("order", 1)
-        prerequisites = data.get("prerequisites", [])
-        video_data = data.get("video")  # New video data
-
-        # Load subject config
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
-
-        if not os.path.exists(subject_config_path):
-            return jsonify({"error": "Subject configuration not found"}), 404
-
-        with open(subject_config_path, "r", encoding="utf-8") as f:
-            subject_config = json.load(f)
-
-        # Check if subtopic exists
-        if subtopic_id not in subject_config.get("subtopics", {}):
-            return jsonify({"error": "Subtopic not found"}), 404
-
-        # Validate prerequisites exist in the same subject and don't create circular dependencies
-        if prerequisites:
-            existing_subtopics = set(subject_config.get("subtopics", {}).keys())
-            invalid_prerequisites = [
-                prereq for prereq in prerequisites if prereq not in existing_subtopics
-            ]
-            if invalid_prerequisites:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Invalid prerequisites: {', '.join(invalid_prerequisites)}"
-                        }
-                    ),
-                    400,
-                )
-
-            # Check for circular dependencies
-            if subtopic_id in prerequisites:
-                return (
-                    jsonify({"error": "A subtopic cannot be a prerequisite of itself"}),
-                    400,
-                )
-
-        # Update subtopic information
-        subject_config["subtopics"][subtopic_id].update(
-            {
-                "name": name or subtopic_id.replace("-", " ").title(),
-                "description": description,
-                "estimated_time": estimated_time,
-                "order": order,
-                "prerequisites": prerequisites,
-            }
-        )
-
-        # Update allowed keywords if provided
-        if keywords:
-            if "allowed_keywords" not in subject_config:
-                subject_config["allowed_keywords"] = []
-
-            # Add new keywords that don't already exist
-            existing_keywords = set(subject_config["allowed_keywords"])
-            for keyword in keywords:
-                if keyword.strip() and keyword.strip().lower() not in [
-                    k.lower() for k in existing_keywords
-                ]:
-                    subject_config["allowed_keywords"].append(keyword.strip())
-
-        # Handle video data update
-        if video_data is not None:  # Check for None to allow clearing video data
-            subtopic_dir = os.path.join(
-                DATA_ROOT_PATH, "subjects", subject, subtopic_id
-            )
-            videos_path = os.path.join(subtopic_dir, "videos.json")
-
-            # Load existing videos or create new structure
-            videos_data = {"videos": {}}
-            if os.path.exists(videos_path):
-                try:
-                    with open(videos_path, "r", encoding="utf-8") as f:
-                        videos_data = json.load(f)
-                except:
-                    videos_data = {"videos": {}}
-
-            # Update video data
-            if video_data:  # If video data provided
-                videos_data["videos"][subtopic_id] = {
-                    "title": video_data.get("title", ""),
-                    "url": video_data.get("url", ""),
-                    "description": video_data.get("description", ""),
-                }
-                subject_config["subtopics"][subtopic_id]["video_count"] = 1
-            else:  # If video data is empty (clearing video)
-                if subtopic_id in videos_data.get("videos", {}):
-                    del videos_data["videos"][subtopic_id]
-                subject_config["subtopics"][subtopic_id]["video_count"] = 0
-
-            # Save videos file
-            with open(videos_path, "w", encoding="utf-8") as f:
-                json.dump(videos_data, f, indent=2)
-
-        # Save updated subject config
-        with open(subject_config_path, "w", encoding="utf-8") as f:
-            json.dump(subject_config, f, indent=2)
-
-        # Clear cache to ensure fresh data is loaded
-        data_loader.clear_cache()
-
-        return jsonify(
-            {
-                "success": True,
-                "message": f"Subtopic '{subject_config['subtopics'][subtopic_id]['name']}' updated successfully",
-            }
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error updating subtopic: {e}")
-        return jsonify({"error": "An error occurred while updating the subtopic"}), 500
-
-
-@app.route("/admin/subtopics/<subject>/<subtopic_id>", methods=["DELETE"])
-def admin_delete_subtopic(subject, subtopic_id):
-    """Delete a subtopic and all its associated data."""
-    try:
-        # Load subject config
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
-
-        if not os.path.exists(subject_config_path):
-            return jsonify({"error": "Subject configuration not found"}), 404
-
-        with open(subject_config_path, "r", encoding="utf-8") as f:
-            subject_config = json.load(f)
-
-        # Check if subtopic exists in config
-        subtopic_name = subtopic_id.replace("-", " ").title()
-        if subtopic_id in subject_config.get("subtopics", {}):
-            subtopic_name = subject_config["subtopics"][subtopic_id].get(
-                "name", subtopic_name
-            )
-            # Remove from config
-            del subject_config["subtopics"][subtopic_id]
-
-            # Save updated config
-            with open(subject_config_path, "w", encoding="utf-8") as f:
-                json.dump(subject_config, f, indent=2)
-
-        # Remove the subtopic directory if it exists
-        subtopic_dir = os.path.join(subject_dir, subtopic_id)
-        if os.path.exists(subtopic_dir):
-            shutil.rmtree(subtopic_dir)
-
-        # Clear cache for this subject/subtopic
-        data_loader.clear_cache_for_subject_subtopic(subject, subtopic_id)
-
-        return jsonify(
-            {
-                "success": True,
-                "message": f"Subtopic '{subtopic_name}' and all associated data deleted successfully",
-            }
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error deleting subtopic: {e}")
-        return jsonify({"error": "An error occurred while deleting the subtopic"}), 500
-
-
-@app.route("/admin/subjects/<subject>/keywords", methods=["GET"])
-def admin_get_subject_keywords(subject):
-    """Get keywords for a specific subject."""
-    try:
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
-
-        if not os.path.exists(subject_config_path):
-            return jsonify({"error": "Subject configuration not found"}), 404
-
-        with open(subject_config_path, "r", encoding="utf-8") as f:
-            subject_config = json.load(f)
-
-        keywords = subject_config.get("allowed_keywords", [])
-        return jsonify({"keywords": keywords})
-
-    except Exception as e:
-        app.logger.error(f"Error getting subject keywords: {e}")
-        return jsonify({"error": "An error occurred while retrieving keywords"}), 500
-
-
-@app.route("/admin/subjects/<subject>/keywords", methods=["PUT"])
-def admin_update_subject_keywords(subject):
-    """Update keywords for a subject."""
-    try:
-        data = request.get_json()
-        keywords = data.get("keywords", [])
-
-        # Load subject config
-        subject_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject)
-        subject_config_path = os.path.join(subject_dir, "subject_config.json")
-
-        if not os.path.exists(subject_config_path):
-            return jsonify({"error": "Subject configuration not found"}), 404
-
-        with open(subject_config_path, "r", encoding="utf-8") as f:
-            subject_config = json.load(f)
-
-        # Update allowed keywords
-        subject_config["allowed_keywords"] = [k.strip() for k in keywords if k.strip()]
-
-        # Save updated subject config
-        with open(subject_config_path, "w", encoding="utf-8") as f:
-            json.dump(subject_config, f, indent=2)
-
-        return jsonify(
-            {
-                "success": True,
-                "message": f"Keywords updated successfully. {len(subject_config['allowed_keywords'])} keywords saved.",
-            }
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error updating subject keywords: {e}")
-        return jsonify({"error": "An error occurred while updating keywords"}), 500
-
-
-@app.route("/admin/lessons")
-def admin_lessons():
-    """List all lessons across all subjects."""
-    lessons = get_all_lessons()
-
-    # Get subjects for dropdown using auto-discovery
-    subjects = data_loader.discover_subjects()
-
-    return render_template("admin/lessons.html", lessons=lessons, subjects=subjects)
-
-
-@app.route("/admin/lessons/create", methods=["GET", "POST"])
-def admin_create_lesson():
-    """Create a new lesson."""
-    if request.method == "POST":
-        try:
-            data = request.json
-            subject = data.get("subject", "")
-            subtopic = data.get("subtopic", "")
-            lesson_id = data.get("lesson_id", "").lower().replace(" ", "_")
-            title = data.get("title", "")
-            video_id = data.get("videoId", "")
-            content = data.get("content", [])
-            tags = data.get("tags", [])
-
-            if not all([subject, subtopic, lesson_id, title]):
-                return (
-                    jsonify(
-                        {
-                            "error": "Subject, subtopic, lesson ID, and title are required"
-                        }
-                    ),
-                    400,
-                )
-
-            # Validate tags against allowed keywords
-            if not tags:
-                return jsonify({"error": "At least one tag is required"}), 400
-
-            allowed_keywords = get_subject_keywords(subject)
-            invalid_tags = [tag for tag in tags if tag not in allowed_keywords]
-            if invalid_tags:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Invalid tags: {', '.join(invalid_tags)}. Must use allowed keywords for this subject."
-                        }
-                    ),
-                    400,
-                )
-
-            # Check if lesson already exists
-            lesson_plans_path = os.path.join(
-                DATA_ROOT_PATH, "subjects", subject, subtopic, "lesson_plans.json"
-            )
-            if os.path.exists(lesson_plans_path):
-                with open(lesson_plans_path, "r", encoding="utf-8") as f:
-                    existing_lessons = json.load(f).get("lessons", {})
-                if lesson_id in existing_lessons:
-                    return jsonify({"error": "Lesson ID already exists"}), 400
-
-            # Create lesson data
-            lesson_data = {
-                "title": title,
-                "videoId": video_id,
-                "content": content,
-                "tags": tags,
-            }
-
-            # Save lesson
-            if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
-                return jsonify(
-                    {"success": True, "message": "Lesson created successfully"}
-                )
-            else:
-                return jsonify({"error": "Failed to save lesson"}), 500
-
-        except Exception as e:
-            app.logger.error(f"Error creating lesson: {e}")
-            return jsonify({"error": str(e)}), 500
-
-    # GET request - show create form using auto-discovery
-    subjects = data_loader.discover_subjects()
-
-    return render_template(
-        "admin/create_lesson.html", subjects=subjects, edit_mode=False
-    )
-
-
-@app.route(
-    "/admin/lessons/<subject>/<subtopic>/<lesson_id>/edit", methods=["GET", "POST"]
-)
-def admin_edit_lesson(subject, subtopic, lesson_id):
-    """Edit an existing lesson."""
-    if request.method == "POST":
-        try:
-            data = request.json
-            title = data.get("title", "")
-            video_id = data.get("videoId", "")
-            content = data.get("content", [])
-            tags = data.get("tags", [])
-
-            if not title:
-                return jsonify({"error": "Title is required"}), 400
-
-            # Validate tags against allowed keywords
-            if not tags:
-                return jsonify({"error": "At least one tag is required"}), 400
-
-            allowed_keywords = get_subject_keywords(subject)
-            invalid_tags = [tag for tag in tags if tag not in allowed_keywords]
-            if invalid_tags:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Invalid tags: {', '.join(invalid_tags)}. Must use allowed keywords for this subject."
-                        }
-                    ),
-                    400,
-                )
-
-            # Create lesson data
-            lesson_data = {
-                "title": title,
-                "videoId": video_id,
-                "content": content,
-                "tags": tags,
-            }
-
-            # Save lesson
-            if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
-                return jsonify(
-                    {"success": True, "message": "Lesson updated successfully"}
-                )
-            else:
-                return jsonify({"error": "Failed to update lesson"}), 500
-
-        except Exception as e:
-            app.logger.error(f"Error updating lesson: {e}")
-            return jsonify({"error": str(e)}), 500
-
-    # GET request - show edit form
-    try:
-        lesson_plans_path = os.path.join(
-            DATA_ROOT_PATH, "subjects", subject, subtopic, "lesson_plans.json"
-        )
-        if not os.path.exists(lesson_plans_path):
-            return "Lesson not found", 404
-
-        with open(lesson_plans_path, "r", encoding="utf-8") as f:
-            lesson_plans = json.load(f)
-
-        lesson_data = lesson_plans.get("lessons", {}).get(lesson_id)
-        if not lesson_data:
-            return "Lesson not found", 404
-
-        # Get subjects for context using auto-discovery
-        subjects = data_loader.discover_subjects()
-
-        # Get subtopics for the current subject
-        subject_subtopics = {}
-        subject_config = data_loader.load_subject_config(subject)
-        if subject_config and "subtopics" in subject_config:
-            for subtopic_id, subtopic_data in subject_config["subtopics"].items():
-                subject_subtopics[subtopic_id] = {
-                    "name": subtopic_data.get(
-                        "name", subtopic_id.replace("-", " ").title()
-                    ),
-                    "order": subtopic_data.get("order", 0),
-                }
-
-        return render_template(
-            "admin/create_lesson.html",
-            subjects=subjects,
-            edit_mode=True,
-            lesson_data=lesson_data,
-            subject=subject,
-            subtopic=subtopic,
-            lesson_id=lesson_id,
-            subject_subtopics=subject_subtopics,
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error loading lesson for edit: {e}")
-        return "Error loading lesson", 500
-
-
-@app.route("/admin/lessons/<subject>/<subtopic>/<lesson_id>/delete", methods=["DELETE"])
-def admin_delete_lesson(subject, subtopic, lesson_id):
-    """Delete a lesson."""
-    try:
-        if delete_lesson_from_file(subject, subtopic, lesson_id):
-            return jsonify({"success": True, "message": "Lesson deleted successfully"})
-        else:
-            return jsonify({"error": "Lesson not found or could not be deleted"}), 404
-
-    except Exception as e:
-        app.logger.error(f"Error deleting lesson: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/subjects/<subject_id>/subtopics", methods=["GET"])
-def get_subject_subtopics(subject_id):
-    """Get subtopics for a specific subject."""
-    try:
-        subject_config = data_loader.load_subject_config(subject_id)
-        if not subject_config or "subtopics" not in subject_config:
-            return jsonify({"subtopics": {}})
-
-        # Return only the subtopic names and IDs for the dropdown
-        subtopics = {}
-        for subtopic_id, subtopic_data in subject_config["subtopics"].items():
-            subtopics[subtopic_id] = {
-                "name": subtopic_data.get(
-                    "name", subtopic_id.replace("-", " ").title()
-                ),
-                "order": subtopic_data.get("order", 0),
-            }
-
-        return jsonify({"subtopics": subtopics})
-    except Exception as e:
-        app.logger.error(f"Error loading subtopics for subject {subject_id}: {e}")
-        return jsonify({"error": "Failed to load subtopics"}), 500
-
-
-@app.route("/admin/lessons/<subject>/<subtopic>")
-def admin_lessons_by_subtopic(subject, subtopic):
-    """View lessons for a specific subtopic."""
-    try:
-        lesson_plans_path = os.path.join(
-            DATA_ROOT_PATH, "subjects", subject, subtopic, "lesson_plans.json"
-        )
-        if not os.path.exists(lesson_plans_path):
-            lessons = {}
-        else:
-            with open(lesson_plans_path, "r", encoding="utf-8") as f:
-                lessons = json.load(f).get("lessons", {})
-
-        # Get subject info
-        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
-        subject_info = {}
-        if os.path.exists(subjects_path):
-            with open(subjects_path, "r", encoding="utf-8") as f:
-                subjects = json.load(f).get("subjects", {})
-                subject_info = subjects.get(subject, {})
-
-        return render_template(
-            "admin/lessons.html",
-            lessons=lessons,
-            subject=subject,
-            subtopic=subtopic,
-            subject_info=subject_info,
-            filtered_view=True,
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error loading lessons for {subject}/{subtopic}: {e}")
-        return "Error loading lessons", 500
-
-
-# ===== QUIZ MANAGEMENT ROUTES =====
-
-
 @app.route("/admin/questions")
 def admin_questions():
     """Questions management page."""
     try:
-        # Auto-discover subjects and load their subtopics with quiz data
+        # Load all subjects and their subtopics with quiz data
+        subjects_path = os.path.join(DATA_ROOT_PATH, "subjects.json")
         subjects_data = {}
         stats = {
             "total_initial_questions": 0,
@@ -2269,42 +1456,40 @@ def admin_questions():
             "subtopics_without_questions": 0,
         }
 
-        # Get all subjects using auto-discovery
-        all_subjects = data_loader.discover_subjects()
+        if os.path.exists(subjects_path):
+            with open(subjects_path, "r", encoding="utf-8") as f:
+                all_subjects = json.load(f).get("subjects", {})
 
-        for subject_id, subject_info in all_subjects.items():
-            # Load subject config to get subtopics
-            subject_config = data_loader.load_subject_config(subject_id)
-            if subject_config and "subtopics" in subject_config:
-                subject_data = {
-                    **subject_info,
-                    "subtopics": {}
-                }
+            for subject_id, subject_data in all_subjects.items():
+                # Load subject config to get subtopics
+                subject_config = data_loader.load_subject_config(subject_id)
+                if subject_config and "subtopics" in subject_config:
+                    subject_data["subtopics"] = {}
 
-                for subtopic_id, subtopic_data in subject_config["subtopics"].items():
-                    # Load quiz data and question pool to get counts
-                    quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
-                    pool_data = data_loader.load_question_pool(subject_id, subtopic_id)
+                    for subtopic_id, subtopic_data in subject_config[
+                        "subtopics"
+                    ].items():
+                        # Load quiz data and question pool to get counts
+                        quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
+                        pool_data = data_loader.get_question_pool_questions(subject_id, subtopic_id)
 
-                    quiz_count = (
-                        len(quiz_data.get("questions", [])) if quiz_data else 0
-                    )
-                    pool_count = (
-                        len(pool_data.get("questions", [])) if pool_data else 0
-                    )
+                        quiz_count = (
+                            len(quiz_data.get("questions", [])) if quiz_data else 0
+                        )
+                        pool_count = len(pool_data) if pool_data else 0
 
-                    subtopic_data["quiz_questions_count"] = quiz_count
-                    subtopic_data["pool_questions_count"] = pool_count
+                        subtopic_data["quiz_questions_count"] = quiz_count
+                        subtopic_data["pool_questions_count"] = pool_count
 
-                    # Update statistics
-                    stats["total_initial_questions"] += quiz_count
-                    stats["total_pool_questions"] += pool_count
-                    stats["total_subtopics"] += 1
+                        # Update statistics
+                        stats["total_initial_questions"] += quiz_count
+                        stats["total_pool_questions"] += pool_count
+                        stats["total_subtopics"] += 1
 
-                    if quiz_count == 0 and pool_count == 0:
-                        stats["subtopics_without_questions"] += 1
+                        if quiz_count == 0 and pool_count == 0:
+                            stats["subtopics_without_questions"] += 1
 
-                    subject_data["subtopics"][subtopic_id] = subtopic_data
+                        subject_data["subtopics"][subtopic_id] = subtopic_data
 
                 subjects_data[subject_id] = subject_data
 
@@ -2319,235 +1504,180 @@ def admin_questions():
 
 @app.route("/admin/quiz/<subject>/<subtopic>")
 def admin_quiz_editor(subject, subtopic):
-    """Edit quiz for a specific subject/subtopic."""
+    """Quiz editor page for a specific subject/subtopic."""
     try:
-        # Load subject config to verify subtopic exists
-        subject_config = data_loader.load_subject_config(subject)
-        if not subject_config or subtopic not in subject_config.get("subtopics", {}):
-            return f"Subtopic '{subtopic}' not found in subject '{subject}'", 404
+        # Validate subject/subtopic exists
+        if not data_loader.validate_subject_subtopic(subject, subtopic):
+            return f"Subject '{subject}' with subtopic '{subtopic}' not found", 404
 
-        # Load quiz data (initial quiz)
+        # Load quiz data and question pool
         quiz_data = data_loader.load_quiz_data(subject, subtopic)
-        if not quiz_data:
-            quiz_data = {
-                "quiz_title": f"{subject.title()} {subtopic.replace('-', ' ').title()} Quiz",
-                "questions": [],
-            }
+        pool_questions = data_loader.get_question_pool_questions(subject, subtopic)
+        
+        # Format question pool to match template expectations
+        question_pool = {"questions": pool_questions}
 
-        # Load question pool (remedial quiz questions)
-        question_pool = data_loader.load_question_pool(subject, subtopic)
-        if not question_pool:
-            question_pool = {"questions": []}
-
-        # Get subtopic info
-        subtopic_data = subject_config["subtopics"][subtopic]
+        # Get subject config for keywords
+        subject_config = data_loader.load_subject_config(subject)
+        allowed_keywords = subject_config.get("allowed_keywords", []) if subject_config else []
 
         return render_template(
             "admin/quiz_editor.html",
             subject=subject,
             subtopic=subtopic,
-            subtopic_data=subtopic_data,
             quiz_data=quiz_data,
             question_pool=question_pool,
+            allowed_keywords=allowed_keywords
         )
+
     except Exception as e:
-        app.logger.error(f"Error loading quiz editor for {subject}/{subtopic}: {e}")
+        app.logger.error(f"Error loading quiz editor: {e}")
         return f"Error: {e}", 500
 
 
-@app.route("/admin/quiz/<subject>/<subtopic>/initial", methods=["POST"])
-def admin_save_initial_quiz(subject, subtopic):
-    """Save initial quiz data (quiz_data.json)."""
-    try:
-        data = request.json
-        quiz_title = data.get("quiz_title", "")
-        questions = data.get("questions", [])
+@app.route("/admin/quiz/<subject>/<subtopic>/initial", methods=["GET", "POST"])
+def admin_quiz_initial(subject, subtopic):
+    """Manage initial quiz questions."""
+    if request.method == "GET":
+        try:
+            quiz_data = data_loader.load_quiz_data(subject, subtopic)
+            return jsonify(quiz_data if quiz_data else {"questions": []})
+        except Exception as e:
+            app.logger.error(f"Error loading initial quiz data: {e}")
+            return jsonify({"error": str(e)}), 500
 
-        # Validate data
-        if not quiz_title:
-            return jsonify({"error": "Quiz title is required"}), 400
+    elif request.method == "POST":
+        try:
+            data = request.json
+            questions = data.get("questions", [])
+            
+            # Create quiz data structure
+            quiz_data = {
+                "quiz_title": f"{subject.title()} - {subtopic.title()} Quiz",
+                "questions": questions,
+                "updated_date": "2025-01-01"
+            }
 
-        # Ensure subtopic directory exists
-        subtopic_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject, subtopic)
-        os.makedirs(subtopic_dir, exist_ok=True)
-
-        # Save quiz data
-        quiz_data = {"quiz_title": quiz_title, "questions": questions}
-
-        quiz_path = os.path.join(subtopic_dir, "quiz_data.json")
-        with open(quiz_path, "w", encoding="utf-8") as f:
-            json.dump(quiz_data, f, indent=2, ensure_ascii=False)
-
-        # Clear cache
-        data_loader.clear_cache()
-
-        return jsonify({"success": True, "message": "Initial quiz saved successfully"})
-
-    except Exception as e:
-        app.logger.error(f"Error saving initial quiz for {subject}/{subtopic}: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/admin/quiz/<subject>/<subtopic>/pool", methods=["POST"])
-def admin_save_question_pool(subject, subtopic):
-    """Save question pool data (question_pool.json)."""
-    try:
-        data = request.json
-        questions = data.get("questions", [])
-
-        # Ensure subtopic directory exists
-        subtopic_dir = os.path.join(DATA_ROOT_PATH, "subjects", subject, subtopic)
-        os.makedirs(subtopic_dir, exist_ok=True)
-
-        # Save question pool
-        question_pool_data = {"questions": questions}
-
-        pool_path = os.path.join(subtopic_dir, "question_pool.json")
-        with open(pool_path, "w", encoding="utf-8") as f:
-            json.dump(question_pool_data, f, indent=2, ensure_ascii=False)
-
-        # Clear cache
-        data_loader.clear_cache()
-
-        return jsonify({"success": True, "message": "Question pool saved successfully"})
-
-    except Exception as e:
-        app.logger.error(f"Error saving question pool for {subject}/{subtopic}: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/admin/quiz/validate", methods=["POST"])
-def admin_validate_question():
-    """Validate a quiz question structure."""
-    try:
-        question = request.json
-
-        # Basic validation
-        if not question.get("question"):
-            return jsonify({"valid": False, "error": "Question text is required"})
-
-        question_type = question.get("type", "multiple_choice")
-
-        if question_type == "multiple_choice":
-            options = question.get("options", [])
-            answer_index = question.get("answer_index")
-
-            if len(options) < 2:
-                return jsonify(
-                    {
-                        "valid": False,
-                        "error": "Multiple choice questions need at least 2 options",
-                    }
-                )
-
-            if answer_index is None or answer_index < 0 or answer_index >= len(options):
-                return jsonify(
-                    {
-                        "valid": False,
-                        "error": "Invalid answer index for multiple choice question",
-                    }
-                )
-
-        elif question_type == "fill_in_the_blank":
-            if "____" not in question.get("question", ""):
-                return jsonify(
-                    {
-                        "valid": False,
-                        "error": "Fill in the blank questions must contain '____' placeholder",
-                    }
-                )
-
-            if not question.get("correct_answer"):
-                return jsonify(
-                    {
-                        "valid": False,
-                        "error": "Fill in the blank questions must have a correct_answer",
-                    }
-                )
-
-        elif question_type == "coding":
-            if not question.get("sample_solution"):
-                return jsonify(
-                    {
-                        "valid": False,
-                        "error": "Coding questions should have a sample_solution",
-                    }
-                )
-
-        # Validate tags
-        tags = question.get("tags", [])
-        if not tags:
-            return jsonify(
-                {"valid": False, "error": "Questions should have at least one tag"}
+            # Save to file
+            quiz_file_path = os.path.join(
+                DATA_ROOT_PATH, "subjects", subject, subtopic, "quiz_data.json"
             )
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(quiz_file_path), exist_ok=True)
+            
+            with open(quiz_file_path, "w", encoding="utf-8") as f:
+                json.dump(quiz_data, f, indent=2)
 
-        return jsonify({"valid": True, "message": "Question is valid"})
+            return jsonify({"success": True, "message": "Initial quiz updated successfully"})
+
+        except Exception as e:
+            app.logger.error(f"Error updating initial quiz: {e}")
+            return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/quiz/<subject>/<subtopic>/pool", methods=["GET", "POST"])
+def admin_quiz_pool(subject, subtopic):
+    """Manage question pool for remedial quizzes."""
+    if request.method == "GET":
+        try:
+            pool_data = data_loader.get_question_pool_questions(subject, subtopic)
+            return jsonify({"questions": pool_data if pool_data else []})
+        except Exception as e:
+            app.logger.error(f"Error loading question pool: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    elif request.method == "POST":
+        try:
+            data = request.json
+            questions = data.get("questions", [])
+            
+            # Create question pool structure
+            pool_data = {
+                "pool_title": f"{subject.title()} - {subtopic.title()} Question Pool",
+                "questions": questions,
+                "updated_date": "2025-01-01"
+            }
+
+            # Save to file
+            pool_file_path = os.path.join(
+                DATA_ROOT_PATH, "subjects", subject, subtopic, "question_pool.json"
+            )
+            
+            # Ensure directory exists  
+            os.makedirs(os.path.dirname(pool_file_path), exist_ok=True)
+            
+            with open(pool_file_path, "w", encoding="utf-8") as f:
+                json.dump(pool_data, f, indent=2)
+
+            return jsonify({"success": True, "message": "Question pool updated successfully"})
+
+        except Exception as e:
+            app.logger.error(f"Error updating question pool: {e}")
+            return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/subjects/<subject>/subtopics")
+def api_get_subtopics(subject):
+    """API endpoint to get subtopics for a subject."""
+    try:
+        subject_config = data_loader.load_subject_config(subject)
+        if not subject_config:
+            return jsonify({"error": "Subject not found"}), 404
+
+        subtopics = subject_config.get("subtopics", {})
+        
+        # Format for frontend
+        subtopics_list = []
+        for subtopic_id, subtopic_data in subtopics.items():
+            subtopics_list.append({
+                "id": subtopic_id,
+                "name": subtopic_data.get("name", subtopic_id),
+                "description": subtopic_data.get("description", ""),
+                "order": subtopic_data.get("order", 999)
+            })
+
+        # Sort by order
+        subtopics_list.sort(key=lambda x: x["order"])
+
+        return jsonify({"subtopics": subtopics_list})
 
     except Exception as e:
-        app.logger.error(f"Error validating question: {e}")
-        return jsonify({"valid": False, "error": str(e)})
+        app.logger.error(f"Error getting subtopics for {subject}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/export")
+def admin_export():
+    """Export/Import functionality placeholder."""
+    return render_template("admin/export.html")
 
 
 @app.route("/admin/clear-cache", methods=["POST"])
 def admin_clear_cache():
-    """Clear all cached data."""
+    """Clear the DataLoader cache."""
     try:
-        data_loader.clear_cache()
-        return jsonify({"success": True, "message": "Cache cleared successfully"})
+        # Clear the DataLoader cache
+        data_loader._cache.clear()
+        
+        app.logger.info("DataLoader cache cleared successfully")
+        return jsonify({
+            "success": True, 
+            "message": "Cache cleared successfully! All data will be reloaded fresh."
+        })
+        
     except Exception as e:
         app.logger.error(f"Error clearing cache: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/admin/toggle-override", methods=["GET", "POST"])
-def admin_toggle_override():
-    """Toggle admin override for testing prerequisites."""
-    try:
-        if request.method == "GET":
-            # Return current override status
-            current_state = session.get("admin_override", False)
-            return jsonify({"success": True, "admin_override": current_state})
-
-        # POST - Toggle the override
-        current_state = session.get("admin_override", False)
-        new_state = not current_state
-        session["admin_override"] = new_state
-
-        status = "enabled" if new_state else "disabled"
-        return jsonify(
-            {
-                "success": True,
-                "message": f"Admin override {status}",
-                "admin_override": new_state,
-            }
-        )
-    except Exception as e:
-        app.logger.error(f"Error toggling admin override: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/admin/videos/<subject>/<subtopic>", methods=["GET"])
-def admin_get_video_data(subject, subtopic):
-    """Get video data for a specific subject/subtopic for editing."""
-    try:
-        # Load video data
-        video_data = get_video_data(subject, subtopic)
-
-        # Check if video exists for this subtopic
-        if subtopic in video_data:
-            return jsonify({"success": True, "video": video_data[subtopic]})
-        else:
-            return jsonify({"success": True, "video": None})
-
-    except Exception as e:
-        app.logger.error(f"Error loading video data for {subject}/{subtopic}: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": f"Failed to clear cache: {str(e)}"
+        }), 500
 
 
 if __name__ == "__main__":
-    if not os.getenv("OPEN_API_KEY"):
+    if not os.getenv("OPENAI_API_KEY"):
         print(
-            "ERROR: OPEN_API_KEY environment variable not set. AI features will not work."
+            "ERROR: OPENAI_API_KEY environment variable not set. AI features will not work."
         )
 
     # Validate that we have the required data structure
