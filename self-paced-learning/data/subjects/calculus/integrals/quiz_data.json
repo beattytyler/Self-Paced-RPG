@@ -1,0 +1,31 @@
+{
+  "quiz_title": "Calculus Integrals Quiz",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "What is the integral of x³ with respect to x?",
+      "tags": ["integrals", "integration", "calculus"],
+      "options": ["x⁴/4 + C", "3x² + C", "x⁴ + C", "4x⁴ + C"],
+      "answer_index": 0
+    },
+    {
+      "type": "multiple_choice",
+      "question": "The Fundamental Theorem of Calculus states that:",
+      "tags": ["fundamental theorem", "definite integrals", "calculus"],
+      "options": [
+        "Integration and differentiation are unrelated",
+        "∫[a to b] f(x) dx = F(b) - F(a) where F'(x) = f(x)",
+        "All functions are integrable",
+        "Derivatives equal integrals"
+      ],
+      "answer_index": 1
+    },
+    {
+      "type": "multiple_choice",
+      "question": "What is ∫ 1/x dx?",
+      "tags": ["integration", "logarithmic", "calculus"],
+      "options": ["x + C", "ln|x| + C", "1/x² + C", "x² + C"],
+      "answer_index": 1
+    }
+  ]
+}

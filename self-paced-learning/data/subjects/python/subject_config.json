@@ -84,39 +84,6 @@
       "video_count": 0,
       "lesson_count": 0,
       "question_count": 0
-    },
-    "test": {
-      "name": "test",
-      "description": "test",
-      "order": 1,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "",
-      "video_count": 0,
-      "lesson_count": 0,
-      "question_count": 0
-    },
-    "testtt": {
-      "name": "test",
-      "description": "test",
-      "order": 1,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "",
-      "video_count": 0,
-      "lesson_count": 0,
-      "question_count": 0
-    },
-    "test123": {
-      "name": "test123",
-      "description": "",
-      "order": 1,
-      "status": "active",
-      "prerequisites": [],
-      "estimated_time": "",
-      "video_count": 0,
-      "lesson_count": 0,
-      "question_count": 0
     }
   },
   "allowed_keywords": [

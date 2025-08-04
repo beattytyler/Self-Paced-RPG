@@ -626,7 +626,9 @@ def analyze_quiz():
     allowed_keywords_str = json.dumps(allowed_topic_keywords)
 
     # DEBUG: Log available keywords
-    app.logger.info(f"[DEBUG] Available keywords for {current_subject}: {allowed_topic_keywords}")
+    app.logger.info(
+        f"[DEBUG] Available keywords for {current_subject}: {allowed_topic_keywords}"
+    )
     app.logger.info(f"[DEBUG] Total keywords available: {len(allowed_topic_keywords)}")
 
     prompt = (
@@ -690,10 +692,10 @@ def analyze_quiz():
             "detailed_feedback", "No detailed feedback provided."
         )
         weak_topics = parsed_ai_response.get("weak_concept_tags", [])
-        
+
         # DEBUG: Log AI's chosen keywords before validation
         app.logger.info(f"[DEBUG] AI chose these keywords: {weak_topics}")
-        
+
         validated_weak_topics = [
             topic for topic in weak_topics if topic in allowed_topic_keywords
         ]
@@ -701,8 +703,12 @@ def analyze_quiz():
         # DEBUG: Log validation results
         app.logger.info(f"[DEBUG] Validated keywords: {validated_weak_topics}")
         if len(weak_topics) != len(validated_weak_topics):
-            rejected_topics = [topic for topic in weak_topics if topic not in allowed_topic_keywords]
-            app.logger.warning(f"[DEBUG] Rejected keywords (not in allowed list): {rejected_topics}")
+            rejected_topics = [
+                topic for topic in weak_topics if topic not in allowed_topic_keywords
+            ]
+            app.logger.warning(
+                f"[DEBUG] Rejected keywords (not in allowed list): {rejected_topics}"
+            )
 
         # Store weak topics with subject/subtopic prefix
         session[get_session_key(current_subject, current_subtopic, "weak_topics")] = (
@@ -792,9 +798,13 @@ def generate_remedial_quiz():
     matching_lessons = get_lessons_by_tags(current_subject, weak_topics)
 
     # DEBUG: Log lesson search results
-    app.logger.info(f"[DEBUG] Found {len(matching_lessons)} matching lessons for weak topics")
+    app.logger.info(
+        f"[DEBUG] Found {len(matching_lessons)} matching lessons for weak topics"
+    )
     for lesson in matching_lessons:
-        app.logger.info(f"[DEBUG] - Lesson: {lesson.get('title', 'No title')} (tags: {lesson.get('tags', [])})")
+        app.logger.info(
+            f"[DEBUG] - Lesson: {lesson.get('title', 'No title')} (tags: {lesson.get('tags', [])})"
+        )
 
     # Select questions from the pool that match the weak topics
     remedial_questions = []

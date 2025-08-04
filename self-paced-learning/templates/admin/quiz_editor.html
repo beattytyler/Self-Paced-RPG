@@ -1651,7 +1651,7 @@
               const answerIndex = question.answer_index !== undefined ? question.answer_index : 0;
 
               // Add extra options if needed
-              while (options.length > 2) {
+              while (document.querySelectorAll('.option-input').length < options.length) {
                   addOption();
               }
 

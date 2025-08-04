@@ -201,19 +201,6 @@
         "passing function arguments"
       ],
       "type": "coding"
-    },
-    {
-      "type": "multiple_choice",
-      "question": "zxccc",
-      "tags": [
-        "test",
-        "test2"
-      ],
-      "options": [
-        "zxcv",
-        "vcxz"
-      ],
-      "answer_index": 1
     }
   ]
 }

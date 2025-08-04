@@ -1,0 +1,107 @@
+{
+  "lessons": {
+    "introduction to integrals": {
+      "title": "Introduction to Integrals",
+      "videoId": "5yfh5cf4-0w&t=2661s",
+      "tags": ["integrals", "integration", "calculus", "antiderivative"],
+      "content": [
+        {
+          "type": "header",
+          "text": "Understanding Integration"
+        },
+        {
+          "type": "paragraph",
+          "text": "Integration is the inverse operation of differentiation. While derivatives measure the rate of change, integrals help us find the area under curves and accumulate quantities over time or space."
+        },
+        {
+          "type": "header",
+          "text": "The Antiderivative"
+        },
+        {
+          "type": "paragraph",
+          "text": "An antiderivative of a function f(x) is a function F(x) whose derivative is f(x). In other words, if F'(x) = f(x), then F(x) is an antiderivative of f(x)."
+        },
+        {
+          "type": "code",
+          "text": "# Example: If f(x) = 2x, then F(x) = x² + C is an antiderivative\n# because d/dx(x² + C) = 2x\n\n# The general form of an indefinite integral:\n# ∫ f(x) dx = F(x) + C\n# where C is the constant of integration"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Indefinite Integral:</strong> ∫ f(x) dx = F(x) + C, represents a family of functions",
+            "<strong>Definite Integral:</strong> ∫[a to b] f(x) dx = F(b) - F(a), gives a specific numerical value",
+            "<strong>Fundamental Theorem of Calculus:</strong> Links differentiation and integration"
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Integration is the reverse of differentiation. Indefinite integrals include a constant of integration, while definite integrals evaluate to specific values."
+        }
+      ]
+    },
+    "basic integration rules": {
+      "title": "Basic Integration Rules",
+      "videoId": "5yfh5cf4-0w&t=2661s",
+      "tags": ["integration techniques", "integration", "calculus"],
+      "content": [
+        {
+          "type": "header",
+          "text": "Essential Integration Formulas"
+        },
+        {
+          "type": "paragraph",
+          "text": "Just as there are rules for differentiation, there are corresponding rules for integration. These basic formulas form the foundation for solving more complex integrals."
+        },
+        {
+          "type": "code",
+          "text": "# Power Rule for Integration:\n# ∫ x^n dx = (x^(n+1))/(n+1) + C, where n ≠ -1\n\n# Examples:\n# ∫ x³ dx = x⁴/4 + C\n# ∫ x^(-2) dx = -1/x + C\n# ∫ √x dx = ∫ x^(1/2) dx = (2/3)x^(3/2) + C"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Constant Rule:</strong> ∫ c dx = cx + C",
+            "<strong>Power Rule:</strong> ∫ x^n dx = x^(n+1)/(n+1) + C (n ≠ -1)",
+            "<strong>Exponential:</strong> ∫ e^x dx = e^x + C",
+            "<strong>Logarithmic:</strong> ∫ (1/x) dx = ln|x| + C",
+            "<strong>Trigonometric:</strong> ∫ sin(x) dx = -cos(x) + C, ∫ cos(x) dx = sin(x) + C"
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Master these basic integration rules as they are the building blocks for more advanced integration techniques."
+        }
+      ]
+    },
+    "definite integrals": {
+      "title": "Understanding Definite Integrals",
+      "videoId": "5yfh5cf4-0w&t=2661s",
+      "tags": ["definite integrals", "fundamental theorem", "calculus", "integration"],
+      "content": [
+        {
+          "type": "header",
+          "text": "The Fundamental Theorem of Calculus"
+        },
+        {
+          "type": "paragraph",
+          "text": "The Fundamental Theorem of Calculus connects differentiation and integration, showing that they are inverse operations. It provides a practical way to evaluate definite integrals."
+        },
+        {
+          "type": "code",
+          "text": "# Fundamental Theorem of Calculus:\n# If F(x) is an antiderivative of f(x), then:\n# ∫[a to b] f(x) dx = F(b) - F(a)\n\n# Example: Evaluate ∫[1 to 3] 2x dx\n# Step 1: Find antiderivative: F(x) = x²\n# Step 2: Apply theorem: F(3) - F(1) = 9 - 1 = 8"
+        },
+        {
+          "type": "list",
+          "items": [
+            "<strong>Geometric Interpretation:</strong> Definite integrals represent the signed area under a curve",
+            "<strong>Properties:</strong> ∫[a to a] f(x) dx = 0, ∫[a to b] f(x) dx = -∫[b to a] f(x) dx",
+            "<strong>Additivity:</strong> ∫[a to c] f(x) dx = ∫[a to b] f(x) dx + ∫[b to c] f(x) dx"
+          ]
+        },
+        {
+          "type": "summary",
+          "text": "<strong>Key takeaway:</strong> Definite integrals give exact numerical values and represent the net area between the curve and the x-axis over a given interval."
+        }
+      ]
+    }
+  }
+}

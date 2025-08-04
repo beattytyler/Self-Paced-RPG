@@ -1,0 +1,43 @@
+{
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "question": "What is the result of integrating a constant function f(x) = k?",
+      "tags": ["integrals", "integration", "constant"],
+      "options": ["k", "kx + C", "k + C", "0"],
+      "answer_index": 1
+    },
+    {
+      "type": "multiple_choice",
+      "question": "Which of the following represents an indefinite integral?",
+      "tags": ["indefinite integrals", "integration"],
+      "options": ["∫[0 to 5] x dx", "∫ x dx", "d/dx(x²)", "F(5) - F(0)"],
+      "answer_index": 1
+    },
+    {
+      "type": "fill_blank",
+      "question": "The power rule for integration states: ∫ x^n dx = _______ + C (where n ≠ -1)",
+      "tags": ["integration techniques", "power rule"],
+      "answer": "x^(n+1)/(n+1)"
+    },
+    {
+      "type": "multiple_choice",
+      "question": "What is ∫ e^x dx?",
+      "tags": ["integration", "exponential"],
+      "options": ["e^x + C", "xe^x + C", "e^(x+1) + C", "ln(e^x) + C"],
+      "answer_index": 0
+    },
+    {
+      "type": "multiple_choice",
+      "question": "For a definite integral ∫[a to b] f(x) dx, what does the result represent geometrically?",
+      "tags": ["definite integrals", "geometric interpretation"],
+      "options": [
+        "The slope of the tangent line",
+        "The area under the curve from x=a to x=b",
+        "The maximum value of f(x)",
+        "The derivative of f(x)"
+      ],
+      "answer_index": 1
+    }
+  ]
+}
