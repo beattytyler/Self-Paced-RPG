@@ -57,8 +57,8 @@ def get_session_key(subject: str, subtopic: str, key_type: str) -> str:
     return f"{subject}_{subtopic}_{key_type}"
 
 
-def get_subject_keywords(subject: str) -> list:
-    """Get allowed AI analysis keywords for a subject."""
+def get_subject_tags(subject: str) -> list:
+    """Get allowed AI analysis tags for a subject."""
     return data_loader.get_subject_keywords(subject)
 
 
@@ -470,14 +470,14 @@ def analyze_quiz():
         "For 'coding' questions, determine if the student's code correctly solves the problem."
     )
 
-    # Get allowed keywords for the current subject
-    allowed_topic_keywords = get_subject_keywords(current_subject)
-    allowed_keywords_str = json.dumps(allowed_topic_keywords)
+    # Get allowed tags for the current subject
+    allowed_topic_tags = get_subject_tags(current_subject)
+    allowed_tags_str = json.dumps(allowed_topic_tags)
 
     prompt = (
         "You are analyzing a student's quiz submission which includes multiple choice, fill-in-the-blank, and coding questions.\n"
         "Based on the incorrect answers and their submitted code, identify the concepts they are weak in.\n"
-        f"You **MUST** choose the weak concepts from this predefined list ONLY: {allowed_keywords_str}\n\n"
+        f"You **MUST** choose the weak concepts from this predefined list ONLY: {allowed_tags_str}\n\n"
         "For coding questions marked 'For AI Review', evaluate if the student's code:\n"
         "1. Correctly solves the problem\n"
         "2. Uses appropriate syntax and conventions\n"
@@ -485,7 +485,7 @@ def analyze_quiz():
         "Compare their code with the provided sample solution.\n\n"
         "Provide your analysis as a single JSON object with two keys:\n"
         ' - "detailed_feedback": (string) Your textual analysis, including specific feedback on coding attempts, what they did well, and areas for improvement.\n'
-        ' - "weak_concept_tags": (JSON list of strings) The list of weak concepts from the ALLOWED KEYWORDS list. If there are no weaknesses, provide an empty list `[]`.\n\n'
+        ' - "weak_concept_tags": (JSON list of strings) The list of weak concepts from the ALLOWED TAGS list. If there are no weaknesses, provide an empty list `[]`.\n\n'
         "Here is the student's submission:\n"
         "--- START OF SUBMISSION ---\n"
         f"{full_submission_text}"
@@ -533,7 +533,7 @@ def analyze_quiz():
         )
         weak_topics = parsed_ai_response.get("weak_concept_tags", [])
         validated_weak_topics = [
-            topic for topic in weak_topics if topic in allowed_topic_keywords
+            topic for topic in weak_topics if topic in allowed_topic_tags
         ]
 
         # Store weak topics with subject/subtopic prefix
@@ -1013,7 +1013,7 @@ def admin_create_subject():
                     "color": color,
                 },
                 "subtopics": {},
-                "allowed_keywords": [],
+                "allowed_tags": [],
             }
 
             config_path = os.path.join(subject_dir, "subject_config.json")
@@ -1037,11 +1037,20 @@ def admin_edit_subject(subject):
     """Edit a subject."""
     try:
         subject_config = data_loader.load_subject_config(subject)
-        if not subject_config:
+        subject_info = data_loader.load_subject_info(subject)
+        
+        if not subject_config or not subject_info:
             return f"Subject '{subject}' not found", 404
 
+        # Combine config and info into the expected structure
+        config = {
+            "subject_info": subject_info,
+            "subtopics": subject_config.get("subtopics", {}),
+            "allowed_tags": subject_config.get("allowed_tags", [])
+        }
+
         return render_template(
-            "admin/edit_subject.html", subject=subject, config=subject_config
+            "admin/edit_subject.html", subject=subject, config=config
         )
     except Exception as e:
         app.logger.error(f"Error loading subject editor for {subject}: {e}")
@@ -1362,20 +1371,20 @@ def admin_subtopics():
 
                     # Get subtopics from subject_config.json
                     config_subtopics = config.get("subtopics", {})
-                    allowed_keywords = config.get("allowed_keywords", [])
+                    allowed_tags = config.get("allowed_tags", config.get("allowed_keywords", []))
 
                     subjects[subject_id]["subtopics"] = config_subtopics
-                    subjects[subject_id]["allowed_keywords"] = allowed_keywords
+                    subjects[subject_id]["allowed_tags"] = allowed_tags
 
                 except Exception as e:
                     app.logger.error(
                         f"Error reading subject config for {subject_id}: {e}"
                     )
                     subjects[subject_id]["subtopics"] = {}
-                    subjects[subject_id]["allowed_keywords"] = []
+                    subjects[subject_id]["allowed_tags"] = []
             else:
                 subjects[subject_id]["subtopics"] = {}
-                subjects[subject_id]["allowed_keywords"] = []
+                subjects[subject_id]["allowed_tags"] = []
 
         return render_template("admin/subtopics.html", subjects=subjects)
 
@@ -1397,7 +1406,7 @@ def admin_questions():
             "subtopics_without_questions": 0,
         }
 
-        # Discover subjects using auto-discovery
+        # Discover subjects using auto-discoverythe subtopic
         discovered_subjects = data_loader.discover_subjects()
 
         for subject_id, subject_info in discovered_subjects.items():
@@ -1461,9 +1470,9 @@ def admin_quiz_editor(subject, subtopic):
         # Format question pool to match template expectations
         question_pool = {"questions": pool_questions}
 
-        # Get subject config for keywords
+        # Get subject config for tags
         subject_config = data_loader.load_subject_config(subject)
-        allowed_keywords = subject_config.get("allowed_keywords", []) if subject_config else []
+        allowed_tags = subject_config.get("allowed_tags", subject_config.get("allowed_keywords", [])) if subject_config else []
 
         return render_template(
             "admin/quiz_editor.html",
@@ -1471,7 +1480,7 @@ def admin_quiz_editor(subject, subtopic):
             subtopic=subtopic,
             quiz_data=quiz_data,
             question_pool=question_pool,
-            allowed_keywords=allowed_keywords
+            allowed_tags=allowed_tags
         )
 
     except Exception as e:
@@ -1561,6 +1570,23 @@ def admin_quiz_pool(subject, subtopic):
             return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/subjects/<subject>/tags")
+def api_get_subject_tags(subject):
+    """API endpoint to get available tags for a subject."""
+    try:
+        tags = get_subject_tags(subject)
+        
+        return jsonify({
+            "success": True,
+            "tags": tags,
+            "count": len(tags)
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error getting tags for {subject}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/subjects/<subject>/subtopics")
 def api_get_subtopics(subject):
     """API endpoint to get subtopics for a subject."""
@@ -1615,6 +1641,41 @@ def admin_clear_cache():
         return jsonify({
             "success": False,
             "error": f"Failed to clear cache: {str(e)}"
+        }), 500
+
+
+@app.route("/admin/migrate-tags", methods=["POST"])
+def admin_migrate_tags():
+    """Migrate all subjects from keywords to tags format."""
+    try:
+        # Perform migration for all subjects
+        results = data_loader.migrate_all_subjects_tags()
+        
+        successful_migrations = [subject for subject, success in results.items() if success]
+        failed_migrations = [subject for subject, success in results.items() if not success]
+        
+        # Clear cache to ensure new data is loaded
+        data_loader._cache.clear()
+        
+        message = f"Migration completed! Successfully migrated {len(successful_migrations)} subjects."
+        if failed_migrations:
+            message += f" Failed to migrate: {', '.join(failed_migrations)}"
+        
+        app.logger.info(f"Tag migration results: {results}")
+        
+        return jsonify({
+            "success": True,
+            "message": message,
+            "results": results,
+            "successful_count": len(successful_migrations),
+            "failed_count": len(failed_migrations)
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error during tag migration: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Failed to migrate tags: {str(e)}"
         }), 500
 
 

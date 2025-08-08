@@ -467,17 +467,19 @@
             <!-- Tags -->
             <div class="form-group">
               <label for="questionTags">Tags *</label>
-              <input
-                type="text"
-                id="questionTags"
-                placeholder="e.g., function definition, syntax, python basics"
-                required
-              />
-              <small
-                >Enter tags separated by commas. Tags help categorize questions
-                for targeted remedial quizzes</small
-              >
+              <div class="tag-input-container">
+                <input
+                  type="text"
+                  id="questionTags"
+                  placeholder="Start typing to search tags..."
+                  required
+                  autocomplete="off"
+                />
+                <div class="tag-suggestions" id="tagSuggestions"></div>
+              </div>
+              <small>Select from available tags or type to search. Tags help categorize questions for targeted learning</small>
               <div class="tags-preview" id="tagsPreview"></div>
+              <div class="available-tags" id="availableTags"></div>
               <div class="error-message" id="questionTagsError"></div>
             </div>
 
@@ -1175,6 +1177,85 @@
         color: #e53e3e;
       }
 
+      /* New tag input styles */
+      .tag-input-container {
+        position: relative;
+      }
+
+      .tag-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+      }
+
+      .tag-suggestions.show {
+        display: block;
+      }
+
+      .tag-suggestion {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .tag-suggestion:hover,
+      .tag-suggestion.highlighted {
+        background-color: #f7fafc;
+      }
+
+      .tag-suggestion.selected {
+        background-color: #e6fffa;
+        color: #00695c;
+      }
+
+      .available-tags {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+      }
+
+      .available-tags h4 {
+        margin: 0 0 8px 0;
+        font-size: 0.9rem;
+        color: #495057;
+      }
+
+      .available-tags .tag-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .tag-chip {
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tag-chip:hover {
+        background: #bbdefb;
+      }
+
+      .tag-chip.used {
+        background: #c8e6c9;
+        color: #2e7d32;
+      }
+
       .question-type-section {
         border: 1px solid #e2e8f0;
         border-radius: 8px;
@@ -1460,6 +1541,89 @@
       let questionPoolData = {{ question_pool | tojson }};
       const subject = "{{ subject }}";
       const subtopic = "{{ subtopic }}";
+      let availableTags = [];
+      let selectedTags = [];
+
+      // Load available tags from API
+      async function loadAvailableTags() {
+          try {
+              const response = await fetch(`/api/subjects/${subject}/tags`);
+              if (response.ok) {
+                  const data = await response.json();
+                  availableTags = data.tags || [];
+                  displayAvailableTags();
+              } else {
+                  console.error('Failed to load available tags');
+                  availableTags = [];
+              }
+          } catch (error) {
+              console.error('Error loading tags:', error);
+              availableTags = [];
+          }
+      }
+
+      // Tags functionality with API integration (GLOBAL FUNCTIONS)
+      function displayAvailableTags() {
+          const container = document.getElementById('availableTags');
+          if (availableTags.length === 0) {
+              container.innerHTML = '<small style="color: #666;">No tags available for this subject.</small>';
+              return;
+          }
+
+          container.innerHTML = `
+              <h4>Available Tags (${availableTags.length})</h4>
+              <div class="tag-chips">
+                  ${availableTags.map(tag => `
+                      <span class="tag-chip" onclick="addTagFromChip('${tag}')" title="Click to add">${tag}</span>
+                  `).join('')}
+              </div>
+          `;
+          updateTagChipsDisplay();
+      }
+
+      function updateTagChipsDisplay() {
+          document.querySelectorAll('.tag-chip').forEach(chip => {
+              const tagText = chip.textContent;
+              if (selectedTags.includes(tagText)) {
+                  chip.classList.add('used');
+                  chip.title = 'Already selected';
+              } else {
+                  chip.classList.remove('used');
+                  chip.title = 'Click to add';
+              }
+          });
+      }
+
+      function addTagFromChip(tag) {
+          if (!selectedTags.includes(tag)) {
+              selectedTags.push(tag);
+              updateTagInput();
+              updateTagsPreview();
+              updateTagChipsDisplay();
+          }
+      }
+
+      function updateTagInput() {
+          document.getElementById('questionTags').value = selectedTags.join(', ');
+      }
+
+      function updateTagsPreview() {
+          const preview = document.getElementById('tagsPreview');
+          preview.innerHTML = selectedTags.map(tag => `
+              <span class="tag-preview">
+                  ${tag}
+                  <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
+              </span>
+          `).join('');
+      }
+
+      function removeTag(tagToRemove) {
+          selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
+          updateTagInput();
+          updateTagsPreview();
+          updateTagChipsDisplay();
+          hideSuggestions();
+      }
 
       // Tab switching
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1531,30 +1695,7 @@
           }
       });
 
-      // Tags preview functionality
-      document.getElementById('questionTags').addEventListener('input', function() {
-          updateTagsPreview();
-      });
 
-      function updateTagsPreview() {
-          const input = document.getElementById('questionTags');
-          const preview = document.getElementById('tagsPreview');
-          const tags = input.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-
-          preview.innerHTML = tags.map(tag => `
-              <span class="tag-preview">
-                  ${tag}
-                  <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
-              </span>
-          `).join('');
-      }
-
-      function removeTag(tagToRemove) {
-          const input = document.getElementById('questionTags');
-          const tags = input.value.split(',').map(tag => tag.trim()).filter(tag => tag && tag !== tagToRemove);
-          input.value = tags.join(', ');
-          updateTagsPreview();
-      }
 
       // Add question
       function addQuestion(quizType) {
@@ -1600,7 +1741,13 @@
           showQuestionTypeSection('multiple_choice');
           resetOptions();
           clearErrors();
+          
+          // Reset tags with new API system
+          selectedTags = [];
+          updateTagInput();
           updateTagsPreview();
+          updateTagChipsDisplay();
+          hideSuggestions();
       }
 
       // Clear all error messages
@@ -1637,7 +1784,12 @@
 
           document.getElementById('questionType').value = question.type || 'multiple_choice';
           document.getElementById('questionText').value = question.question || '';
-          document.getElementById('questionTags').value = (question.tags || []).join(', ');
+          
+          // Handle tags with new API system
+          selectedTags = question.tags || [];
+          updateTagInput();
+          updateTagsPreview();
+          updateTagChipsDisplay();
 
           // Update character counter
           const counter = document.getElementById('questionTextCounter');
@@ -2385,6 +2537,7 @@
           renderQuestions('pool');
           updateTabCounts();
           showQuestionTypeSection('multiple_choice');
+          loadAvailableTags(); // Load tags from API
       });
     </script>
   </body>

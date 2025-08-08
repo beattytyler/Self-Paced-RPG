@@ -96,7 +96,7 @@
             <input
               type="text"
               id="searchSubtopics"
-              placeholder="Search by name or keywords..."
+              placeholder="Search by name or tags..."
             />
           </div>
         </div>
@@ -151,8 +151,8 @@
                 </button>
                 <button
                   class="btn-icon"
-                  title="Manage Keywords"
-                  onclick="manageKeywords('{{ subject_id }}', '{{ subtopic_id }}')"
+                  title="Manage Tags"
+                  onclick="manageTags('{{ subject_id }}', '{{ subtopic_id }}')"
                 >
                   <i class="fas fa-tags"></i>
                 </button>
@@ -197,14 +197,14 @@
               </div>
             </div>
 
-            <!-- Quick Keywords Preview -->
-            <div class="keywords-preview">
-              <strong>Subject Keywords Available:</strong>
-              <div class="keywords-count">
-                {{ subject_data.allowed_keywords|length or 0 }} keywords
+            <!-- Quick Tags Preview -->
+            <div class="tags-preview">
+              <strong>Subject Tags Available:</strong>
+              <div class="tags-count">
+                {{ subject_data.allowed_keywords|length or 0 }} tags
                 <button
                   class="btn-mini"
-                  onclick="viewKeywords('{{ subject_id }}')"
+                  onclick="viewTags('{{ subject_id }}')"
                 >
                   <i class="fas fa-eye"></i> View All
                 </button>
@@ -214,49 +214,49 @@
           {% endfor %} {% endif %} {% endfor %}
         </div>
 
-        <!-- Subject Keywords Overview -->
-        <div class="keywords-overview">
-          <h2><i class="fas fa-tags"></i> Subject Keywords Overview</h2>
+        <!-- Subject Tags Overview -->
+        <div class="tags-overview">
+          <h2><i class="fas fa-tags"></i> Subject Tags Overview</h2>
           <p>
-            Keywords help the AI understand and categorize content for
+            Tags help the AI understand and categorize content for
             personalized learning recommendations.
           </p>
 
           {% for subject_id, subject_data in subjects.items() %}
-          <div class="subject-keywords-section">
-            <div class="subject-keywords-header">
+          <div class="subject-tags-section">
+            <div class="subject-tags-header">
               <h3 style="color: {{ subject_data.color or '#007bff' }}">
                 <i class="{{ subject_data.icon or 'fas fa-book' }}"></i>
                 {{ subject_data.name }}
               </h3>
-              <div class="subject-keywords-actions">
-                <span class="keywords-count"
+              <div class="subject-tags-actions">
+                <span class="tags-count"
                   >{{ subject_data.allowed_keywords|length or 0 }}
-                  keywords</span
+                  tags</span
                 >
                 <button
                   class="btn-secondary btn-sm"
-                  onclick="editSubjectKeywords('{{ subject_id }}')"
+                  onclick="editSubjectTags('{{ subject_id }}')"
                 >
-                  <i class="fas fa-edit"></i> Manage Keywords
+                  <i class="fas fa-edit"></i> Manage Tags
                 </button>
               </div>
             </div>
 
             {% if subject_data.allowed_keywords %}
-            <div class="keywords-grid">
+            <div class="tags-grid">
               {% for keyword in subject_data.allowed_keywords[:10] %}
-              <span class="keyword-tag">{{ keyword }}</span>
+              <span class="tag-chip">{{ keyword }}</span>
               {% endfor %} {% if subject_data.allowed_keywords|length > 10 %}
-              <span class="keyword-more"
+              <span class="tag-more"
                 >+{{ subject_data.allowed_keywords|length - 10 }} more...</span
               >
               {% endif %}
             </div>
             {% else %}
-            <div class="no-keywords">
+            <div class="no-tags">
               <i class="fas fa-info-circle"></i>
-              No keywords defined for this subject. Keywords help the AI provide
+              No tags defined for this subject. Tags help the AI provide
               better recommendations.
             </div>
             {% endif %}
@@ -397,27 +397,27 @@
             </div>
 
             <div class="form-group">
-              <label for="subtopicKeywords">Keywords for this Subtopic</label>
+              <label for="subtopicKeywords">Tags for this Subtopic</label>
               <input
                 type="text"
                 id="subtopicKeywords"
-                placeholder="Enter keywords separated by commas"
+                placeholder="Enter tags separated by commas"
               />
               <small
-                >These keywords will be added to the subject's keyword pool for
+                >These tags will be added to the subject's tag pool for
                 AI use</small
               >
             </div>
 
-            <!-- Subject Keywords Selection -->
+            <!-- Subject Tags Selection -->
             <div
               id="subjectKeywordsSection"
               class="form-group"
               style="display: none"
             >
-              <label>Select from existing subject keywords:</label>
-              <div id="subjectKeywordsCards" class="keywords-cards-container">
-                <!-- Keyword cards will be populated here -->
+              <label>Select from existing subject tags:</label>
+              <div id="subjectKeywordsCards" class="tags-cards-container">
+                <!-- Tag cards will be populated here -->
               </div>
               <div class="keywords-actions">
                 <button
@@ -653,76 +653,76 @@
       </div>
     </div>
 
-    <!-- Subtopic Keywords Management Modal -->
-    <div id="subtopicKeywordsModal" class="modal">
+    <!-- Subtopic Tags Management Modal -->
+    <div id="subtopicTagsModal" class="modal">
       <div class="modal-content large-modal">
         <div class="modal-header">
-          <h2 id="subtopicKeywordsModalTitle">Subtopic Keywords</h2>
-          <button class="modal-close" onclick="closeSubtopicKeywordsModal()">
+          <h2 id="subtopicTagsModalTitle">Subtopic Tags</h2>
+          <button class="modal-close" onclick="closeSubtopicTagsModal()">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="modal-body">
-          <div class="subtopic-keywords-manager">
-            <!-- Current Subtopic Keywords Section -->
-            <div class="keywords-section">
-              <h3><i class="fas fa-bookmark"></i> Current Subtopic Keywords</h3>
+          <div class="subtopic-tags-manager">
+            <!-- Current Subtopic Tags Section -->
+            <div class="tags-section">
+              <h3><i class="fas fa-bookmark"></i> Current Subtopic Tags</h3>
               <p>
-                These keywords are specifically associated with this subtopic:
+                These tags are specifically associated with this subtopic:
               </p>
               <div
-                id="currentSubtopicKeywordsList"
-                class="keywords-list-editable"
+                id="currentSubtopicTagsList"
+                class="tags-list-editable"
               >
-                <!-- Current subtopic keywords will be populated here -->
+                <!-- Current subtopic tags will be populated here -->
               </div>
-              <div class="add-keywords-form">
+              <div class="add-tags-form">
                 <input
                   type="text"
-                  id="newSubtopicKeywordsInput"
-                  placeholder="Add new keywords for this subtopic (comma-separated)..."
-                  class="keywords-input"
+                  id="newSubtopicTagsInput"
+                  placeholder="Add new tags for this subtopic (comma-separated)..."
+                  class="tags-input"
                 />
                 <button
                   type="button"
                   class="btn-primary"
-                  onclick="addNewSubtopicKeywords()"
+                  onclick="addNewSubtopicTags()"
                 >
-                  <i class="fas fa-plus"></i> Add Keywords
+                  <i class="fas fa-plus"></i> Add Tags
                 </button>
               </div>
             </div>
 
-            <!-- Subject Keywords Pool Section -->
-            <div class="keywords-section">
-              <h3><i class="fas fa-tags"></i> Subject Keywords Pool</h3>
+            <!-- Subject Tags Pool Section -->
+            <div class="tags-section">
+              <h3><i class="fas fa-tags"></i> Subject Tags Pool</h3>
               <p>
-                Select keywords from the subject's keyword pool to assign to
+                Select tags from the subject's tag pool to assign to
                 this subtopic:
               </p>
-              <div class="keywords-search">
+              <div class="tags-search">
                 <input
                   type="text"
-                  id="subjectKeywordsSearchInput"
-                  placeholder="Search subject keywords..."
-                  onkeyup="searchSubjectKeywords()"
+                  id="subjectTagsSearchInput"
+                  placeholder="Search subject tags..."
+                  onkeyup="searchSubjectTags()"
                 />
               </div>
-              <div id="subjectKeywordsPool" class="keywords-cards-container">
-                <!-- Subject keywords will be populated here as selectable cards -->
+              <div id="subjectTagsPool" class="tags-cards-container">
+                <!-- Subject tags will be populated here as selectable cards -->
               </div>
-              <div class="keywords-actions">
+              <div class="tags-actions">
                 <button
                   type="button"
                   class="btn-link"
-                  onclick="selectAllSubjectKeywords()"
+                  onclick="selectAllSubjectTags()"
                 >
                   <i class="fas fa-check-double"></i> Select All
                 </button>
                 <button
                   type="button"
                   class="btn-link"
-                  onclick="clearAllSubjectKeywords()"
+                  onclick="clearAllSubjectTags()"
                 >
                   <i class="fas fa-times"></i> Clear All
                 </button>
@@ -730,11 +730,11 @@
             </div>
 
             <!-- Preview Section -->
-            <div class="keywords-section">
-              <h3><i class="fas fa-eye"></i> Preview Final Keywords</h3>
-              <p>These keywords will be associated with this subtopic:</p>
-              <div id="finalKeywordsPreview" class="keywords-preview">
-                <!-- Final keywords preview will be shown here -->
+            <div class="tags-section">
+              <h3><i class="fas fa-eye"></i> Preview Final Tags</h3>
+              <p>These tags will be associated with this subtopic:</p>
+              <div id="finalTagsPreview" class="tags-preview">
+                <!-- Final tags preview will be shown here -->
               </div>
             </div>
           </div>
@@ -743,16 +743,16 @@
             <button
               type="button"
               class="btn-secondary"
-              onclick="closeSubtopicKeywordsModal()"
+              onclick="closeSubtopicTagsModal()"
             >
               Cancel
             </button>
             <button
               type="button"
               class="btn-primary"
-              onclick="saveSubtopicKeywords()"
+              onclick="saveSubtopicTags()"
             >
-              <i class="fas fa-save"></i> Save Keywords
+              <i class="fas fa-save"></i> Save Tags
             </button>
           </div>
         </div>
@@ -1739,7 +1739,7 @@
         background-color: #f9f9f9;
       }
 
-      .keyword-card {
+      .tag-card {
         position: relative;
         padding: 12px 16px;
         border: 2px solid #e0e0e0;
@@ -1755,19 +1755,19 @@
         min-height: 48px;
       }
 
-      .keyword-card:hover {
+      .tag-card:hover {
         border-color: #4285f4;
         box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
         transform: translateY(-1px);
       }
 
-      .keyword-card.selected {
+      .tag-card.selected {
         border-color: #4285f4;
         background-color: #e8f0fe;
         color: #1565c0;
       }
 
-      .keyword-card.selected::before {
+      .tag-card.selected::before {
         content: "✓";
         position: absolute;
         top: 8px;
@@ -1777,23 +1777,23 @@
         font-size: 16px;
       }
 
-      .keyword-card-text {
+      .tag-card-text {
         flex: 1;
         margin-right: 24px;
       }
 
-      .keyword-card-actions {
+      .tag-card-actions {
         display: flex;
         gap: 8px;
         opacity: 0;
         transition: opacity 0.3s ease;
       }
 
-      .keyword-card:hover .keyword-card-actions {
+      .tag-card:hover .tag-card-actions {
         opacity: 1;
       }
 
-      .keyword-card-btn {
+      .tag-card-btn {
         background: none;
         border: none;
         padding: 4px;
@@ -1809,19 +1809,115 @@
         justify-content: center;
       }
 
-      .keyword-card-btn:hover {
+      .tag-card-btn:hover {
         background-color: rgba(0, 0, 0, 0.1);
         color: #333;
       }
 
-      .keyword-card-btn.edit-btn:hover {
+      .tag-card-btn.edit-btn:hover {
         background-color: rgba(255, 193, 7, 0.2);
         color: #f57c00;
       }
 
-      .keyword-card-btn.delete-btn:hover {
+      .tag-card-btn.delete-btn:hover {
         background-color: rgba(244, 67, 54, 0.2);
         color: #d32f2f;
+      }
+
+      /* Tag Card Styles (same as keyword cards) */
+      .tag-card {
+        position: relative;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 48px;
+      }
+
+      .tag-card:hover {
+        border-color: #4285f4;
+        box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .tag-card.selected {
+        border-color: #4285f4;
+        background-color: #e8f0fe;
+        color: #1565c0;
+      }
+
+      .tag-card.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-weight: bold;
+        color: #4285f4;
+        font-size: 16px;
+      }
+
+      .tag-card-text {
+        flex: 1;
+        margin-right: 24px;
+      }
+
+      .tags-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      .preview-tag-element {
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        display: inline-block;
+      }
+
+      .editable-tag-element {
+        background: #f0f9ff;
+        color: #0369a1;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .editable-tag-element .remove-tag {
+        background: #dc2626;
+        color: white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .editable-tag-element .remove-tag:hover {
+        background: #b91c1c;
+        transform: scale(1.1);
       }
 
       .keywords-actions {
@@ -1852,8 +1948,8 @@
         margin-right: 5px;
       }
 
-      /* Keyword card edit modal */
-      .edit-keyword-modal,
+      /* Tag card edit modal */
+      .edit-tag-modal,
       .confirm-delete-modal {
         display: none;
         position: fixed;
@@ -1865,7 +1961,7 @@
         z-index: 1001;
       }
 
-      .edit-keyword-content,
+      .edit-tag-content,
       .confirm-delete-content {
         position: absolute;
         top: 50%;
@@ -1878,7 +1974,7 @@
         max-width: 90%;
       }
 
-      .edit-keyword-header,
+      .edit-tag-header,
       .confirm-delete-header {
         display: flex;
         justify-content: space-between;
@@ -1888,18 +1984,18 @@
         border-bottom: 1px solid #e0e0e0;
       }
 
-      .edit-keyword-header h3,
+      .edit-tag-header h3,
       .confirm-delete-header h3 {
         margin: 0;
         color: #333;
       }
 
-      .edit-keyword-body,
+      .edit-tag-body,
       .confirm-delete-body {
         margin-bottom: 20px;
       }
 
-      .edit-keyword-input {
+      .edit-tag-input {
         width: 100%;
         padding: 10px;
         border: 1px solid #ddd;
@@ -1908,7 +2004,7 @@
         margin-top: 5px;
       }
 
-      .edit-keyword-actions,
+      .edit-tag-actions,
       .confirm-delete-actions {
         display: flex;
         justify-content: flex-end;
@@ -1920,7 +2016,7 @@
         line-height: 1.5;
       }
 
-      .keyword-name {
+      .tag-name {
         font-weight: bold;
         color: #d32f2f;
       }
@@ -2441,7 +2537,7 @@
           container.innerHTML = '';
 
           keywords.forEach((keyword, index) => {
-              const card = createKeywordCard(keyword, index);
+              const card = createTagCard(keyword, index);
               container.appendChild(card);
           });
       }
@@ -2493,19 +2589,19 @@
           return Array.from(selectedCards).map(card => card.dataset.subtopicId);
       }
 
-      function createKeywordCard(keyword, index) {
+      function createTagCard(tag, index) {
           const card = document.createElement('div');
-          card.className = 'keyword-card';
-          card.dataset.keyword = keyword;
+          card.className = 'tag-card';
+          card.dataset.tag = tag;
           card.dataset.index = index;
 
           card.innerHTML = `
-              <div class="keyword-card-text">${keyword}</div>
-              <div class="keyword-card-actions">
-                  <button type="button" class="keyword-card-btn edit-btn" onclick="editKeywordCard(${index})" title="Edit keyword">
+              <div class="tag-card-text">${tag}</div>
+              <div class="tag-card-actions">
+                  <button type="button" class="tag-card-btn edit-btn" onclick="editTagCard(${index})" title="Edit tag">
                       <i class="fas fa-edit"></i>
                   </button>
-                  <button type="button" class="keyword-card-btn delete-btn" onclick="deleteKeywordCard(${index})" title="Delete keyword">
+                  <button type="button" class="tag-card-btn delete-btn" onclick="deleteTagCard(${index})" title="Delete tag">
                       <i class="fas fa-trash"></i>
                   </button>
               </div>
@@ -2513,65 +2609,65 @@
 
           // Add click handler for selection
           card.addEventListener('click', function(e) {
-              if (!e.target.closest('.keyword-card-actions')) {
-                  toggleKeywordSelection(card);
+              if (!e.target.closest('.tag-card-actions')) {
+                  toggleTagSelection(card);
               }
           });
 
           return card;
       }
 
-      function toggleKeywordSelection(card) {
+      function toggleTagSelection(card) {
           card.classList.toggle('selected');
-          updateKeywordsInput();
+          updateTagsInput();
       }
 
-      function selectAllKeywords() {
-          const cards = document.querySelectorAll('.keyword-card');
+      function selectAllTags() {
+          const cards = document.querySelectorAll('.tag-card');
           cards.forEach(card => {
               card.classList.add('selected');
           });
-          updateKeywordsInput();
+          updateTagsInput();
       }
 
-      function clearAllKeywords() {
-          const cards = document.querySelectorAll('.keyword-card');
+      function clearAllTags() {
+          const cards = document.querySelectorAll('.tag-card');
           cards.forEach(card => {
               card.classList.remove('selected');
           });
-          updateKeywordsInput();
+          updateTagsInput();
       }
 
-      function updateKeywordsInput() {
-          const selectedCards = document.querySelectorAll('.keyword-card.selected');
-          const selectedKeywords = Array.from(selectedCards).map(card => card.dataset.keyword);
-          document.getElementById('subtopicKeywords').value = selectedKeywords.join(', ');
+      function updateTagsInput() {
+          const selectedCards = document.querySelectorAll('.tag-card.selected');
+          const selectedTags = Array.from(selectedCards).map(card => card.dataset.tag);
+          document.getElementById('subtopicKeywords').value = selectedTags.join(', ');
       }
 
-      function editKeywordCard(index) {
+      function editTagCard(index) {
           const card = document.querySelector(`[data-index="${index}"]`);
-          const currentKeyword = card.dataset.keyword;
+          const currentTag = card.dataset.tag;
 
           // Create and show edit modal
-          showEditKeywordModal(currentKeyword, index);
+          showEditTagModal(currentTag, index);
       }
 
-      function deleteKeywordCard(index) {
+      function deleteTagCard(index) {
           const card = document.querySelector(`[data-index="${index}"]`);
-          const keyword = card.dataset.keyword;
+          const tag = card.dataset.tag;
 
-          showDeleteConfirmationModal(keyword, () => {
-              // Remove from subject keywords
+          showDeleteConfirmationModal(tag, () => {
+              // Remove from subject tags
               const subjectId = document.getElementById('subtopicSubject').value;
-              removeKeywordFromSubject(subjectId, keyword);
+              removeTagFromSubject(subjectId, tag);
 
               // Remove card from display
               card.remove();
-              updateKeywordsInput();
+              updateTagsInput();
           });
       }
 
-      function showDeleteConfirmationModal(keyword, onConfirm) {
+      function showDeleteConfirmationModal(tag, onConfirm) {
           // Create modal HTML
           const modalHTML = `
               <div id="confirmDeleteModal" class="confirm-delete-modal">
@@ -2588,7 +2684,7 @@
                       </div>
                       <div class="confirm-delete-actions">
                           <button type="button" class="btn-secondary" onclick="closeDeleteConfirmationModal()">Cancel</button>
-                          <button type="button" class="btn-danger" onclick="confirmDeleteKeyword()">Delete</button>
+                          <button type="button" class="btn-danger" onclick="confirmDeleteTag()">Delete</button>
                       </div>
                   </div>
               </div>
@@ -2616,93 +2712,93 @@
           window.deleteKeywordCallback = null;
       }
 
-      function confirmDeleteKeyword() {
+      function confirmDeleteTag() {
           if (window.deleteKeywordCallback) {
               window.deleteKeywordCallback();
           }
           closeDeleteConfirmationModal();
       }
 
-      function showEditKeywordModal(currentKeyword, index) {
+      function showEditTagModal(currentTag, index) {
           // Create modal HTML
           const modalHTML = `
-              <div id="editKeywordModal" class="edit-keyword-modal">
-                  <div class="edit-keyword-content">
-                      <div class="edit-keyword-header">
-                          <h3>Edit Keyword</h3>
-                          <button type="button" onclick="closeEditKeywordModal()">
+              <div id="editTagModal" class="edit-tag-modal">
+                  <div class="edit-tag-content">
+                      <div class="edit-tag-header">
+                          <h3>Edit Tag</h3>
+                          <button type="button" onclick="closeEditTagModal()">
                               <i class="fas fa-times"></i>
                           </button>
                       </div>
-                      <div class="edit-keyword-body">
-                          <label for="editKeywordInput">Keyword:</label>
-                          <input type="text" id="editKeywordInput" class="edit-keyword-input" value="${currentKeyword}">
+                      <div class="edit-tag-body">
+                          <label for="editTagInput">Tag:</label>
+                          <input type="text" id="editTagInput" class="edit-tag-input" value="${currentTag}">
                       </div>
-                      <div class="edit-keyword-actions">
-                          <button type="button" class="btn-secondary" onclick="closeEditKeywordModal()">Cancel</button>
-                          <button type="button" class="btn-primary" onclick="saveEditedKeyword(${index})">Save</button>
+                      <div class="edit-tag-actions">
+                          <button type="button" class="btn-secondary" onclick="closeEditTagModal()">Cancel</button>
+                          <button type="button" class="btn-primary" onclick="saveEditedTag(${index})">Save</button>
                       </div>
                   </div>
               </div>
           `;
 
           // Remove existing modal if any
-          const existingModal = document.getElementById('editKeywordModal');
+          const existingModal = document.getElementById('editTagModal');
           if (existingModal) {
               existingModal.remove();
           }
 
           // Add modal to body
           document.body.insertAdjacentHTML('beforeend', modalHTML);
-          document.getElementById('editKeywordModal').style.display = 'block';
-          document.getElementById('editKeywordInput').focus();
+          document.getElementById('editTagModal').style.display = 'block';
+          document.getElementById('editTagInput').focus();
       }
 
-      function closeEditKeywordModal() {
-          const modal = document.getElementById('editKeywordModal');
+      function closeEditTagModal() {
+          const modal = document.getElementById('editTagModal');
           if (modal) {
               modal.remove();
           }
       }
 
-      function saveEditedKeyword(index) {
-          const newKeyword = document.getElementById('editKeywordInput').value.trim();
-          if (!newKeyword) {
-              alert('Please enter a valid keyword');
+      function saveEditedTag(index) {
+          const newTag = document.getElementById('editTagInput').value.trim();
+          if (!newTag) {
+              alert('Please enter a valid tag');
               return;
           }
 
           const card = document.querySelector(`[data-index="${index}"]`);
-          const oldKeyword = card.dataset.keyword;
+          const oldTag = card.dataset.tag;
 
           // Update the card
-          card.dataset.keyword = newKeyword;
-          card.querySelector('.keyword-card-text').textContent = newKeyword;
+          card.dataset.tag = newTag;
+          card.querySelector('.tag-card-text').textContent = newTag;
 
-          // Update subject keywords
+          // Update subject tags
           const subjectId = document.getElementById('subtopicSubject').value;
-          updateKeywordInSubject(subjectId, oldKeyword, newKeyword);
+          updateTagInSubject(subjectId, oldTag, newTag);
 
-          closeEditKeywordModal();
-          updateKeywordsInput();
+          closeEditTagModal();
+          updateTagsInput();
       }
 
-      function removeKeywordFromSubject(subjectId, keyword) {
+      function removeTagFromSubject(subjectId, tag) {
           if (currentSubjects[subjectId] && currentSubjects[subjectId].allowed_keywords) {
-              const keywords = currentSubjects[subjectId].allowed_keywords;
-              const keywordIndex = keywords.indexOf(keyword);
-              if (keywordIndex > -1) {
-                  keywords.splice(keywordIndex, 1);
+              const tags = currentSubjects[subjectId].allowed_keywords;
+              const tagIndex = tags.indexOf(tag);
+              if (tagIndex > -1) {
+                  tags.splice(tagIndex, 1);
               }
           }
       }
 
-      function updateKeywordInSubject(subjectId, oldKeyword, newKeyword) {
+      function updateTagInSubject(subjectId, oldTag, newTag) {
           if (currentSubjects[subjectId] && currentSubjects[subjectId].allowed_keywords) {
-              const keywords = currentSubjects[subjectId].allowed_keywords;
-              const keywordIndex = keywords.indexOf(oldKeyword);
-              if (keywordIndex > -1) {
-                  keywords[keywordIndex] = newKeyword;
+              const tags = currentSubjects[subjectId].allowed_keywords;
+              const tagIndex = tags.indexOf(oldTag);
+              if (tagIndex > -1) {
+                  tags[tagIndex] = newTag;
               }
           }
       }
@@ -2808,143 +2904,156 @@
           });
       }
 
-      // Keywords Management Functions
-      let currentSubtopicKeywords = [];
+      // Tags Management Functions
+      let currentSubtopicTags = [];
 
-      function manageKeywords(subjectId, subtopicId) {
-          const modal = document.getElementById('subtopicKeywordsModal');
-          const title = document.getElementById('subtopicKeywordsModalTitle');
+      function manageTags(subjectId, subtopicId) {
+          const modal = document.getElementById('subtopicTagsModal');
+          const title = document.getElementById('subtopicTagsModalTitle');
 
           const subjectName = currentSubjects[subjectId]?.name || subjectId;
           const subtopicName = currentSubjects[subjectId]?.subtopics?.[subtopicId]?.name || subtopicId;
 
-          title.textContent = `Manage Keywords - ${subtopicName} (${subjectName})`;
+          title.textContent = `Manage Tags - ${subtopicName} (${subjectName})`;
           currentEditingSubject = subjectId;
           currentEditingSubtopic = subtopicId;
 
-          // Initialize current subtopic keywords (load from existing data if available)
-          currentSubtopicKeywords = loadExistingSubtopicKeywords(subjectId, subtopicId);
+          // Initialize current subtopic tags (load from existing data if available)
+          currentSubtopicTags = loadExistingSubtopicTags(subjectId, subtopicId);
 
-          // Load current subtopic keywords
-          loadCurrentSubtopicKeywords(subjectId, subtopicId);
+          // Load current subtopic tags
+          loadCurrentSubtopicTags(subjectId, subtopicId);
 
-          // Load subject keywords pool
-          loadSubjectKeywordsPool(subjectId);
+          // Load subject tags pool
+          loadSubjectTagsPool(subjectId);
 
           // Update preview
-          updateFinalKeywordsPreview();
+          updateFinalTagsPreview();
 
           modal.style.display = 'block';
       }
 
-      function closeSubtopicKeywordsModal() {
-          document.getElementById('subtopicKeywordsModal').style.display = 'none';
+      function closeSubtopicTagsModal() {
+          document.getElementById('subtopicTagsModal').style.display = 'none';
           currentEditingSubtopic = null;
-          currentSubtopicKeywords = [];
+          currentSubtopicTags = [];
       }
 
-      function loadExistingSubtopicKeywords(subjectId, subtopicId) {
-          // For now, since keywords are stored at subject level, we'll return an empty array
-          // In a future implementation, you could store subtopic-specific keywords
+      function loadExistingSubtopicTags(subjectId, subtopicId) {
+          // For now, since tags are stored at subject level, we'll return an empty array
+          // In a future implementation, you could store subtopic-specific tags
           // and load them here from the backend or local storage
           return [];
       }
 
-      function loadCurrentSubtopicKeywords(subjectId, subtopicId) {
-          const container = document.getElementById('currentSubtopicKeywordsList');
+      function loadCurrentSubtopicTags(subjectId, subtopicId) {
+          const container = document.getElementById('currentSubtopicTagsList');
           container.innerHTML = '';
 
-          // For now, we'll start with an empty set of subtopic-specific keywords
+          // For now, we'll start with an empty set of subtopic-specific tags
           // In a real implementation, you'd fetch this from the backend
-          currentSubtopicKeywords.forEach((keyword, index) => {
-              const tag = createEditableKeywordTag(keyword, index);
-              container.appendChild(tag);
+          currentSubtopicTags.forEach((tag, index) => {
+              const tagElement = createEditableTagElement(tag, index);
+              container.appendChild(tagElement);
           });
 
-          if (currentSubtopicKeywords.length === 0) {
-              container.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No specific keywords assigned to this subtopic yet.</p>';
+          if (currentSubtopicTags.length === 0) {
+              container.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No specific tags assigned to this subtopic yet.</p>';
           }
       }
 
-      function loadSubjectKeywordsPool(subjectId) {
-          const container = document.getElementById('subjectKeywordsPool');
-          container.innerHTML = '';
+      async function loadSubjectTagsPool(subjectId) {
+          const container = document.getElementById('subjectTagsPool');
+          container.innerHTML = '<p style="color: #666; text-align: center;">Loading tags...</p>';
 
-          const subjectKeywords = currentSubjects[subjectId]?.allowed_keywords || [];
+          try {
+              const response = await fetch(`/api/subjects/${subjectId}/tags`);
+              if (response.ok) {
+                  const data = await response.json();
+                  const subjectTags = data.tags || [];
+                  
+                  container.innerHTML = '';
 
-          if (subjectKeywords.length === 0) {
-              container.innerHTML = '<p style="color: #666; font-style: italic; margin: 20px; text-align: center;">No keywords in subject pool yet. <br><a href="#" onclick="editSubjectKeywords(\'' + subjectId + '\'); closeSubtopicKeywordsModal();" style="color: #4285f4;">Click here to add keywords to the subject pool first.</a></p>';
-              return;
+                  if (subjectTags.length === 0) {
+                      container.innerHTML = '<p style="color: #666; font-style: italic; margin: 20px; text-align: center;">No tags in subject pool yet. <br><a href="#" onclick="editSubjectTags(\'' + subjectId + '\'); closeSubtopicTagsModal();" style="color: #4285f4;">Click here to add tags to the subject pool first.</a></p>';
+                      return;
+                  }
+
+                  subjectTags.forEach((tag, index) => {
+                      const card = createSelectableTagCard(tag, index);
+                      container.appendChild(card);
+                  });
+              } else {
+                  throw new Error('Failed to load tags');
+              }
+          } catch (error) {
+              console.error('Error loading subject tags:', error);
+              container.innerHTML = '<p style="color: #e53e3e; text-align: center;">Error loading tags. Please try again.</p>';
           }
-
-          subjectKeywords.forEach((keyword, index) => {
-              const card = createSelectableKeywordCard(keyword, index);
-              container.appendChild(card);
-          });
       }
 
-      function createEditableKeywordTag(keyword, index) {
-          const tag = document.createElement('div');
-          tag.className = 'editable-keyword-tag';
-          tag.innerHTML = `
-              <span>${keyword}</span>
-              <span class="remove-keyword" onclick="removeSubtopicKeyword(${index})" title="Remove keyword">×</span>
+      function createEditableTagElement(tag, index) {
+          const tagElement = document.createElement('div');
+          tagElement.className = 'editable-tag-element';
+          tagElement.innerHTML = `
+              <span>${tag}</span>
+              <span class="remove-tag" onclick="removeSubtopicTag(${index})" title="Remove tag">×</span>
           `;
-          return tag;
+          return tagElement;
       }
 
-      function createSelectableKeywordCard(keyword, index) {
+      function createSelectableTagCard(tag, index) {
           const card = document.createElement('div');
-          card.className = 'keyword-card';
-          card.dataset.keyword = keyword;
+          card.className = 'tag-card';
+          card.dataset.tag = tag;
           card.dataset.index = index;
 
           card.innerHTML = `
-              <div class="keyword-card-text">${keyword}</div>
+              <div class="tag-card-text">${tag}</div>
           `;
 
           // Add click handler for selection
           card.addEventListener('click', function() {
-              toggleSubjectKeywordSelection(card);
+              toggleSubjectTagSelection(card);
           });
 
           return card;
       }
 
-      function toggleSubjectKeywordSelection(card) {
+      function toggleSubjectTagSelection(card) {
           card.classList.toggle('selected');
-          updateFinalKeywordsPreview();
+          updateFinalTagsPreview();
       }
 
-      function selectAllSubjectKeywords() {
-          const cards = document.querySelectorAll('#subjectKeywordsPool .keyword-card');
+      function selectAllSubjectTags() {
+          const cards = document.querySelectorAll('#subjectTagsPool .tag-card');
           cards.forEach(card => {
               card.classList.add('selected');
           });
-          updateFinalKeywordsPreview();
+          updateFinalTagsPreview();
       }
 
-      function clearAllSubjectKeywords() {
-          const cards = document.querySelectorAll('#subjectKeywordsPool .keyword-card');
+      function clearAllSubjectTags() {
+          const cards = document.querySelectorAll('#subjectTagsPool .tag-card');
           cards.forEach(card => {
               card.classList.remove('selected');
           });
-          updateFinalKeywordsPreview();
+          updateFinalTagsPreview();
       }
 
-      function addNewSubtopicKeywords() {
-          const input = document.getElementById('newSubtopicKeywordsInput');
-          const newKeywords = input.value.split(',').map(k => k.trim()).filter(k => k.length > 0);
+      function addNewSubtopicTags() {
+          const input = document.getElementById('newSubtopicTagsInput');
+          const newTags = input.value.split(',').map(k => k.trim()).filter(k => k.length > 0);
 
-          if (newKeywords.length === 0) {
-              alert('Please enter at least one keyword');
+          if (newTags.length === 0) {
+              alert('Please enter at least one tag');
               return;
           }
 
-          // Add to current subtopic keywords if not already present
-          newKeywords.forEach(keyword => {
-              if (!currentSubtopicKeywords.includes(keyword)) {
-                  currentSubtopicKeywords.push(keyword);
+          // Add to current subtopic tags if not already present
+          newTags.forEach(tag => {
+              if (!currentSubtopicTags.includes(tag)) {
+                  currentSubtopicTags.push(tag);
               }
           });
 
@@ -2952,43 +3061,43 @@
           input.value = '';
 
           // Refresh display
-          loadCurrentSubtopicKeywords(currentEditingSubject, currentEditingSubtopic);
-          updateFinalKeywordsPreview();
+          loadCurrentSubtopicTags(currentEditingSubject, currentEditingSubtopic);
+          updateFinalTagsPreview();
       }
 
-      function removeSubtopicKeyword(index) {
-          currentSubtopicKeywords.splice(index, 1);
-          loadCurrentSubtopicKeywords(currentEditingSubject, currentEditingSubtopic);
-          updateFinalKeywordsPreview();
+      function removeSubtopicTag(index) {
+          currentSubtopicTags.splice(index, 1);
+          loadCurrentSubtopicTags(currentEditingSubject, currentEditingSubtopic);
+          updateFinalTagsPreview();
       }
 
-      function updateFinalKeywordsPreview() {
-          const preview = document.getElementById('finalKeywordsPreview');
+      function updateFinalTagsPreview() {
+          const preview = document.getElementById('finalTagsPreview');
 
-          // Get selected subject keywords
-          const selectedCards = document.querySelectorAll('#subjectKeywordsPool .keyword-card.selected');
-          const selectedSubjectKeywords = Array.from(selectedCards).map(card => card.dataset.keyword);
+          // Get selected subject tags
+          const selectedCards = document.querySelectorAll('#subjectTagsPool .tag-card.selected');
+          const selectedSubjectTags = Array.from(selectedCards).map(card => card.dataset.tag);
 
-          // Combine subtopic-specific keywords with selected subject keywords
-          const allKeywords = [...new Set([...currentSubtopicKeywords, ...selectedSubjectKeywords])];
+          // Combine subtopic-specific tags with selected subject tags
+          const allTags = [...new Set([...currentSubtopicTags, ...selectedSubjectTags])];
 
-          if (allKeywords.length === 0) {
-              preview.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No keywords selected</p>';
+          if (allTags.length === 0) {
+              preview.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No tags selected</p>';
               return;
           }
 
-          preview.innerHTML = allKeywords.map(keyword =>
-              `<span class="preview-keyword-tag">${keyword}</span>`
+          preview.innerHTML = allTags.map(tag =>
+              `<span class="preview-tag-element">${tag}</span>`
           ).join('');
       }
 
-      function searchSubjectKeywords() {
-          const searchTerm = document.getElementById('subjectKeywordsSearchInput').value.toLowerCase();
-          const cards = document.querySelectorAll('#subjectKeywordsPool .keyword-card');
+      function searchSubjectTags() {
+          const searchTerm = document.getElementById('subjectTagsSearchInput').value.toLowerCase();
+          const cards = document.querySelectorAll('#subjectTagsPool .tag-card');
 
           cards.forEach(card => {
-              const keyword = card.dataset.keyword.toLowerCase();
-              if (keyword.includes(searchTerm)) {
+              const tag = card.dataset.tag.toLowerCase();
+              if (tag.includes(searchTerm)) {
                   card.style.display = 'flex';
               } else {
                   card.style.display = 'none';
@@ -2996,58 +3105,58 @@
           });
       }
 
-      function saveSubtopicKeywords() {
-          // Get selected subject keywords
-          const selectedCards = document.querySelectorAll('#subjectKeywordsPool .keyword-card.selected');
-          const selectedSubjectKeywords = Array.from(selectedCards).map(card => card.dataset.keyword);
+      function saveSubtopicTags() {
+          // Get selected subject tags
+          const selectedCards = document.querySelectorAll('#subjectTagsPool .tag-card.selected');
+          const selectedSubjectTags = Array.from(selectedCards).map(card => card.dataset.tag);
 
-          // Combine all keywords
-          const allKeywords = [...new Set([...currentSubtopicKeywords, ...selectedSubjectKeywords])];
+          // Combine all tags
+          const allTags = [...new Set([...currentSubtopicTags, ...selectedSubjectTags])];
 
-          // For now, we'll add these keywords to the subject's keyword pool
+          // For now, we'll add these tags to the subject's tag pool
           // In a full implementation, you'd save this association to the backend
 
-          // Add new subtopic-specific keywords to the subject pool
-          const subjectKeywords = currentSubjects[currentEditingSubject].allowed_keywords || [];
-          const newKeywords = currentSubtopicKeywords.filter(k => !subjectKeywords.includes(k));
+          // Add new subtopic-specific tags to the subject pool
+          const subjectTags = currentSubjects[currentEditingSubject].allowed_keywords || [];
+          const newTags = currentSubtopicTags.filter(k => !subjectTags.includes(k));
 
-          if (newKeywords.length > 0) {
-              // Update subject keywords
+          if (newTags.length > 0) {
+              // Update subject tags
               fetch(`/admin/subjects/${currentEditingSubject}/keywords`, {
                   method: 'PUT',
                   headers: {
                       'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                      keywords: [...subjectKeywords, ...newKeywords]
+                      keywords: [...subjectTags, ...newTags]
                   })
               })
               .then(response => response.json())
               .then(data => {
                   if (data.success) {
                       // Update local data
-                      currentSubjects[currentEditingSubject].allowed_keywords = [...subjectKeywords, ...newKeywords];
-                      showNotification(`Keywords saved successfully! Added ${newKeywords.length} new keywords to subject pool.`, 'success');
-                      closeSubtopicKeywordsModal();
+                      currentSubjects[currentEditingSubject].allowed_keywords = [...subjectTags, ...newTags];
+                      showNotification(`Tags saved successfully! Added ${newTags.length} new tags to subject pool.`, 'success');
+                      closeSubtopicTagsModal();
                   } else {
-                      showNotification(data.error || 'Failed to save keywords', 'error');
+                      showNotification(data.error || 'Failed to save tags', 'error');
                   }
               })
               .catch(error => {
-                  console.error('Error saving keywords:', error);
-                  showNotification('Error saving keywords', 'error');
+                  console.error('Error saving tags:', error);
+                  showNotification('Error saving tags', 'error');
               });
           } else {
-              showNotification('Keywords selection saved!', 'success');
-              closeSubtopicKeywordsModal();
+              showNotification('Tags selection saved!', 'success');
+              closeSubtopicTagsModal();
           }
       }
 
-      function editSubjectKeywords(subjectId) {
+      function editSubjectTags(subjectId) {
           const modal = document.getElementById('subjectKeywordsModal');
           const title = document.getElementById('subjectKeywordsModalTitle');
 
-          title.textContent = `Manage Keywords - ${currentSubjects[subjectId]?.name || subjectId}`;
+          title.textContent = `Manage Tags - ${currentSubjects[subjectId]?.name || subjectId}`;
           currentEditingSubject = subjectId;
 
           // Load stats
@@ -3063,25 +3172,25 @@
           modal.style.display = 'block';
       }
 
-      function viewKeywords(subjectId) {
+      function viewTags(subjectId) {
           const modal = document.getElementById('viewKeywordsModal');
           const title = document.getElementById('viewKeywordsModalTitle');
           const content = document.getElementById('viewKeywordsContent');
 
-          title.textContent = `${currentSubjects[subjectId]?.name || subjectId} Keywords`;
+          title.textContent = `${currentSubjects[subjectId]?.name || subjectId} Tags`;
 
-          const keywords = currentSubjects[subjectId]?.allowed_keywords || [];
+          const tags = currentSubjects[subjectId]?.allowed_keywords || [];
           content.innerHTML = '';
 
-          if (keywords.length > 0) {
-              keywords.forEach(keyword => {
-                  const tag = document.createElement('span');
-                  tag.className = 'keyword-tag';
-                  tag.textContent = keyword;
-                  content.appendChild(tag);
+          if (tags.length > 0) {
+              tags.forEach(tag => {
+                  const tagElement = document.createElement('span');
+                  tagElement.className = 'tag-chip';
+                  tagElement.textContent = tag;
+                  content.appendChild(tagElement);
               });
           } else {
-              content.innerHTML = '<div class="no-keywords"><i class="fas fa-info-circle"></i> No keywords defined for this subject.</div>';
+              content.innerHTML = '<div class="no-tags"><i class="fas fa-info-circle"></i> No tags defined for this subject.</div>';
           }
 
           modal.style.display = 'block';

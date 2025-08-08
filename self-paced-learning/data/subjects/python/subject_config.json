@@ -80,20 +80,22 @@
       "question_count": 0
     }
   },
-  "allowed_keywords": [
-    "python function basics",
+  "allowed_tags": [
+    "*args and **kwargs",
+    "default parameter values",
+    "error handling",
     "function definition",
+    "function return values",
+    "keyword arguments",
+    "passing function arguments",
+    "positional-only and keyword-only arguments",
+    "python function basics",
+    "python syntax",
+    "recursive functions",
+    "return values",
     "syntax",
     "terminology",
-    "passing function arguments",
-    "keyword arguments",
-    "default parameter values",
-    "*args and **kwargs",
-    "positional-only and keyword-only arguments",
-    "return values",
-    "function return values",
-    "recursive functions",
-    "error handling",
-    "python syntax"
+    "test",
+    "test2"
   ]
 }

@@ -265,7 +265,7 @@
                 >
 
                 <div class="keywords-list" id="keywordsList">
-                  {% for keyword in config.allowed_keywords %}
+                  {% for keyword in config.allowed_tags %}
                   <span class="keyword-tag">
                     {{ keyword }}
                     <button
@@ -780,7 +780,7 @@
     </style>
 
     <script>
-      let allowedKeywords = {{ config.allowed_keywords | tojson }};
+      let allowedKeywords = {{ config.allowed_tags | tojson }};
 
       // Icon functionality
       document.getElementById('icon').addEventListener('input', function() {

@@ -106,12 +106,16 @@
                         
                         <div class="form-group">
                             <label for="lessonTags">Lesson Tags *</label>
-                            <input type="text" id="lessonTags" name="lessonTags" 
-                                   placeholder="e.g., python function basics, function definition, syntax"
-                                   {% if edit_mode and lesson_data.tags %}value="{{ lesson_data.tags | join(', ') }}"{% endif %}
-                                   required>
-                            <small>Enter tags separated by commas. Tags help the AI match lessons to student needs</small>
+                            <div class="tag-input-container">
+                                <input type="text" id="lessonTags" name="lessonTags" 
+                                       placeholder="Start typing to search tags..."
+                                       {% if edit_mode and lesson_data.tags %}value="{{ lesson_data.tags | join(', ') }}"{% endif %}
+                                       required autocomplete="off">
+                                <div class="tag-suggestions" id="lessonTagSuggestions"></div>
+                            </div>
+                            <small>Select from available tags or type to search. Tags help the AI match lessons to student needs</small>
                             <div class="tags-preview" id="lessonTagsPreview"></div>
+                            <div class="available-tags" id="lessonAvailableTags"></div>
                             <div class="error-message" id="lessonTagsError"></div>
                         </div>
                     </div>
@@ -396,6 +400,85 @@
 
         .tag-preview .remove-tag:hover {
             color: #e53e3e;
+        }
+
+        /* New tag input styles */
+        .tag-input-container {
+            position: relative;
+        }
+
+        .tag-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .tag-suggestions.show {
+            display: block;
+        }
+
+        .tag-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .tag-suggestion:hover,
+        .tag-suggestion.highlighted {
+            background-color: #f7fafc;
+        }
+
+        .tag-suggestion.selected {
+            background-color: #e6fffa;
+            color: #00695c;
+        }
+
+        .available-tags {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .available-tags h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .available-tags .tag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .tag-chip {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tag-chip:hover {
+            background: #bbdefb;
+        }
+
+        .tag-chip.used {
+            background: #c8e6c9;
+            color: #2e7d32;
         }
 
         .error-message {
@@ -768,15 +851,215 @@
             
             updateContentVisibility();
             
-            // Add tags preview functionality
-            document.getElementById('lessonTags').addEventListener('input', function() {
-                updateTagsPreview();
-            });
+            // Tag API integration variables
+            let availableTags = [];
+            let selectedTags = [];
             
-            // Initialize tags preview for edit mode
-            {% if edit_mode and lesson_data.tags %}
+            // Load available tags from API
+            async function loadAvailableTags() {
+                const subjectSelect = document.getElementById('subject');
+                const currentSubject = subjectSelect.value;
+                
+                if (!currentSubject) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/subjects/${currentSubject}/tags`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        availableTags = data.tags || [];
+                        displayAvailableTags();
+                        
+                        // Initialize selected tags from input if in edit mode
+                        {% if edit_mode and lesson_data.tags %}
+                            selectedTags = {{ lesson_data.tags | tojson }};
+                            updateTagInput();
+                            updateTagsPreview();
+                            updateTagChipsDisplay();
+                        {% endif %}
+                    } else {
+                        console.error('Failed to load available tags');
+                        availableTags = [];
+                    }
+                } catch (error) {
+                    console.error('Error loading tags:', error);
+                    availableTags = [];
+                }
+            }
+
+            // Display available tags
+            function displayAvailableTags() {
+                const container = document.getElementById('lessonAvailableTags');
+                if (availableTags.length === 0) {
+                    container.innerHTML = '<small style="color: #666;">No tags available for this subject.</small>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <h4>Available Tags (${availableTags.length})</h4>
+                    <div class="tag-chips">
+                        ${availableTags.map(tag => `
+                            <span class="tag-chip" onclick="addTagFromChip('${tag}')" title="Click to add">${tag}</span>
+                        `).join('')}
+                    </div>
+                `;
+                updateTagChipsDisplay();
+            }
+
+            function updateTagChipsDisplay() {
+                document.querySelectorAll('.tag-chip').forEach(chip => {
+                    const tagText = chip.textContent;
+                    if (selectedTags.includes(tagText)) {
+                        chip.classList.add('used');
+                        chip.title = 'Already selected';
+                    } else {
+                        chip.classList.remove('used');
+                        chip.title = 'Click to add';
+                    }
+                });
+            }
+
+            function addTagFromChip(tag) {
+                if (!selectedTags.includes(tag)) {
+                    selectedTags.push(tag);
+                    updateTagInput();
+                    updateTagsPreview();
+                    updateTagChipsDisplay();
+                }
+            }
+
+            function updateTagInput() {
+                document.getElementById('lessonTags').value = selectedTags.join(', ');
+            }
+
+            function updateTagsPreview() {
+                const preview = document.getElementById('lessonTagsPreview');
+                preview.innerHTML = selectedTags.map(tag => `
+                    <span class="tag-preview">
+                        ${tag}
+                        <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
+                    </span>
+                `).join('');
+            }
+
+            function removeTag(tagToRemove) {
+                selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
+                updateTagInput();
                 updateTagsPreview();
-            {% endif %}
+                updateTagChipsDisplay();
+                hideSuggestions();
+            }
+
+            // Tag search and suggestions
+            let highlightedIndex = -1;
+
+            document.getElementById('lessonTags').addEventListener('input', function() {
+                const inputValue = this.value;
+                const lastComma = inputValue.lastIndexOf(',');
+                const currentTag = lastComma >= 0 ? inputValue.substring(lastComma + 1).trim() : inputValue.trim();
+                
+                // Update selected tags based on input
+                if (lastComma >= 0) {
+                    const tags = inputValue.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    selectedTags = tags.filter(tag => availableTags.includes(tag));
+                } else if (currentTag && availableTags.includes(currentTag)) {
+                    selectedTags = [currentTag];
+                } else {
+                    selectedTags = [];
+                }
+
+                updateTagsPreview();
+                updateTagChipsDisplay();
+
+                if (currentTag) {
+                    showSuggestions(currentTag);
+                } else {
+                    hideSuggestions();
+                }
+            });
+
+            document.getElementById('lessonTags').addEventListener('keydown', function(e) {
+                const suggestions = document.querySelectorAll('.tag-suggestion');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    highlightedIndex = Math.min(highlightedIndex + 1, suggestions.length - 1);
+                    updateHighlight();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                    updateHighlight();
+                } else if (e.key === 'Enter' && highlightedIndex >= 0 && suggestions.length > 0) {
+                    e.preventDefault();
+                    selectSuggestion(suggestions[highlightedIndex].textContent);
+                } else if (e.key === 'Escape') {
+                    hideSuggestions();
+                }
+            });
+
+            function showSuggestions(searchTerm) {
+                const filteredTags = availableTags.filter(tag => 
+                    tag.toLowerCase().includes(searchTerm.toLowerCase()) && 
+                    !selectedTags.includes(tag)
+                );
+
+                const container = document.getElementById('lessonTagSuggestions');
+                
+                if (filteredTags.length === 0) {
+                    hideSuggestions();
+                    return;
+                }
+
+                container.innerHTML = filteredTags.map(tag => `
+                    <div class="tag-suggestion" onclick="selectSuggestion('${tag}')">${tag}</div>
+                `).join('');
+                
+                container.classList.add('show');
+                highlightedIndex = -1;
+            }
+
+            function hideSuggestions() {
+                document.getElementById('lessonTagSuggestions').classList.remove('show');
+                highlightedIndex = -1;
+            }
+
+            function updateHighlight() {
+                document.querySelectorAll('.tag-suggestion').forEach((suggestion, index) => {
+                    suggestion.classList.toggle('highlighted', index === highlightedIndex);
+                });
+            }
+
+            function selectSuggestion(tag) {
+                const input = document.getElementById('lessonTags');
+                const inputValue = input.value;
+                const lastComma = inputValue.lastIndexOf(',');
+                
+                if (lastComma >= 0) {
+                    // Replace the part after the last comma
+                    const beforeComma = inputValue.substring(0, lastComma + 1).trim();
+                    input.value = beforeComma + (beforeComma ? ' ' : '') + tag;
+                } else {
+                    // Replace entire input
+                    input.value = tag;
+                }
+
+                if (!selectedTags.includes(tag)) {
+                    selectedTags.push(tag);
+                    updateTagsPreview();
+                    updateTagChipsDisplay();
+                }
+
+                hideSuggestions();
+                input.focus();
+            }
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.tag-input-container')) {
+                    hideSuggestions();
+                }
+            });
             
             // Add subject change handler
             const subjectSelect = document.getElementById('subject');
@@ -789,7 +1072,17 @@
                 subtopicSelect.innerHTML = '<option value="">Select Subtopic</option>';
                 subtopicSelect.disabled = !selectedSubject;
                 
+                // Reset tags when subject changes
+                selectedTags = [];
+                availableTags = [];
+                updateTagInput();
+                updateTagsPreview();
+                document.getElementById('lessonAvailableTags').innerHTML = '';
+                
                 if (selectedSubject) {
+                    // Load tags for the new subject
+                    loadAvailableTags();
+                    
                     // Fetch subtopics for the selected subject
                     fetch(`/api/subjects/${selectedSubject}/subtopics`)
                         .then(response => response.json())
@@ -826,6 +1119,15 @@
                 if (subjectSelect.value) {
                     // The subtopics are already populated via Jinja template in edit mode
                     subtopicSelect.disabled = false;
+                    // Load tags for the current subject in edit mode
+                    loadAvailableTags();
+                }
+            {% endif %}
+            
+            // For new lessons, load tags if subject is preselected
+            {% if not edit_mode %}
+                if (subjectSelect.value) {
+                    loadAvailableTags();
                 }
             {% endif %}
         });
@@ -1152,27 +1454,6 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
-        }
-
-        // Tags preview functionality
-        function updateTagsPreview() {
-            const input = document.getElementById('lessonTags');
-            const preview = document.getElementById('lessonTagsPreview');
-            const tags = input.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-
-            preview.innerHTML = tags.map(tag => `
-                <span class="tag-preview">
-                    ${tag}
-                    <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
-                </span>
-            `).join('');
-        }
-
-        function removeTag(tagToRemove) {
-            const input = document.getElementById('lessonTags');
-            const tags = input.value.split(',').map(tag => tag.trim()).filter(tag => tag && tag !== tagToRemove);
-            input.value = tags.join(', ');
-            updateTagsPreview();
         }
 
         // Add CSS for notification animation

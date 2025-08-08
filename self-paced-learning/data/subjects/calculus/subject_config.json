@@ -12,16 +12,21 @@
       "question_count": 0
     }
   },
-  "allowed_keywords": [
+  "allowed_tags": [
+    "antiderivative",
+    "calculus",
+    "constant",
+    "definite integrals",
+    "exponential",
+    "fundamental theorem",
+    "geometric interpretation",
+    "indefinite integrals",
     "integrals",
     "integration",
-    "indefinite integrals",
-    "definite integrals",
-    "fundamental theorem",
-    "integration techniques",
-    "substitution",
     "integration by parts",
-    "calculus",
-    "antiderivative"
+    "integration techniques",
+    "logarithmic",
+    "power rule",
+    "substitution"
   ]
 }

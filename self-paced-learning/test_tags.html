@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Tag API Integration</title>
+    <style>
+        .tag-chip {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin: 2px;
+            display: inline-block;
+        }
+        .tag-chip:hover {
+            background: #bbdefb;
+        }
+        .tag-chip.used {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        .available-tags {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tag API Integration Test</h1>
+    
+    <button onclick="loadTags()">Load Python Tags</button>
+    <div id="status"></div>
+    <div id="availableTags" class="available-tags"></div>
+    
+    <script>
+        let availableTags = [];
+        
+        async function loadTags() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch('/api/subjects/python/tags');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Response data:', data);
+                    availableTags = data.tags || [];
+                    displayAvailableTags();
+                    statusDiv.innerHTML = `Loaded ${availableTags.length} tags successfully!`;
+                } else {
+                    statusDiv.innerHTML = `Error: ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                console.error('Error loading tags:', error);
+                statusDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        function displayAvailableTags() {
+            const container = document.getElementById('availableTags');
+            if (availableTags.length === 0) {
+                container.innerHTML = '<small style="color: #666;">No tags available.</small>';
+                return;
+            }
+
+            container.innerHTML = `
+                <h4>Available Tags (${availableTags.length})</h4>
+                <div>
+                    ${availableTags.map(tag => `
+                        <span class="tag-chip" onclick="selectTag('${tag}')" title="Click to select">${tag}</span>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function selectTag(tag) {
+            alert(`Selected tag: ${tag}`);
+        }
+    </script>
+</body>
+</html>
