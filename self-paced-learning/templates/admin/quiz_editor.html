@@ -477,7 +477,10 @@
                 />
                 <div class="tag-suggestions" id="tagSuggestions"></div>
               </div>
-              <small>Select from available tags or type to search. Tags help categorize questions for targeted learning</small>
+              <small
+                >Select from available tags or type to search. Tags help
+                categorize questions for targeted learning</small
+              >
               <div class="tags-preview" id="tagsPreview"></div>
               <div class="available-tags" id="availableTags"></div>
               <div class="error-message" id="questionTagsError"></div>
@@ -1741,7 +1744,7 @@
           showQuestionTypeSection('multiple_choice');
           resetOptions();
           clearErrors();
-          
+
           // Reset tags with new API system
           selectedTags = [];
           updateTagInput();
@@ -1784,7 +1787,7 @@
 
           document.getElementById('questionType').value = question.type || 'multiple_choice';
           document.getElementById('questionText').value = question.question || '';
-          
+
           // Handle tags with new API system
           selectedTags = question.tags || [];
           updateTagInput();

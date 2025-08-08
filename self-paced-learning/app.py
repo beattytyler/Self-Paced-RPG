@@ -203,7 +203,7 @@ def subject_selection():
     try:
         # Use auto-discovery instead of subjects.json
         subjects = data_loader.discover_subjects()
-        
+
         # Fallback to default Python subject if no subjects found
         if not subjects:
             subjects = {
@@ -231,12 +231,37 @@ def subject_page(subject):
         # Load subject configuration and info
         subject_config = data_loader.load_subject_config(subject)
         subject_info = data_loader.load_subject_info(subject)
-        
+
         if not subject_config or not subject_info:
             app.logger.error(f"Subject data not found for: {subject}")
             return redirect(url_for("subject_selection"))
 
         subtopics = subject_config.get("subtopics", {})
+
+        # Calculate actual counts for each subtopic by checking the files
+        for subtopic_id, subtopic_data in subtopics.items():
+            try:
+                # Count quiz questions
+                quiz_data = get_quiz_data(subject, subtopic_id)
+                question_count = len(quiz_data) if quiz_data else 0
+                
+                # Count lesson plans
+                lesson_plans = get_lesson_plans(subject, subtopic_id)
+                lesson_count = len(lesson_plans) if lesson_plans else 0
+                
+                # Count videos
+                video_data = get_video_data(subject, subtopic_id)
+                video_count = len(video_data) if video_data else 0
+                
+                # Update the counts with actual values
+                subtopic_data["question_count"] = question_count
+                subtopic_data["lesson_count"] = lesson_count
+                subtopic_data["video_count"] = video_count
+                
+            except Exception as e:
+                app.logger.warning(f"Error calculating counts for {subject}/{subtopic_id}: {e}")
+                # Keep original counts if there's an error
+                pass
 
         # Sort subtopics by order
         sorted_subtopics = dict(
@@ -362,7 +387,12 @@ def quiz_page(subject, subtopic):
     session["current_subject"] = subject
     session["current_subtopic"] = subtopic
 
-    return render_template("quiz.html", questions=quiz_questions, quiz_title=quiz_title, admin_override=session.get("admin_override", False))
+    return render_template(
+        "quiz.html",
+        questions=quiz_questions,
+        quiz_title=quiz_title,
+        admin_override=session.get("admin_override", False),
+    )
 
 
 # Legacy route for backward compatibility
@@ -855,7 +885,10 @@ def take_remedial_quiz_page():
         quiz_title += " (Focusing on: " + ", ".join(targeted_topics) + ")"
 
     return render_template(
-        "quiz.html", questions=remedial_questions, quiz_title=quiz_title, admin_override=session.get("admin_override", False)
+        "quiz.html",
+        questions=remedial_questions,
+        quiz_title=quiz_title,
+        admin_override=session.get("admin_override", False),
     )
 
 
@@ -1039,7 +1072,7 @@ def admin_edit_subject(subject):
     try:
         subject_config = data_loader.load_subject_config(subject)
         subject_info = data_loader.load_subject_info(subject)
-        
+
         if not subject_config or not subject_info:
             return f"Subject '{subject}' not found", 404
 
@@ -1047,7 +1080,7 @@ def admin_edit_subject(subject):
         config = {
             "subject_info": subject_info,
             "subtopics": subject_config.get("subtopics", {}),
-            "allowed_tags": subject_config.get("allowed_tags", [])
+            "allowed_tags": subject_config.get("allowed_tags", []),
         }
 
         return render_template(
@@ -1116,6 +1149,7 @@ def admin_delete_subject(subject):
 # ADMIN - OVERRIDE FUNCTIONALITY
 # ============================================================================
 
+
 @app.route("/admin/toggle-override", methods=["GET", "POST"])
 def admin_toggle_override():
     """Toggle or check admin override status for debugging/testing."""
@@ -1123,26 +1157,21 @@ def admin_toggle_override():
         if request.method == "GET":
             # Return current override status
             admin_override = session.get("admin_override", False)
-            return jsonify({
-                "success": True,
-                "admin_override": admin_override
-            })
-        
+            return jsonify({"success": True, "admin_override": admin_override})
+
         elif request.method == "POST":
             # Toggle the override status
             current_status = session.get("admin_override", False)
             new_status = not current_status
             session["admin_override"] = new_status
-            
+
             message = f"Admin override {'enabled' if new_status else 'disabled'}"
             app.logger.info(f"Admin override toggled: {message}")
-            
-            return jsonify({
-                "success": True,
-                "admin_override": new_status,
-                "message": message
-            })
-            
+
+            return jsonify(
+                {"success": True, "admin_override": new_status, "message": message}
+            )
+
     except Exception as e:
         app.logger.error(f"Error in admin override toggle: {e}")
         return jsonify({"error": str(e)}), 500
@@ -1188,7 +1217,9 @@ def get_all_lessons():
                                     "content_count": len(
                                         lesson_data.get("content", [])
                                     ),
-                                    "subject_name": subject_info.get("name", subject_id),
+                                    "subject_name": subject_info.get(
+                                        "name", subject_id
+                                    ),
                                 }
                             )
     except Exception as e:
@@ -1276,11 +1307,25 @@ def admin_create_lesson():
             tags = data.get("tags", [])
 
             if not all([subject, subtopic, lesson_id, lesson_title]):
-                return jsonify({"error": "Subject, subtopic, lesson ID, and title are required"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "Subject, subtopic, lesson ID, and title are required"
+                        }
+                    ),
+                    400,
+                )
 
             # Validate subject and subtopic exist
             if not data_loader.validate_subject_subtopic(subject, subtopic):
-                return jsonify({"error": f"Subject '{subject}' with subtopic '{subtopic}' not found"}), 404
+                return (
+                    jsonify(
+                        {
+                            "error": f"Subject '{subject}' with subtopic '{subtopic}' not found"
+                        }
+                    ),
+                    404,
+                )
 
             # Check if lesson already exists
             existing_lessons = get_lesson_plans(subject, subtopic)
@@ -1298,7 +1343,9 @@ def admin_create_lesson():
 
             # Save lesson
             if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
-                return jsonify({"success": True, "message": "Lesson created successfully"})
+                return jsonify(
+                    {"success": True, "message": "Lesson created successfully"}
+                )
             else:
                 return jsonify({"error": "Failed to save lesson"}), 500
 
@@ -1316,7 +1363,9 @@ def admin_create_lesson():
         return f"Error: {e}", 500
 
 
-@app.route("/admin/lessons/<subject>/<subtopic>/<lesson_id>/edit", methods=["GET", "POST"])
+@app.route(
+    "/admin/lessons/<subject>/<subtopic>/<lesson_id>/edit", methods=["GET", "POST"]
+)
 def admin_edit_lesson(subject, subtopic, lesson_id):
     """Edit an existing lesson."""
     if request.method == "POST":
@@ -1341,7 +1390,9 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
 
             # Save lesson
             if save_lesson_to_file(subject, subtopic, lesson_id, lesson_data):
-                return jsonify({"success": True, "message": "Lesson updated successfully"})
+                return jsonify(
+                    {"success": True, "message": "Lesson updated successfully"}
+                )
             else:
                 return jsonify({"error": "Failed to update lesson"}), 500
 
@@ -1360,6 +1411,10 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
 
         # Get subjects for context
         subjects = data_loader.discover_subjects()
+        
+        # Load subtopics for the current subject (needed for edit mode)
+        subject_config = data_loader.load_subject_config(subject)
+        subject_subtopics = subject_config.get("subtopics", {}) if subject_config else {}
 
         return render_template(
             "admin/create_lesson.html",
@@ -1368,7 +1423,8 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
             subject=subject,
             subtopic=subtopic,
             lesson_id=lesson_id,
-            lesson_data=lesson_data
+            lesson_data=lesson_data,
+            subject_subtopics=subject_subtopics,
         )
     except Exception as e:
         app.logger.error(f"Error loading lesson editor: {e}")
@@ -1408,7 +1464,9 @@ def admin_subtopics():
 
                     # Get subtopics from subject_config.json
                     config_subtopics = config.get("subtopics", {})
-                    allowed_tags = config.get("allowed_tags", config.get("allowed_keywords", []))
+                    allowed_tags = config.get(
+                        "allowed_tags", config.get("allowed_keywords", [])
+                    )
 
                     subjects[subject_id]["subtopics"] = config_subtopics
                     subjects[subject_id]["allowed_tags"] = allowed_tags
@@ -1453,19 +1511,17 @@ def admin_questions():
                 subject_data = {
                     "name": subject_info.get("name", subject_id),
                     "description": subject_info.get("description", ""),
-                    "subtopics": {}
+                    "subtopics": {},
                 }
 
-                for subtopic_id, subtopic_data in subject_config[
-                    "subtopics"
-                ].items():
+                for subtopic_id, subtopic_data in subject_config["subtopics"].items():
                     # Load quiz data and question pool to get counts
                     quiz_data = data_loader.load_quiz_data(subject_id, subtopic_id)
-                    pool_data = data_loader.get_question_pool_questions(subject_id, subtopic_id)
-
-                    quiz_count = (
-                        len(quiz_data.get("questions", [])) if quiz_data else 0
+                    pool_data = data_loader.get_question_pool_questions(
+                        subject_id, subtopic_id
                     )
+
+                    quiz_count = len(quiz_data.get("questions", [])) if quiz_data else 0
                     pool_count = len(pool_data) if pool_data else 0
 
                     subtopic_data["quiz_questions_count"] = quiz_count
@@ -1503,13 +1559,19 @@ def admin_quiz_editor(subject, subtopic):
         # Load quiz data and question pool
         quiz_data = data_loader.load_quiz_data(subject, subtopic)
         pool_questions = data_loader.get_question_pool_questions(subject, subtopic)
-        
+
         # Format question pool to match template expectations
         question_pool = {"questions": pool_questions}
 
         # Get subject config for tags
         subject_config = data_loader.load_subject_config(subject)
-        allowed_tags = subject_config.get("allowed_tags", subject_config.get("allowed_keywords", [])) if subject_config else []
+        allowed_tags = (
+            subject_config.get(
+                "allowed_tags", subject_config.get("allowed_keywords", [])
+            )
+            if subject_config
+            else []
+        )
 
         return render_template(
             "admin/quiz_editor.html",
@@ -1517,7 +1579,7 @@ def admin_quiz_editor(subject, subtopic):
             subtopic=subtopic,
             quiz_data=quiz_data,
             question_pool=question_pool,
-            allowed_tags=allowed_tags
+            allowed_tags=allowed_tags,
         )
 
     except Exception as e:
@@ -1540,26 +1602,28 @@ def admin_quiz_initial(subject, subtopic):
         try:
             data = request.json
             questions = data.get("questions", [])
-            
+
             # Create quiz data structure
             quiz_data = {
                 "quiz_title": f"{subject.title()} - {subtopic.title()} Quiz",
                 "questions": questions,
-                "updated_date": "2025-01-01"
+                "updated_date": "2025-01-01",
             }
 
             # Save to file
             quiz_file_path = os.path.join(
                 DATA_ROOT_PATH, "subjects", subject, subtopic, "quiz_data.json"
             )
-            
+
             # Ensure directory exists
             os.makedirs(os.path.dirname(quiz_file_path), exist_ok=True)
-            
+
             with open(quiz_file_path, "w", encoding="utf-8") as f:
                 json.dump(quiz_data, f, indent=2)
 
-            return jsonify({"success": True, "message": "Initial quiz updated successfully"})
+            return jsonify(
+                {"success": True, "message": "Initial quiz updated successfully"}
+            )
 
         except Exception as e:
             app.logger.error(f"Error updating initial quiz: {e}")
@@ -1581,26 +1645,28 @@ def admin_quiz_pool(subject, subtopic):
         try:
             data = request.json
             questions = data.get("questions", [])
-            
+
             # Create question pool structure
             pool_data = {
                 "pool_title": f"{subject.title()} - {subtopic.title()} Question Pool",
                 "questions": questions,
-                "updated_date": "2025-01-01"
+                "updated_date": "2025-01-01",
             }
 
             # Save to file
             pool_file_path = os.path.join(
                 DATA_ROOT_PATH, "subjects", subject, subtopic, "question_pool.json"
             )
-            
-            # Ensure directory exists  
+
+            # Ensure directory exists
             os.makedirs(os.path.dirname(pool_file_path), exist_ok=True)
-            
+
             with open(pool_file_path, "w", encoding="utf-8") as f:
                 json.dump(pool_data, f, indent=2)
 
-            return jsonify({"success": True, "message": "Question pool updated successfully"})
+            return jsonify(
+                {"success": True, "message": "Question pool updated successfully"}
+            )
 
         except Exception as e:
             app.logger.error(f"Error updating question pool: {e}")
@@ -1612,12 +1678,8 @@ def api_get_subject_tags(subject):
     """API endpoint to get available tags for a subject."""
     try:
         tags = get_subject_tags(subject)
-        
-        return jsonify({
-            "success": True,
-            "tags": tags,
-            "count": len(tags)
-        })
+
+        return jsonify({"success": True, "tags": tags, "count": len(tags)})
 
     except Exception as e:
         app.logger.error(f"Error getting tags for {subject}: {e}")
@@ -1633,21 +1695,10 @@ def api_get_subtopics(subject):
             return jsonify({"error": "Subject not found"}), 404
 
         subtopics = subject_config.get("subtopics", {})
-        
-        # Format for frontend
-        subtopics_list = []
-        for subtopic_id, subtopic_data in subtopics.items():
-            subtopics_list.append({
-                "id": subtopic_id,
-                "name": subtopic_data.get("name", subtopic_id),
-                "description": subtopic_data.get("description", ""),
-                "order": subtopic_data.get("order", 999)
-            })
 
-        # Sort by order
-        subtopics_list.sort(key=lambda x: x["order"])
-
-        return jsonify({"subtopics": subtopics_list})
+        # Return the subtopics in the format expected by the frontend JavaScript
+        # The frontend expects an object with subtopic IDs as keys
+        return jsonify({"subtopics": subtopics})
 
     except Exception as e:
         app.logger.error(f"Error getting subtopics for {subject}: {e}")
@@ -1666,19 +1717,21 @@ def admin_clear_cache():
     try:
         # Clear the DataLoader cache
         data_loader._cache.clear()
-        
+
         app.logger.info("DataLoader cache cleared successfully")
-        return jsonify({
-            "success": True, 
-            "message": "Cache cleared successfully! All data will be reloaded fresh."
-        })
-        
+        return jsonify(
+            {
+                "success": True,
+                "message": "Cache cleared successfully! All data will be reloaded fresh.",
+            }
+        )
+
     except Exception as e:
         app.logger.error(f"Error clearing cache: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Failed to clear cache: {str(e)}"
-        }), 500
+        return (
+            jsonify({"success": False, "error": f"Failed to clear cache: {str(e)}"}),
+            500,
+        )
 
 
 @app.route("/admin/migrate-tags", methods=["POST"])
@@ -1687,33 +1740,39 @@ def admin_migrate_tags():
     try:
         # Perform migration for all subjects
         results = data_loader.migrate_all_subjects_tags()
-        
-        successful_migrations = [subject for subject, success in results.items() if success]
-        failed_migrations = [subject for subject, success in results.items() if not success]
-        
+
+        successful_migrations = [
+            subject for subject, success in results.items() if success
+        ]
+        failed_migrations = [
+            subject for subject, success in results.items() if not success
+        ]
+
         # Clear cache to ensure new data is loaded
         data_loader._cache.clear()
-        
+
         message = f"Migration completed! Successfully migrated {len(successful_migrations)} subjects."
         if failed_migrations:
             message += f" Failed to migrate: {', '.join(failed_migrations)}"
-        
+
         app.logger.info(f"Tag migration results: {results}")
-        
-        return jsonify({
-            "success": True,
-            "message": message,
-            "results": results,
-            "successful_count": len(successful_migrations),
-            "failed_count": len(failed_migrations)
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "message": message,
+                "results": results,
+                "successful_count": len(successful_migrations),
+                "failed_count": len(failed_migrations),
+            }
+        )
+
     except Exception as e:
         app.logger.error(f"Error during tag migration: {e}")
-        return jsonify({
-            "success": False,
-            "error": f"Failed to migrate tags: {str(e)}"
-        }), 500
+        return (
+            jsonify({"success": False, "error": f"Failed to migrate tags: {str(e)}"}),
+            500,
+        )
 
 
 if __name__ == "__main__":

@@ -202,10 +202,7 @@
               <strong>Subject Tags Available:</strong>
               <div class="tags-count">
                 {{ subject_data.allowed_keywords|length or 0 }} tags
-                <button
-                  class="btn-mini"
-                  onclick="viewTags('{{ subject_id }}')"
-                >
+                <button class="btn-mini" onclick="viewTags('{{ subject_id }}')">
                   <i class="fas fa-eye"></i> View All
                 </button>
               </div>
@@ -218,8 +215,8 @@
         <div class="tags-overview">
           <h2><i class="fas fa-tags"></i> Subject Tags Overview</h2>
           <p>
-            Tags help the AI understand and categorize content for
-            personalized learning recommendations.
+            Tags help the AI understand and categorize content for personalized
+            learning recommendations.
           </p>
 
           {% for subject_id, subject_data in subjects.items() %}
@@ -231,8 +228,7 @@
               </h3>
               <div class="subject-tags-actions">
                 <span class="tags-count"
-                  >{{ subject_data.allowed_keywords|length or 0 }}
-                  tags</span
+                  >{{ subject_data.allowed_keywords|length or 0 }} tags</span
                 >
                 <button
                   class="btn-secondary btn-sm"
@@ -256,8 +252,8 @@
             {% else %}
             <div class="no-tags">
               <i class="fas fa-info-circle"></i>
-              No tags defined for this subject. Tags help the AI provide
-              better recommendations.
+              No tags defined for this subject. Tags help the AI provide better
+              recommendations.
             </div>
             {% endif %}
           </div>
@@ -404,8 +400,8 @@
                 placeholder="Enter tags separated by commas"
               />
               <small
-                >These tags will be added to the subject's tag pool for
-                AI use</small
+                >These tags will be added to the subject's tag pool for AI
+                use</small
               >
             </div>
 
@@ -667,13 +663,8 @@
             <!-- Current Subtopic Tags Section -->
             <div class="tags-section">
               <h3><i class="fas fa-bookmark"></i> Current Subtopic Tags</h3>
-              <p>
-                These tags are specifically associated with this subtopic:
-              </p>
-              <div
-                id="currentSubtopicTagsList"
-                class="tags-list-editable"
-              >
+              <p>These tags are specifically associated with this subtopic:</p>
+              <div id="currentSubtopicTagsList" class="tags-list-editable">
                 <!-- Current subtopic tags will be populated here -->
               </div>
               <div class="add-tags-form">
@@ -697,8 +688,8 @@
             <div class="tags-section">
               <h3><i class="fas fa-tags"></i> Subject Tags Pool</h3>
               <p>
-                Select tags from the subject's tag pool to assign to
-                this subtopic:
+                Select tags from the subject's tag pool to assign to this
+                subtopic:
               </p>
               <div class="tags-search">
                 <input
@@ -2971,7 +2962,7 @@
               if (response.ok) {
                   const data = await response.json();
                   const subjectTags = data.tags || [];
-                  
+
                   container.innerHTML = '';
 
                   if (subjectTags.length === 0) {

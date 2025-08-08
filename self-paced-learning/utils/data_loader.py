@@ -220,7 +220,7 @@ class DataLoader:
     def get_subject_keywords(self, subject: str) -> List[str]:
         """
         Get allowed AI analysis tags for a subject.
-        
+
         Note: Function name kept for backwards compatibility, but now returns tags.
 
         Args:
@@ -392,88 +392,102 @@ class DataLoader:
         """
         subjects = {}
         subjects_dir = os.path.join(self.data_root, "subjects")
-        
+
         if not os.path.exists(subjects_dir):
             if current_app:
-                current_app.logger.warning(f"Subjects directory not found: {subjects_dir}")
+                current_app.logger.warning(
+                    f"Subjects directory not found: {subjects_dir}"
+                )
             return subjects
 
         try:
             # Scan all directories in the subjects folder
             for item in os.listdir(subjects_dir):
                 subject_path = os.path.join(subjects_dir, item)
-                
+
                 # Skip if not a directory
                 if not os.path.isdir(subject_path):
                     continue
-                
+
                 # Look for subject_info.json
                 subject_info_path = os.path.join(subject_path, "subject_info.json")
                 subject_config_path = os.path.join(subject_path, "subject_config.json")
-                
+
                 # Subject must have both files to be valid
-                if os.path.exists(subject_info_path) and os.path.exists(subject_config_path):
+                if os.path.exists(subject_info_path) and os.path.exists(
+                    subject_config_path
+                ):
                     subject_info = self._load_json_file(subject_info_path)
                     subject_config = self._load_json_file(subject_config_path)
-                    
+
                     if subject_info and subject_config:
                         # Calculate subtopic count
                         subtopic_count = len(subject_config.get("subtopics", {}))
-                        
+
                         # Merge info and add calculated fields
                         subjects[item] = {
                             **subject_info,
                             "subtopic_count": subtopic_count,
                             "status": subject_info.get("status", "active"),
-                            "created_date": subject_info.get("created_date", "2025-01-01")
+                            "created_date": subject_info.get(
+                                "created_date", "2025-01-01"
+                            ),
                         }
-                        
+
                         if current_app:
-                            current_app.logger.info(f"Discovered subject: {item} - {subject_info.get('name', 'Unknown')}")
+                            current_app.logger.info(
+                                f"Discovered subject: {item} - {subject_info.get('name', 'Unknown')}"
+                            )
                     else:
                         if current_app:
-                            current_app.logger.warning(f"Invalid subject files in directory: {item}")
+                            current_app.logger.warning(
+                                f"Invalid subject files in directory: {item}"
+                            )
                 else:
                     if current_app:
-                        current_app.logger.debug(f"Skipping directory (missing required files): {item}")
-                        
+                        current_app.logger.debug(
+                            f"Skipping directory (missing required files): {item}"
+                        )
+
         except Exception as e:
             if current_app:
                 current_app.logger.error(f"Error discovering subjects: {e}")
-        
+
         return subjects
 
     def migrate_tags_for_subject(self, subject: str) -> bool:
         """
         Migrate tags from keywords to tags format and collect existing tags from content.
-        
+
         Args:
             subject: Subject name to migrate
-            
+
         Returns:
             True if migration was successful
         """
         try:
-            subject_config_path = os.path.join(self.data_root, "subjects", subject, "subject_config.json")
-            
+            subject_config_path = os.path.join(
+                self.data_root, "subjects", subject, "subject_config.json"
+            )
+
             if not os.path.exists(subject_config_path):
                 return False
-                
+
             # Load current config
-            with open(subject_config_path, 'r', encoding='utf-8') as f:
+            with open(subject_config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
-            
+
             # Collect existing tags from various sources
             all_tags = set()
-            
+
             # Add existing allowed_keywords
             existing_keywords = config.get("allowed_keywords", [])
             all_tags.update([tag.lower() for tag in existing_keywords])
-            
+
             # Add existing allowed_tags if any
             existing_tags = config.get("allowed_tags", [])
             all_tags.update([tag.lower() for tag in existing_tags])
-            
+
             # Scan all subtopics for lesson and question tags
             subject_dir = os.path.join(self.data_root, "subjects", subject)
             if os.path.exists(subject_dir):
@@ -484,76 +498,94 @@ class DataLoader:
                         lesson_plans_path = os.path.join(item_path, "lesson_plans.json")
                         if os.path.exists(lesson_plans_path):
                             try:
-                                with open(lesson_plans_path, 'r', encoding='utf-8') as f:
+                                with open(
+                                    lesson_plans_path, "r", encoding="utf-8"
+                                ) as f:
                                     lesson_data = json.load(f)
                                     lessons = lesson_data.get("lessons", {})
                                     for lesson_id, lesson_content in lessons.items():
                                         lesson_tags = lesson_content.get("tags", [])
-                                        all_tags.update([tag.lower() for tag in lesson_tags])
+                                        all_tags.update(
+                                            [tag.lower() for tag in lesson_tags]
+                                        )
                             except Exception as e:
                                 if current_app:
-                                    current_app.logger.warning(f"Error reading lesson plans for {subject}/{item}: {e}")
-                        
+                                    current_app.logger.warning(
+                                        f"Error reading lesson plans for {subject}/{item}: {e}"
+                                    )
+
                         # Check quiz data
                         quiz_data_path = os.path.join(item_path, "quiz_data.json")
                         if os.path.exists(quiz_data_path):
                             try:
-                                with open(quiz_data_path, 'r', encoding='utf-8') as f:
+                                with open(quiz_data_path, "r", encoding="utf-8") as f:
                                     quiz_data = json.load(f)
                                     questions = quiz_data.get("questions", [])
                                     for question in questions:
                                         question_tags = question.get("tags", [])
-                                        all_tags.update([tag.lower() for tag in question_tags])
+                                        all_tags.update(
+                                            [tag.lower() for tag in question_tags]
+                                        )
                             except Exception as e:
                                 if current_app:
-                                    current_app.logger.warning(f"Error reading quiz data for {subject}/{item}: {e}")
-                        
+                                    current_app.logger.warning(
+                                        f"Error reading quiz data for {subject}/{item}: {e}"
+                                    )
+
                         # Check question pool
                         pool_data_path = os.path.join(item_path, "question_pool.json")
                         if os.path.exists(pool_data_path):
                             try:
-                                with open(pool_data_path, 'r', encoding='utf-8') as f:
+                                with open(pool_data_path, "r", encoding="utf-8") as f:
                                     pool_data = json.load(f)
                                     questions = pool_data.get("questions", [])
                                     for question in questions:
                                         question_tags = question.get("tags", [])
-                                        all_tags.update([tag.lower() for tag in question_tags])
+                                        all_tags.update(
+                                            [tag.lower() for tag in question_tags]
+                                        )
                             except Exception as e:
                                 if current_app:
-                                    current_app.logger.warning(f"Error reading question pool for {subject}/{item}: {e}")
-            
+                                    current_app.logger.warning(
+                                        f"Error reading question pool for {subject}/{item}: {e}"
+                                    )
+
             # Update config with new format
             config["allowed_tags"] = sorted(list(all_tags))
-            
+
             # Remove old allowed_keywords if it exists
             if "allowed_keywords" in config:
                 del config["allowed_keywords"]
-            
+
             # Save updated config
-            with open(subject_config_path, 'w', encoding='utf-8') as f:
+            with open(subject_config_path, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
-            
+
             if current_app:
-                current_app.logger.info(f"Migrated {len(all_tags)} tags for subject '{subject}': {sorted(list(all_tags))}")
-            
+                current_app.logger.info(
+                    f"Migrated {len(all_tags)} tags for subject '{subject}': {sorted(list(all_tags))}"
+                )
+
             return True
-            
+
         except Exception as e:
             if current_app:
-                current_app.logger.error(f"Error migrating tags for subject {subject}: {e}")
+                current_app.logger.error(
+                    f"Error migrating tags for subject {subject}: {e}"
+                )
             return False
 
     def migrate_all_subjects_tags(self) -> Dict[str, bool]:
         """
         Migrate tags for all discovered subjects.
-        
+
         Returns:
             Dictionary mapping subject names to migration success status
         """
         results = {}
         subjects = self.discover_subjects()
-        
+
         for subject_id in subjects.keys():
             results[subject_id] = self.migrate_tags_for_subject(subject_id)
-            
+
         return results
