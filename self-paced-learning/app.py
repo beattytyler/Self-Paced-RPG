@@ -228,13 +228,14 @@ def subject_selection():
 def subject_page(subject):
     """Display subtopics for a specific subject."""
     try:
-        # Load subject configuration
+        # Load subject configuration and info
         subject_config = data_loader.load_subject_config(subject)
-        if not subject_config:
-            app.logger.error(f"Subject config not found for: {subject}")
+        subject_info = data_loader.load_subject_info(subject)
+        
+        if not subject_config or not subject_info:
+            app.logger.error(f"Subject data not found for: {subject}")
             return redirect(url_for("subject_selection"))
 
-        subject_info = subject_config.get("subject_info", {})
         subtopics = subject_config.get("subtopics", {})
 
         # Sort subtopics by order
@@ -361,7 +362,7 @@ def quiz_page(subject, subtopic):
     session["current_subject"] = subject
     session["current_subtopic"] = subtopic
 
-    return render_template("quiz.html", questions=quiz_questions, quiz_title=quiz_title)
+    return render_template("quiz.html", questions=quiz_questions, quiz_title=quiz_title, admin_override=session.get("admin_override", False))
 
 
 # Legacy route for backward compatibility
@@ -854,7 +855,7 @@ def take_remedial_quiz_page():
         quiz_title += " (Focusing on: " + ", ".join(targeted_topics) + ")"
 
     return render_template(
-        "quiz.html", questions=remedial_questions, quiz_title=quiz_title
+        "quiz.html", questions=remedial_questions, quiz_title=quiz_title, admin_override=session.get("admin_override", False)
     )
 
 
@@ -1108,6 +1109,42 @@ def admin_delete_subject(subject):
 
     except Exception as e:
         app.logger.error(f"Error deleting subject {subject}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# ADMIN - OVERRIDE FUNCTIONALITY
+# ============================================================================
+
+@app.route("/admin/toggle-override", methods=["GET", "POST"])
+def admin_toggle_override():
+    """Toggle or check admin override status for debugging/testing."""
+    try:
+        if request.method == "GET":
+            # Return current override status
+            admin_override = session.get("admin_override", False)
+            return jsonify({
+                "success": True,
+                "admin_override": admin_override
+            })
+        
+        elif request.method == "POST":
+            # Toggle the override status
+            current_status = session.get("admin_override", False)
+            new_status = not current_status
+            session["admin_override"] = new_status
+            
+            message = f"Admin override {'enabled' if new_status else 'disabled'}"
+            app.logger.info(f"Admin override toggled: {message}")
+            
+            return jsonify({
+                "success": True,
+                "admin_override": new_status,
+                "message": message
+            })
+            
+    except Exception as e:
+        app.logger.error(f"Error in admin override toggle: {e}")
         return jsonify({"error": str(e)}), 500
 
 
