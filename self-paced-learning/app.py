@@ -244,22 +244,24 @@ def subject_page(subject):
                 # Count quiz questions
                 quiz_data = get_quiz_data(subject, subtopic_id)
                 question_count = len(quiz_data) if quiz_data else 0
-                
+
                 # Count lesson plans
                 lesson_plans = get_lesson_plans(subject, subtopic_id)
                 lesson_count = len(lesson_plans) if lesson_plans else 0
-                
+
                 # Count videos
                 video_data = get_video_data(subject, subtopic_id)
                 video_count = len(video_data) if video_data else 0
-                
+
                 # Update the counts with actual values
                 subtopic_data["question_count"] = question_count
                 subtopic_data["lesson_count"] = lesson_count
                 subtopic_data["video_count"] = video_count
-                
+
             except Exception as e:
-                app.logger.warning(f"Error calculating counts for {subject}/{subtopic_id}: {e}")
+                app.logger.warning(
+                    f"Error calculating counts for {subject}/{subtopic_id}: {e}"
+                )
                 # Keep original counts if there's an error
                 pass
 
@@ -1411,10 +1413,12 @@ def admin_edit_lesson(subject, subtopic, lesson_id):
 
         # Get subjects for context
         subjects = data_loader.discover_subjects()
-        
+
         # Load subtopics for the current subject (needed for edit mode)
         subject_config = data_loader.load_subject_config(subject)
-        subject_subtopics = subject_config.get("subtopics", {}) if subject_config else {}
+        subject_subtopics = (
+            subject_config.get("subtopics", {}) if subject_config else {}
+        )
 
         return render_template(
             "admin/create_lesson.html",

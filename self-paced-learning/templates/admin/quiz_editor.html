@@ -468,21 +468,58 @@
             <div class="form-group">
               <label for="questionTags">Tags *</label>
               <div class="tag-input-container">
-                <input
-                  type="text"
-                  id="questionTags"
-                  placeholder="Start typing to search tags..."
-                  required
-                  autocomplete="off"
-                />
-                <div class="tag-suggestions" id="tagSuggestions"></div>
+                <div class="tag-multiselect" id="tagMultiselect">
+                  <div class="multiselect-display" id="multiselectDisplay">
+                    <div
+                      class="selected-tags-container"
+                      id="selectedTagsContainer"
+                    ></div>
+                    <input
+                      type="text"
+                      id="questionTags"
+                      placeholder="Click to select tags..."
+                      readonly
+                      required
+                      style="
+                        border: none;
+                        outline: none;
+                        flex: 1;
+                        background: transparent;
+                        cursor: pointer;
+                      "
+                    />
+                    <div class="multiselect-arrow" id="multiselectArrow">
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                  </div>
+                  <div class="multiselect-dropdown" id="multiselectDropdown">
+                    <div class="multiselect-search">
+                      <input
+                        type="text"
+                        id="tagSearchInput"
+                        placeholder="Search tags..."
+                      />
+                    </div>
+                    <div class="multiselect-options" id="multiselectOptions">
+                      <!-- Options will be populated here -->
+                    </div>
+                  </div>
+                </div>
               </div>
               <small
-                >Select from available tags or type to search. Tags help
-                categorize questions for targeted learning</small
+                >Select from available tags below. Tags help categorize
+                questions for targeted learning</small
               >
-              <div class="tags-preview" id="tagsPreview"></div>
-              <div class="available-tags" id="availableTags"></div>
+              <div
+                class="tags-preview"
+                id="tagsPreview"
+                style="display: none"
+              ></div>
+              <div
+                class="available-tags"
+                id="availableTags"
+                style="display: none"
+              ></div>
               <div class="error-message" id="questionTagsError"></div>
             </div>
 
@@ -1180,7 +1217,183 @@
         color: #e53e3e;
       }
 
-      /* New tag input styles */
+      /* Enhanced Tag Multiselect Styles */
+      .tag-multiselect {
+        position: relative;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        transition: all 0.3s ease;
+      }
+
+      .tag-multiselect:focus-within {
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .multiselect-display {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 8px 12px;
+        cursor: pointer;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .selected-tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .selected-tag {
+        background: #4299e1;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        animation: tagAppear 0.2s ease;
+      }
+
+      .selected-tag .remove-btn {
+        background: rgba(255, 255, 255, 0.3);
+        border: none;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.7rem;
+        color: white;
+        transition: background-color 0.2s ease;
+      }
+
+      .selected-tag .remove-btn:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .multiselect-arrow {
+        margin-left: auto;
+        color: #718096;
+        transition: transform 0.3s ease;
+      }
+
+      .multiselect-arrow.open {
+        transform: rotate(180deg);
+      }
+
+      .multiselect-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        max-height: 300px;
+        overflow: hidden;
+        display: none;
+      }
+
+      .multiselect-dropdown.open {
+        display: block;
+        animation: dropdownFade 0.2s ease;
+      }
+
+      .multiselect-search {
+        padding: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f7fafc;
+      }
+
+      .multiselect-search input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.9rem;
+      }
+
+      .multiselect-search input:focus {
+        outline: none;
+        border-color: #4299e1;
+      }
+
+      .multiselect-options {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .multiselect-option {
+        padding: 10px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .multiselect-option:hover {
+        background: #f7fafc;
+      }
+
+      .multiselect-option.selected {
+        background: #e6fffa;
+        color: #00695c;
+        font-weight: 600;
+      }
+
+      .multiselect-option .option-check {
+        color: #00695c;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .multiselect-option.selected .option-check {
+        opacity: 1;
+      }
+
+      .multiselect-empty {
+        padding: 20px;
+        text-align: center;
+        color: #718096;
+        font-style: italic;
+      }
+
+      @keyframes tagAppear {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes dropdownFade {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Legacy tag input styles - keep for backwards compatibility */
       .tag-input-container {
         position: relative;
       }
@@ -1565,67 +1778,186 @@
           }
       }
 
-      // Tags functionality with API integration (GLOBAL FUNCTIONS)
-      function displayAvailableTags() {
-          const container = document.getElementById('availableTags');
-          if (availableTags.length === 0) {
-              container.innerHTML = '<small style="color: #666;">No tags available for this subject.</small>';
-              return;
-          }
+      // Enhanced Tags functionality with mouse-clickable multiselect (GLOBAL FUNCTIONS)
+      let multiselectOpen = false;
 
-          container.innerHTML = `
-              <h4>Available Tags (${availableTags.length})</h4>
-              <div class="tag-chips">
-                  ${availableTags.map(tag => `
-                      <span class="tag-chip" onclick="addTagFromChip('${tag}')" title="Click to add">${tag}</span>
-                  `).join('')}
-              </div>
-          `;
-          updateTagChipsDisplay();
-      }
+      // Initialize multiselect functionality
+      function initializeMultiselect() {
+          const display = document.getElementById('multiselectDisplay');
+          const dropdown = document.getElementById('multiselectDropdown');
+          const arrow = document.getElementById('multiselectArrow');
+          const searchInput = document.getElementById('tagSearchInput');
 
-      function updateTagChipsDisplay() {
-          document.querySelectorAll('.tag-chip').forEach(chip => {
-              const tagText = chip.textContent;
-              if (selectedTags.includes(tagText)) {
-                  chip.classList.add('used');
-                  chip.title = 'Already selected';
-              } else {
-                  chip.classList.remove('used');
-                  chip.title = 'Click to add';
+          // Toggle dropdown on display click
+          display.addEventListener('click', function(e) {
+              e.stopPropagation();
+              toggleMultiselect();
+          });
+
+          // Search functionality
+          searchInput.addEventListener('input', function() {
+              filterOptions(this.value);
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener('click', function(e) {
+              if (!document.getElementById('tagMultiselect').contains(e.target)) {
+                  closeMultiselect();
+              }
+          });
+
+          // Keyboard navigation
+          searchInput.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                  closeMultiselect();
               }
           });
       }
 
-      function addTagFromChip(tag) {
-          if (!selectedTags.includes(tag)) {
-              selectedTags.push(tag);
-              updateTagInput();
-              updateTagsPreview();
-              updateTagChipsDisplay();
+      function toggleMultiselect() {
+          if (multiselectOpen) {
+              closeMultiselect();
+          } else {
+              openMultiselect();
           }
       }
 
-      function updateTagInput() {
-          document.getElementById('questionTags').value = selectedTags.join(', ');
+      function openMultiselect() {
+          const dropdown = document.getElementById('multiselectDropdown');
+          const arrow = document.getElementById('multiselectArrow');
+
+          dropdown.classList.add('open');
+          arrow.classList.add('open');
+          multiselectOpen = true;
+
+          // Focus search input
+          setTimeout(() => {
+              document.getElementById('tagSearchInput').focus();
+          }, 100);
+
+          renderMultiselectOptions();
       }
 
-      function updateTagsPreview() {
-          const preview = document.getElementById('tagsPreview');
-          preview.innerHTML = selectedTags.map(tag => `
-              <span class="tag-preview">
-                  ${tag}
-                  <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
-              </span>
+      function closeMultiselect() {
+          const dropdown = document.getElementById('multiselectDropdown');
+          const arrow = document.getElementById('multiselectArrow');
+
+          dropdown.classList.remove('open');
+          arrow.classList.remove('open');
+          multiselectOpen = false;
+
+          // Clear search
+          document.getElementById('tagSearchInput').value = '';
+          renderMultiselectOptions();
+      }
+
+      function renderMultiselectOptions(searchTerm = '') {
+          const container = document.getElementById('multiselectOptions');
+
+          if (availableTags.length === 0) {
+              container.innerHTML = '<div class="multiselect-empty">No tags available for this subject</div>';
+              return;
+          }
+
+          const filteredTags = availableTags.filter(tag =>
+              tag.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+
+          if (filteredTags.length === 0) {
+              container.innerHTML = '<div class="multiselect-empty">No tags match your search</div>';
+              return;
+          }
+
+          container.innerHTML = filteredTags.map(tag => `
+              <div class="multiselect-option ${selectedTags.includes(tag) ? 'selected' : ''}"
+                   onclick="toggleTag('${tag}')">
+                  <span>${tag}</span>
+                  <i class="fas fa-check option-check"></i>
+              </div>
           `).join('');
       }
 
+      function filterOptions(searchTerm) {
+          renderMultiselectOptions(searchTerm);
+      }
+
+      function toggleTag(tag) {
+          if (selectedTags.includes(tag)) {
+              removeTagFromSelection(tag);
+          } else {
+              addTagToSelection(tag);
+          }
+      }
+
+      function addTagToSelection(tag) {
+          if (!selectedTags.includes(tag)) {
+              selectedTags.push(tag);
+              updateSelectedTagsDisplay();
+              updateHiddenInput();
+              renderMultiselectOptions(document.getElementById('tagSearchInput').value);
+          }
+      }
+
+      function removeTagFromSelection(tag) {
+          selectedTags = selectedTags.filter(t => t !== tag);
+          updateSelectedTagsDisplay();
+          updateHiddenInput();
+          renderMultiselectOptions(document.getElementById('tagSearchInput').value);
+      }
+
+      function updateSelectedTagsDisplay() {
+          const container = document.getElementById('selectedTagsContainer');
+
+          container.innerHTML = selectedTags.map(tag => `
+              <div class="selected-tag">
+                  <span>${tag}</span>
+                  <button type="button" class="remove-btn" onclick="removeTagFromSelection('${tag}')">
+                      <i class="fas fa-times" style="font-size: 0.6rem;"></i>
+                  </button>
+              </div>
+          `).join('');
+
+          // Update placeholder
+          const input = document.getElementById('questionTags');
+          if (selectedTags.length === 0) {
+              input.placeholder = 'Click to select tags...';
+          } else {
+              input.placeholder = `${selectedTags.length} tag${selectedTags.length === 1 ? '' : 's'} selected`;
+          }
+      }
+
+      function updateHiddenInput() {
+          document.getElementById('questionTags').value = selectedTags.join(', ');
+      }
+
+      // Legacy compatibility functions - simplified versions
+      function displayAvailableTags() {
+          // This is now handled by the multiselect dropdown
+          // Keep function for backwards compatibility but make it do nothing
+          const container = document.getElementById('availableTags');
+          container.style.display = 'none';
+      }
+
+      function updateTagChipsDisplay() {
+          // Legacy function - no longer needed with multiselect
+      }
+
+      function addTagFromChip(tag) {
+          addTagToSelection(tag);
+      }
+
+      function updateTagInput() {
+          updateHiddenInput();
+      }
+
+      function updateTagsPreview() {
+          // This is now handled by updateSelectedTagsDisplay
+          const preview = document.getElementById('tagsPreview');
+          preview.style.display = 'none';
+      }
+
       function removeTag(tagToRemove) {
-          selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
-          updateTagInput();
-          updateTagsPreview();
-          updateTagChipsDisplay();
-          hideSuggestions();
+          removeTagFromSelection(tagToRemove);
       }
 
       // Tab switching
@@ -1745,12 +2077,11 @@
           resetOptions();
           clearErrors();
 
-          // Reset tags with new API system
+          // Reset tags with new multiselect system
           selectedTags = [];
-          updateTagInput();
-          updateTagsPreview();
-          updateTagChipsDisplay();
-          hideSuggestions();
+          updateSelectedTagsDisplay();
+          updateHiddenInput();
+          closeMultiselect();
       }
 
       // Clear all error messages
@@ -1788,11 +2119,10 @@
           document.getElementById('questionType').value = question.type || 'multiple_choice';
           document.getElementById('questionText').value = question.question || '';
 
-          // Handle tags with new API system
+          // Handle tags with new multiselect system
           selectedTags = question.tags || [];
-          updateTagInput();
-          updateTagsPreview();
-          updateTagChipsDisplay();
+          updateSelectedTagsDisplay();
+          updateHiddenInput();
 
           // Update character counter
           const counter = document.getElementById('questionTextCounter');
@@ -1833,8 +2163,6 @@
               document.getElementById('starterCode').value = question.starter_code || '';
               document.getElementById('sampleSolution').value = question.sample_solution || '';
           }
-
-          updateTagsPreview();
       }
 
       // Options management
@@ -2322,6 +2650,9 @@
 
       // Initialize modal events
       document.addEventListener('DOMContentLoaded', function() {
+          // Initialize multiselect functionality
+          initializeMultiselect();
+
           // Close modal on overlay click
           document.getElementById('questionModal').addEventListener('click', function(e) {
               if (e.target === this) {
