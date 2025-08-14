@@ -898,9 +898,14 @@ def take_remedial_quiz_page():
 def show_results_page():
     quiz_gen_error = session.pop("quiz_generation_error", None)
 
-    # Get current subject/subtopic from session
-    current_subject = session.get("current_subject", "python")
-    current_subtopic = session.get("current_subtopic", "functions")
+    # Get current subject/subtopic from session - NO DEFAULTS TO PREVENT WRONG CONTEXT
+    current_subject = session.get("current_subject")
+    current_subtopic = session.get("current_subtopic")
+
+    # If no session context, redirect to subject selection
+    if not current_subject or not current_subtopic:
+        app.logger.warning("No subject/subtopic context in session for results page")
+        return redirect(url_for("subject_selection"))
 
     # Load video data using the new system
     try:
@@ -1709,6 +1714,40 @@ def api_get_subtopics(subject):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/lessons/find-by-tags", methods=["POST"])
+def api_find_lessons_by_tags():
+    """API endpoint to find lessons matching specific tags."""
+    try:
+        data = request.json
+        subject = data.get("subject")
+        target_tags = data.get("tags", [])
+
+        if not subject:
+            return jsonify({"error": "Subject is required"}), 400
+
+        if not target_tags:
+            return jsonify({"lessons": []})
+
+        # Use the DataLoader method to find matching lessons
+        matching_lessons = data_loader.find_lessons_by_tags(subject, target_tags)
+
+        app.logger.info(
+            f"Found {len(matching_lessons)} lessons for subject '{subject}' with tags {target_tags}"
+        )
+
+        return jsonify(
+            {
+                "lessons": matching_lessons,
+                "count": len(matching_lessons),
+                "searched_tags": target_tags,
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error finding lessons by tags: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/admin/export")
 def admin_export():
     """Export/Import functionality placeholder."""
@@ -1777,6 +1816,32 @@ def admin_migrate_tags():
             jsonify({"success": False, "error": f"Failed to migrate tags: {str(e)}"}),
             500,
         )
+
+
+@app.route("/api/lessons/<subject>/<subtopic>/<lesson_id>")
+def api_get_lesson(subject, subtopic, lesson_id):
+    """Return a specific lesson by subject/subtopic/lesson_id."""
+    try:
+        # Validate subject/subtopic exists
+        if not data_loader.validate_subject_subtopic(subject, subtopic):
+            return jsonify({"error": "Subject or subtopic not found"}), 404
+
+        lesson_plans = data_loader.load_lesson_plans(subject, subtopic)
+        lessons = lesson_plans.get("lessons", {}) if lesson_plans else {}
+
+        if lesson_id in lessons:
+            return jsonify({"lesson": lessons[lesson_id]})
+
+        # Fallback: try resolving by case-insensitive title match
+        for key, value in lessons.items():
+            title = value.get("title")
+            if title and title.lower() == lesson_id.lower():
+                return jsonify({"lesson": value})
+
+        return jsonify({"error": "Lesson not found"}), 404
+    except Exception as e:
+        app.logger.error(f"Error fetching lesson {subject}/{subtopic}/{lesson_id}: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

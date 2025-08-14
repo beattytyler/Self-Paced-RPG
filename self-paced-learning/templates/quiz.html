@@ -126,9 +126,37 @@
             responses[name] = value;
           }
 
-          // Store data in sessionStorage so results.html can access it
-          sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
-          window.location.href = "/results";
+          try {
+            // Submit answers to analyze route to preserve session context
+            const analyzeResponse = await fetch("/analyze", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ answers: responses }),
+            });
+
+            if (analyzeResponse.ok) {
+              // Store analysis results for results page
+              const analysisData = await analyzeResponse.json();
+              sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
+              sessionStorage.setItem(
+                "analysisResults",
+                JSON.stringify(analysisData)
+              );
+
+              // Navigate to results page
+              window.location.href = "/results";
+            } else {
+              console.error("Analysis failed:", analyzeResponse.status);
+              // Fallback: store data and redirect anyway
+              sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
+              window.location.href = "/results";
+            }
+          } catch (error) {
+            console.error("Error during analysis:", error);
+            // Fallback: store data and redirect anyway
+            sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
+            window.location.href = "/results";
+          }
         });
 
       // Admin override functionality
