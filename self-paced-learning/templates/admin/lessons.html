@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lessons Management - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons" class="active"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-content">
+        <header class="admin-header">
+          {% if filtered_view %}
+          <h1>
+            Lessons for {{ subject_info.name or subject|title }} - {{
+            subtopic|title }}
+          </h1>
+          <p>Manage lessons for this specific subtopic</p>
+          <div class="breadcrumb">
+            <a href="/admin/lessons">All Lessons</a> >
+            <a href="/admin/subjects"
+              >{{ subject_info.name or subject|title }}</a
+            >
+            > {{ subtopic|title }}
+          </div>
+          {% else %}
+          <h1>Lessons Management</h1>
+          <p>Manage all lessons across your learning platform</p>
+          {% endif %}
+        </header>
+
+        <!-- Actions Bar -->
+        <div class="actions-bar">
+          <div class="search-filter">
+            <input
+              type="text"
+              id="lessonSearch"
+              placeholder="Search lessons..."
+              class="search-input"
+            />
+            {% if not filtered_view %}
+            <select id="subjectFilter" class="filter-select">
+              <option value="">All Subjects</option>
+              {% for subject_id, subject_data in subjects.items() %}
+              <option value="{{ subject_id }}">{{ subject_data.name }}</option>
+              {% endfor %}
+            </select>
+            {% endif %}
+          </div>
+          <div class="action-buttons">
+            <a href="/admin/lessons/create" class="action-btn primary">
+              <i class="fas fa-plus"></i> Create New Lesson
+            </a>
+            {% if filtered_view %}
+            <a href="/admin/lessons" class="action-btn secondary">
+              <i class="fas fa-list"></i> View All Lessons
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Lessons Grid -->
+        <div class="lessons-grid">
+          {% if filtered_view %} {% if lessons %} {% for lesson_id, lesson_data
+          in lessons.items() %}
+          <div
+            class="lesson-card"
+            data-subject="{{ subject }}"
+            data-lesson-id="{{ lesson_id }}"
+          >
+            <div class="lesson-header">
+              <h3>{{ lesson_data.title }}</h3>
+              <div class="lesson-meta">
+                <span
+                  class="subject-badge"
+                  style="background-color: {{ subject_info.color or '#007bff' }}"
+                >
+                  <i class="{{ subject_info.icon or 'fas fa-book' }}"></i>
+                  {{ subject_info.name or subject|title }}
+                </span>
+                <span class="subtopic-badge">{{ subtopic|title }}</span>
+              </div>
+            </div>
+
+            <div class="lesson-content">
+              {% if lesson_data.videoId %}
+              <div class="video-info">
+                <i class="fas fa-video"></i>
+                <span>Video: {{ lesson_data.videoId }}</span>
+              </div>
+              {% endif %}
+
+              <div class="content-stats">
+                <span
+                  ><i class="fas fa-list"></i> {{ lesson_data.content|length }}
+                  content blocks</span
+                >
+              </div>
+
+              {% if lesson_data.content and lesson_data.content|length > 0 %}
+              <div class="content-preview">
+                {% for content_item in lesson_data.content[:2] %} {% if
+                content_item.type == "header" %}
+                <p><strong>{{ content_item.text|truncate(50) }}</strong></p>
+                {% elif content_item.type == "paragraph" %}
+                <p>{{ content_item.text|truncate(80) }}</p>
+                {% endif %} {% endfor %} {% if lesson_data.content|length > 2 %}
+                <p class="more-content">
+                  ... and {{ lesson_data.content|length - 2 }} more blocks
+                </p>
+                {% endif %}
+              </div>
+              {% endif %} {% if lesson_data.tags %}
+              <div class="lesson-tags">
+                <strong>Tags:</strong>
+                {% for tag in lesson_data.tags %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="lesson-actions">
+              <a
+                href="/admin/lessons/{{ subject }}/{{ subtopic }}/{{ lesson_id }}/edit"
+                class="btn-edit"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+              <button
+                class="btn-delete"
+                onclick="deleteLesson('{{ subject }}', '{{ subtopic }}', '{{ lesson_id }}')"
+              >
+                <i class="fas fa-trash"></i> Delete
+              </button>
+              <a
+                href="/subjects/{{ subject }}?subtopic={{ subtopic }}&lesson={{ lesson_id }}"
+                target="_blank"
+                class="btn-view"
+              >
+                <i class="fas fa-eye"></i> View
+              </a>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <div class="empty-state">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <h3>No lessons found</h3>
+            <p>
+              No lessons have been created for {{ subject|title }} - {{
+              subtopic|title }} yet.
+            </p>
+            <a href="/admin/lessons/create" class="action-btn primary"
+              >Create First Lesson</a
+            >
+          </div>
+          {% endif %} {% else %} {% if lessons %} {% for lesson in lessons %}
+          <div
+            class="lesson-card"
+            data-subject="{{ lesson.subject }}"
+            data-lesson-id="{{ lesson.id }}"
+          >
+            <div class="lesson-header">
+              <h3>{{ lesson.title }}</h3>
+              <div class="lesson-meta">
+                <span class="subject-badge">
+                  <i class="fas fa-book"></i>
+                  {{ lesson.subject_name }}
+                </span>
+                <span class="subtopic-badge">{{ lesson.subtopic|title }}</span>
+              </div>
+            </div>
+
+            <div class="lesson-content">
+              {% if lesson.videoId %}
+              <div class="video-info">
+                <i class="fas fa-video"></i>
+                <span>Video: {{ lesson.videoId }}</span>
+              </div>
+              {% endif %}
+
+              <div class="content-stats">
+                <span
+                  ><i class="fas fa-list"></i> {{ lesson.content_count }}
+                  content blocks</span
+                >
+              </div>
+            </div>
+
+            <div class="lesson-actions">
+              <a
+                href="/admin/lessons/{{ lesson.subject }}/{{ lesson.subtopic }}/{{ lesson.id }}/edit"
+                class="btn-edit"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+              <button
+                class="btn-delete"
+                onclick="deleteLesson('{{ lesson.subject }}', '{{ lesson.subtopic }}', '{{ lesson.id }}')"
+              >
+                <i class="fas fa-trash"></i> Delete
+              </button>
+              <a
+                href="/subjects/{{ lesson.subject }}?subtopic={{ lesson.subtopic }}&lesson={{ lesson.id }}"
+                target="_blank"
+                class="btn-view"
+              >
+                <i class="fas fa-eye"></i> View
+              </a>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <div class="empty-state">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <h3>No lessons found</h3>
+            <p>
+              No lessons have been created yet. Start by creating your first
+              lesson.
+            </p>
+            <a href="/admin/lessons/create" class="action-btn primary"
+              >Create First Lesson</a
+            >
+          </div>
+          {% endif %} {% endif %}
+        </div>
+      </main>
+    </div>
+
+    <style>
+      .admin-body {
+        background: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        width: 280px;
+        background: #1a2332;
+        color: white;
+        padding: 0;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 20px;
+        border-bottom: 1px solid #2d3748;
+        text-align: center;
+      }
+
+      .admin-logo h2 {
+        margin: 0;
+        color: white;
+        font-size: 1.5rem;
+      }
+
+      .back-to-site {
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .back-to-site:hover {
+        color: #4299e1;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: block;
+        padding: 15px 20px;
+        color: #a0aec0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: #2d3748;
+        color: #4299e1;
+        border-left-color: #4299e1;
+      }
+
+      .admin-nav li a i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .admin-header {
+        margin-bottom: 30px;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 2.5rem;
+      }
+
+      .admin-header p {
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .breadcrumb {
+        margin-top: 10px;
+        color: #718096;
+        font-size: 0.9rem;
+      }
+
+      .breadcrumb a {
+        color: #4299e1;
+        text-decoration: none;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      .actions-bar {
+        background: white;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .search-filter {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex: 1;
+      }
+
+      .search-input,
+      .filter-select {
+        padding: 10px 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .search-input {
+        flex: 1;
+        max-width: 300px;
+      }
+
+      .search-input:focus,
+      .filter-select:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+      }
+
+      .action-btn.primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .action-btn.secondary {
+        background: #48bb78;
+        color: white;
+      }
+
+      .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .lessons-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 20px;
+      }
+
+      .lesson-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+      }
+
+      .lesson-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      .lesson-header h3 {
+        color: #2d3748;
+        margin: 0 0 15px 0;
+        font-size: 1.3em;
+        font-weight: 600;
+      }
+
+      .lesson-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .subject-badge,
+      .subtopic-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 500;
+      }
+
+      .subject-badge {
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+        color: white;
+      }
+
+      .subtopic-badge {
+        background: #f7fafc;
+        color: #2d3748;
+        border: 1px solid #e2e8f0;
+      }
+
+      .lesson-content {
+        margin-bottom: 20px;
+      }
+
+      .video-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #e53e3e;
+        font-size: 0.9em;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: #fed7d7;
+        border-radius: 6px;
+      }
+
+      .content-stats {
+        color: #718096;
+        font-size: 0.9em;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .content-preview {
+        background: #f7fafc;
+        border-radius: 8px;
+        padding: 15px;
+        border-left: 4px solid #4299e1;
+      }
+
+      .content-preview p {
+        margin: 8px 0;
+        color: #2d3748;
+        font-size: 0.9em;
+        line-height: 1.5;
+      }
+
+      .more-content {
+        color: #718096;
+        font-style: italic;
+        font-size: 0.85em;
+      }
+
+      .lesson-tags {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.9em;
+      }
+
+      .lesson-tags .tag {
+        display: inline-block;
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-right: 8px;
+        margin-top: 5px;
+      }
+
+      .lesson-actions {
+        display: flex;
+        gap: 10px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .btn-edit,
+      .btn-delete,
+      .btn-view {
+        flex: 1;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9em;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+      }
+
+      .btn-edit {
+        background: #48bb78;
+        color: white;
+      }
+
+      .btn-edit:hover {
+        background: #38a169;
+        color: white;
+      }
+
+      .btn-delete {
+        background: #e53e3e;
+        color: white;
+      }
+
+      .btn-delete:hover {
+        background: #c53030;
+      }
+
+      .btn-view {
+        background: #4299e1;
+        color: white;
+      }
+
+      .btn-view:hover {
+        background: #3182ce;
+        color: white;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #718096;
+        grid-column: 1 / -1;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+      }
+
+      .empty-state i {
+        font-size: 4em;
+        margin-bottom: 20px;
+        color: #cbd5e0;
+      }
+
+      .empty-state h3 {
+        margin-bottom: 15px;
+        color: #2d3748;
+        font-size: 1.5em;
+      }
+
+      .empty-state p {
+        margin-bottom: 25px;
+        font-size: 1.1em;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .admin-content {
+          padding: 20px;
+        }
+
+        .actions-bar {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 15px;
+        }
+
+        .search-filter {
+          flex-direction: column;
+        }
+
+        .action-buttons {
+          justify-content: center;
+        }
+
+        .lessons-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .lesson-actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+
+    <script>
+      // Search and filter functionality
+      document.getElementById('lessonSearch').addEventListener('input', function() {
+          filterLessons();
+      });
+
+      {% if not filtered_view %}
+      document.getElementById('subjectFilter').addEventListener('change', function() {
+          filterLessons();
+      });
+      {% endif %}
+
+      function filterLessons() {
+          const searchTerm = document.getElementById('lessonSearch').value.toLowerCase();
+          {% if not filtered_view %}
+          const selectedSubject = document.getElementById('subjectFilter').value;
+          {% endif %}
+          const lessonCards = document.querySelectorAll('.lesson-card');
+
+          lessonCards.forEach(card => {
+              const title = card.querySelector('h3').textContent.toLowerCase();
+              const subject = card.dataset.subject;
+
+              let showCard = title.includes(searchTerm);
+              {% if not filtered_view %}
+              if (selectedSubject && subject !== selectedSubject) {
+                  showCard = false;
+              }
+              {% endif %}
+
+              card.style.display = showCard ? 'block' : 'none';
+          });
+      }
+
+      // Delete lesson function
+      function deleteLesson(subject, subtopic, lessonId) {
+          if (confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
+              fetch(`/admin/lessons/${subject}/${subtopic}/${lessonId}/delete`, {
+                  method: 'DELETE',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Remove the lesson card from the page
+                      const lessonCard = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+                      if (lessonCard) {
+                          lessonCard.remove();
+                      }
+
+                      // Show success message
+                      showNotification(data.message, 'success');
+
+                      // Check if no lessons left
+                      const remainingCards = document.querySelectorAll('.lesson-card');
+                      if (remainingCards.length === 0) {
+                          location.reload(); // Reload to show empty state
+                      }
+                  } else {
+                      showNotification(data.error || 'Failed to delete lesson', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  showNotification('An error occurred while deleting the lesson', 'error');
+              });
+          }
+      }
+
+      // Notification function
+      function showNotification(message, type) {
+          const notification = document.createElement('div');
+          notification.className = `notification ${type}`;
+          notification.textContent = message;
+          notification.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              padding: 12px 20px;
+              border-radius: 6px;
+              color: white;
+              font-weight: 500;
+              z-index: 1000;
+              animation: slideIn 0.3s ease;
+              ${type === 'success' ? 'background-color: #28a745;' : 'background-color: #dc3545;'}
+          `;
+
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+              notification.remove();
+          }, 3000);
+      }
+
+      // Add CSS for notification animation
+      const style = document.createElement('style');
+      style.textContent = `
+          @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+          }
+      `;
+      document.head.appendChild(style);
+    </script>
+  </body>
+</html>

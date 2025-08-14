@@ -1,17 +1,13 @@
 {
-  "subject_info": {
-    "name": "Python Programming",
-    "description": "Complete Python learning path from basics to advanced concepts",
-    "icon": "fab fa-python",
-    "color": "#3776ab"
-  },
   "subtopics": {
     "functions": {
       "name": "Python Functions",
       "description": "Master function concepts, arguments, return values, and advanced techniques",
-      "order": 1,
+      "order": 3,
       "status": "active",
-      "prerequisites": [],
+      "prerequisites": [
+        "test"
+      ],
       "estimated_time": "2 hours",
       "video_count": 1,
       "lesson_count": 14,
@@ -21,7 +17,7 @@
       "name": "Python Loops",
       "description": "Learn how to automate repetitive tasks using for and while loops",
       "order": 2,
-      "status": "active", 
+      "status": "active",
       "prerequisites": [],
       "estimated_time": "1.5 hours",
       "video_count": 1,
@@ -33,7 +29,14 @@
       "description": "Discover efficient numerical computations and data processing with NumPy arrays",
       "order": 3,
       "status": "active",
-      "prerequisites": ["functions"],
+      "prerequisites": [
+        "dictionaries",
+        "functions",
+        "lists",
+        "loops",
+        "sets",
+        "test"
+      ],
       "estimated_time": "2 hours",
       "video_count": 0,
       "lesson_count": 0,
@@ -55,7 +58,9 @@
       "description": "Learn about unordered collections and set operations like union and intersection",
       "order": 5,
       "status": "active",
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "estimated_time": "1 hour",
       "video_count": 0,
       "lesson_count": 0,
@@ -66,26 +71,31 @@
       "description": "Explore key-value mappings and dictionary comprehensions",
       "order": 6,
       "status": "active",
-      "prerequisites": ["lists"],
+      "prerequisites": [
+        "lists"
+      ],
       "estimated_time": "1.5 hours",
       "video_count": 0,
       "lesson_count": 0,
       "question_count": 0
     }
   },
-  "allowed_keywords": [
-    "python function basics",
+  "allowed_tags": [
+    "*args and **kwargs",
+    "default parameter values",
+    "error handling",
     "function definition",
+    "function return values",
+    "keyword arguments",
+    "passing function arguments",
+    "positional-only and keyword-only arguments",
+    "python function basics",
+    "python syntax",
+    "recursive functions",
+    "return values",
     "syntax",
     "terminology",
-    "passing function arguments",
-    "keyword arguments",
-    "default parameter values",
-    "*args and **kwargs",
-    "positional-only and keyword-only arguments",
-    "return values",
-    "function return values",
-    "recursive functions",
-    "error handling"
+    "test",
+    "test2"
   ]
 }

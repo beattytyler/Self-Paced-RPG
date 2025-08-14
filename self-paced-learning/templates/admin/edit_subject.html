@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Subject - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects" class="active"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-content">
+        <header class="admin-header">
+          <div class="header-actions">
+            <div>
+              <h1>Edit Subject</h1>
+              <p>Modify the {{ config.subject_info.name }} subject</p>
+            </div>
+            <a href="/admin/subjects" class="action-btn secondary">
+              <i class="fas fa-arrow-left"></i>
+              Back to Subjects
+            </a>
+          </div>
+        </header>
+
+        <div class="form-container">
+          <form id="editSubjectForm" class="admin-form">
+            <div class="form-section">
+              <h3>Basic Information</h3>
+
+              <div class="form-group">
+                <label for="subjectName">Subject Name *</label>
+                <input
+                  type="text"
+                  id="subjectName"
+                  name="name"
+                  required
+                  placeholder="e.g., Python Programming, Mathematics, History"
+                  value="{{ config.subject_info.name }}"
+                />
+                <small>This will be displayed to students</small>
+              </div>
+
+              <div class="form-group">
+                <label for="subjectId">Subject ID *</label>
+                <input
+                  type="text"
+                  id="subjectId"
+                  name="id"
+                  required
+                  placeholder="e.g., python, math, history"
+                  value="{{ subject }}"
+                  readonly
+                  disabled
+                />
+                <small>Subject ID cannot be changed after creation</small>
+              </div>
+
+              <div class="form-group">
+                <label for="description">Description *</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows="4"
+                  required
+                  placeholder="Describe what students will learn in this subject..."
+                >
+{{ config.subject_info.description }}</textarea
+                >
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Visual Settings</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="icon">Icon *</label>
+                  <div class="icon-selector">
+                    <input
+                      type="text"
+                      id="icon"
+                      name="icon"
+                      value="{{ config.subject_info.icon }}"
+                      required
+                    />
+                    <div class="icon-preview">
+                      <i
+                        id="iconPreview"
+                        class="{{ config.subject_info.icon }}"
+                      ></i>
+                    </div>
+                  </div>
+                  <small
+                    >Font Awesome icon class (e.g., fas fa-book, fab
+                    fa-python)</small
+                  >
+
+                  <div class="icon-suggestions">
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      data-icon="fas fa-book"
+                    >
+                      <i class="fas fa-book"></i> Book
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      data-icon="fab fa-python"
+                    >
+                      <i class="fab fa-python"></i> Python
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      data-icon="fas fa-calculator"
+                    >
+                      <i class="fas fa-calculator"></i> Math
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      data-icon="fas fa-flask"
+                    >
+                      <i class="fas fa-flask"></i> Science
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      data-icon="fas fa-globe"
+                    >
+                      <i class="fas fa-globe"></i> Geography
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      data-icon="fas fa-landmark"
+                    >
+                      <i class="fas fa-landmark"></i> History
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="color">Theme Color *</label>
+                  <div class="color-selector">
+                    <input
+                      type="color"
+                      id="color"
+                      name="color"
+                      value="{{ config.subject_info.color }}"
+                      required
+                    />
+                    <div class="color-preview" id="colorPreview"></div>
+                  </div>
+                  <small>Choose a theme color for this subject</small>
+
+                  <div class="color-suggestions">
+                    <button
+                      type="button"
+                      class="color-btn"
+                      data-color="#4299e1"
+                      style="background-color: #4299e1"
+                    ></button>
+                    <button
+                      type="button"
+                      class="color-btn"
+                      data-color="#48bb78"
+                      style="background-color: #48bb78"
+                    ></button>
+                    <button
+                      type="button"
+                      class="color-btn"
+                      data-color="#ed8936"
+                      style="background-color: #ed8936"
+                    ></button>
+                    <button
+                      type="button"
+                      class="color-btn"
+                      data-color="#9f7aea"
+                      style="background-color: #9f7aea"
+                    ></button>
+                    <button
+                      type="button"
+                      class="color-btn"
+                      data-color="#f56565"
+                      style="background-color: #f56565"
+                    ></button>
+                    <button
+                      type="button"
+                      class="color-btn"
+                      data-color="#38b2ac"
+                      style="background-color: #38b2ac"
+                    ></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Keywords Management</h3>
+
+              <div class="form-group">
+                <label for="allowedKeywords">Allowed Keywords</label>
+                <div class="keywords-input-container">
+                  <input
+                    type="text"
+                    id="keywordInput"
+                    placeholder="Type a keyword and press Enter..."
+                  />
+                  <button type="button" id="addKeywordBtn" class="btn-small">
+                    <i class="fas fa-plus"></i> Add
+                  </button>
+                </div>
+                <small
+                  >Keywords that can be assigned to subtopics in this
+                  subject</small
+                >
+
+                <div class="keywords-list" id="keywordsList">
+                  {% for keyword in config.allowed_tags %}
+                  <span class="keyword-tag">
+                    {{ keyword }}
+                    <button
+                      type="button"
+                      class="remove-keyword"
+                      data-keyword="{{ keyword }}"
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="action-btn secondary"
+                onclick="window.location.href='/admin/subjects'"
+              >
+                <i class="fas fa-times"></i>
+                Cancel
+              </button>
+              <button type="submit" class="action-btn primary">
+                <i class="fas fa-save"></i>
+                Update Subject
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div id="messageContainer"></div>
+      </main>
+    </div>
+
+    <style>
+      /* Admin Layout Base */
+      .admin-body {
+        margin: 0;
+        padding: 0;
+        background: #f7fafc;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        width: 250px;
+        background: #1a202c;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 20px;
+        border-bottom: 1px solid #2d3748;
+      }
+
+      .admin-logo h2 {
+        margin: 0;
+        color: #4299e1;
+        font-size: 1.5rem;
+      }
+
+      .admin-logo a {
+        display: block;
+        margin-top: 10px;
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .admin-logo a:hover {
+        color: #4299e1;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: block;
+        padding: 15px 20px;
+        color: #a0aec0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: #2d3748;
+        color: #4299e1;
+        border-left-color: #4299e1;
+      }
+
+      .admin-nav li a i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .admin-header {
+        margin-bottom: 30px;
+      }
+
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 2.5rem;
+      }
+
+      .admin-header p {
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .action-btn.primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .action-btn.primary:hover {
+        background: #3182ce;
+      }
+
+      .action-btn.secondary {
+        background: #718096;
+        color: white;
+      }
+
+      .action-btn.secondary:hover {
+        background: #4a5568;
+      }
+
+      .form-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+      }
+
+      .admin-form {
+        padding: 40px;
+      }
+
+      .form-section {
+        margin-bottom: 40px;
+      }
+
+      .form-section:last-child {
+        margin-bottom: 0;
+      }
+
+      .form-section h3 {
+        margin: 0 0 25px 0;
+        color: #2d3748;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      }
+
+      .form-group input:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .form-group input:disabled {
+        background-color: #f7fafc;
+        color: #a0aec0;
+        cursor: not-allowed;
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #718096;
+        font-size: 0.85rem;
+      }
+
+      /* Icon Selector */
+      .icon-selector {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .icon-selector input {
+        flex: 1;
+      }
+
+      .icon-preview {
+        width: 50px;
+        height: 50px;
+        background: #f7fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #4299e1;
+      }
+
+      .icon-suggestions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .icon-btn {
+        padding: 10px 15px;
+        border: 2px solid #e2e8f0;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+      }
+
+      .icon-btn:hover,
+      .icon-btn.selected {
+        border-color: #4299e1;
+        background: #ebf8ff;
+        color: #4299e1;
+      }
+
+      /* Color Selector */
+      .color-selector {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .color-selector input[type="color"] {
+        width: 60px;
+        height: 50px;
+        padding: 0;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .color-preview {
+        width: 100px;
+        height: 50px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+      }
+
+      .color-suggestions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+
+      .color-btn {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .color-btn:hover,
+      .color-btn.selected {
+        transform: scale(1.1);
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      /* Keywords */
+      .keywords-input-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .keywords-input-container input {
+        flex: 1;
+      }
+
+      .btn-small {
+        padding: 8px 15px;
+        background: #4299e1;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .btn-small:hover {
+        background: #3182ce;
+      }
+
+      .keywords-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 60px;
+        padding: 15px;
+        border: 2px dashed #e2e8f0;
+        border-radius: 8px;
+        background: #f7fafc;
+      }
+
+      .keywords-list:empty::after {
+        content: "No keywords added yet. Add some keywords above.";
+        color: #a0aec0;
+        font-style: italic;
+      }
+
+      .keyword-tag {
+        background: #4299e1;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+      }
+
+      .keyword-tag:hover {
+        background: #3182ce;
+      }
+
+      .remove-keyword {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        transition: background-color 0.3s ease;
+      }
+
+      .remove-keyword:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Form Actions */
+      .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        padding-top: 30px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      /* Messages */
+      #messageContainer {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .message {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        animation: slideIn 0.3s ease-out;
+        min-width: 300px;
+      }
+
+      .message.success {
+        background: #f0fff4;
+        color: #22543d;
+        border: 1px solid #9ae6b4;
+      }
+
+      .message.error {
+        background: #fed7d7;
+        color: #742a2a;
+        border: 1px solid #feb2b2;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1024px) {
+        .admin-sidebar {
+          width: 200px;
+        }
+
+        .admin-content {
+          padding: 20px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .form-actions {
+          flex-direction: column;
+        }
+
+        .keywords-input-container {
+          flex-direction: column;
+        }
+
+        .header-actions {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 15px;
+        }
+
+        .admin-form {
+          padding: 20px;
+        }
+      }
+    </style>
+
+    <script>
+      let allowedKeywords = {{ config.allowed_tags | tojson }};
+
+      // Icon functionality
+      document.getElementById('icon').addEventListener('input', function() {
+        const iconClass = this.value;
+        const preview = document.getElementById('iconPreview');
+        preview.className = iconClass;
+      });
+
+      // Icon suggestions
+      document.querySelectorAll('.icon-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const iconClass = this.dataset.icon;
+          document.getElementById('icon').value = iconClass;
+          document.getElementById('iconPreview').className = iconClass;
+        });
+      });
+
+      // Color functionality
+      document.getElementById('color').addEventListener('input', function() {
+        document.getElementById('colorPreview').style.backgroundColor = this.value;
+      });
+
+      // Color suggestions
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const color = this.dataset.color;
+          document.getElementById('color').value = color;
+          document.getElementById('colorPreview').style.backgroundColor = color;
+        });
+      });
+
+      // Initialize color preview
+      document.getElementById('colorPreview').style.backgroundColor = document.getElementById('color').value;
+
+      // Keywords functionality
+      function addKeyword(keyword) {
+        if (keyword && !allowedKeywords.includes(keyword)) {
+          allowedKeywords.push(keyword);
+          renderKeywords();
+        }
+      }
+
+      function removeKeyword(keyword) {
+        allowedKeywords = allowedKeywords.filter(k => k !== keyword);
+        renderKeywords();
+      }
+
+      function renderKeywords() {
+        const container = document.getElementById('keywordsList');
+        container.innerHTML = allowedKeywords.map(keyword => `
+          <span class="keyword-tag">
+            ${keyword}
+            <button type="button" class="remove-keyword" data-keyword="${keyword}">
+              <i class="fas fa-times"></i>
+            </button>
+          </span>
+        `).join('');
+      }
+
+      // Event delegation for remove keyword buttons
+      document.getElementById('keywordsList').addEventListener('click', function(e) {
+        if (e.target.closest('.remove-keyword')) {
+          const keyword = e.target.closest('.remove-keyword').dataset.keyword;
+          removeKeyword(keyword);
+        }
+      });
+
+      document.getElementById('addKeywordBtn').addEventListener('click', function() {
+        const input = document.getElementById('keywordInput');
+        const keyword = input.value.trim();
+        if (keyword) {
+          addKeyword(keyword);
+          input.value = '';
+        }
+      });
+
+      document.getElementById('keywordInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const keyword = this.value.trim();
+          if (keyword) {
+            addKeyword(keyword);
+            this.value = '';
+          }
+        }
+      });
+
+      // Form submission
+      document.getElementById('editSubjectForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = {
+          name: document.getElementById('subjectName').value,
+          description: document.getElementById('description').value,
+          icon: document.getElementById('icon').value,
+          color: document.getElementById('color').value,
+          allowed_keywords: allowedKeywords
+        };
+
+        fetch(`/admin/subjects/{{ subject }}/update`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showMessage('Subject updated successfully!', 'success');
+            setTimeout(() => {
+              window.location.href = '/admin/subjects';
+            }, 1500);
+          } else {
+            showMessage(data.error || 'Error updating subject', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showMessage('Error updating subject', 'error');
+        });
+      });
+
+      function showMessage(text, type) {
+        const container = document.getElementById('messageContainer');
+        const message = document.createElement('div');
+        message.className = `message ${type}`;
+        message.textContent = text;
+        container.appendChild(message);
+
+        setTimeout(() => {
+          message.remove();
+        }, 5000);
+      }
+
+      // Auto-generate subject ID (disabled for edit mode)
+      document.getElementById('subjectName').addEventListener('input', function() {
+        // Subject ID is disabled in edit mode, so we don't update it
+      });
+    </script>
+  </body>
+</html>

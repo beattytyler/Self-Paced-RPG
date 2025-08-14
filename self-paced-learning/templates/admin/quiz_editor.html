@@ -1,0 +1,2878 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Quiz Editor - {{ subject.title() }} {{ subtopic.replace('-', ' ').title()
+      }}
+    </title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions" class="active"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-content">
+        <header class="admin-header">
+          <div class="header-actions">
+            <div>
+              <h1><i class="fas fa-question-circle"></i> Quiz Editor</h1>
+              <p>
+                {{ subject.title() }} → {{ subtopic.replace('-', ' ').title() }}
+              </p>
+            </div>
+            <div class="admin-actions">
+              <a href="/admin/subtopics" class="action-btn secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Subtopics
+              </a>
+              <button id="previewQuizBtn" class="action-btn tertiary">
+                <i class="fas fa-eye"></i>
+                Preview Quiz
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Quiz Type Tabs -->
+        <div class="quiz-tabs">
+          <button class="tab-btn active" data-tab="initial">
+            <i class="fas fa-clipboard-list"></i>
+            Initial Quiz
+            <span class="tab-count" id="initialCount"
+              >{{ quiz_data.questions|length }}</span
+            >
+          </button>
+          <button class="tab-btn" data-tab="pool">
+            <i class="fas fa-database"></i>
+            Question Pool
+            <span class="tab-count" id="poolCount"
+              >{{ question_pool.questions|length }}</span
+            >
+          </button>
+        </div>
+
+        <!-- Initial Quiz Tab -->
+        <div id="initialTab" class="quiz-tab-content active">
+          <div class="quiz-section">
+            <div class="section-header">
+              <h2><i class="fas fa-clipboard-list"></i> Initial Quiz</h2>
+              <p>
+                Questions that appear in the first quiz students take for this
+                subtopic.
+              </p>
+              <div class="section-actions">
+                <input
+                  type="text"
+                  id="initialQuizTitle"
+                  class="quiz-title-input"
+                  value="{{ quiz_data.quiz_title }}"
+                  placeholder="Quiz Title"
+                />
+                <button class="btn-primary" onclick="addQuestion('initial')">
+                  <i class="fas fa-plus"></i>
+                  Add Question
+                </button>
+              </div>
+            </div>
+
+            <div id="initialQuestions" class="questions-container">
+              {% for question in quiz_data.questions %}
+              <div class="question-card" data-index="{{ loop.index0 }}">
+                <div class="question-header">
+                  <div class="question-number">Question {{ loop.index }}</div>
+                  <div class="question-type-badge {{ question.type }}">
+                    {% if question.type == 'multiple_choice' %}
+                    <i class="fas fa-list"></i> Multiple Choice {% elif
+                    question.type == 'fill_in_the_blank' %}
+                    <i class="fas fa-edit"></i> Fill in the Blank {% elif
+                    question.type == 'coding' %}
+                    <i class="fas fa-code"></i> Coding {% else %}
+                    <i class="fas fa-question"></i> {{ question.type.title() }}
+                    {% endif %}
+                  </div>
+                  <div class="question-actions">
+                    <button
+                      class="btn-icon"
+                      onclick="editQuestion('initial', {{ loop.index0 }})"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn-icon btn-danger"
+                      onclick="deleteQuestion('initial', {{ loop.index0 }})"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="question-content">
+                  <div class="question-text">{{ question.question }}</div>
+                  {% if question.type == 'multiple_choice' and question.options
+                  %}
+                  <div class="question-options">
+                    {% for option in question.options %}
+                    <div
+                      class="option {% if loop.index0 == question.answer_index %}correct{% endif %}"
+                    >
+                      {{ loop.index }}. {{ option }} {% if loop.index0 ==
+                      question.answer_index %}
+                      <i class="fas fa-check correct-icon"></i>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% elif question.type == 'fill_in_the_blank' %}
+                  <div class="correct-answer">
+                    <strong>Answer:</strong> {{ question.correct_answer }}
+                  </div>
+                  {% elif question.type == 'coding' %}
+                  <div class="coding-details">
+                    {% if question.starter_code %}
+                    <div class="starter-code">
+                      <strong>Starter Code:</strong>
+                      <pre>{{ question.starter_code }}</pre>
+                    </div>
+                    {% endif %} {% if question.sample_solution %}
+                    <div class="sample-solution">
+                      <strong>Sample Solution:</strong>
+                      <pre>{{ question.sample_solution }}</pre>
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %} {% if question.tags %}
+                  <div class="question-tags">
+                    {% for tag in question.tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            {% if not quiz_data.questions %}
+            <div class="empty-state">
+              <i class="fas fa-clipboard-list"></i>
+              <h3>No Initial Quiz Questions</h3>
+              <p>
+                Add questions that students will encounter in their first quiz
+                for this subtopic.
+              </p>
+              <button class="btn-primary" onclick="addQuestion('initial')">
+                <i class="fas fa-plus"></i>
+                Add First Question
+              </button>
+            </div>
+            {% endif %}
+
+            <div class="quiz-actions">
+              <button id="saveInitialBtn" class="btn-success">
+                <i class="fas fa-save"></i>
+                Save Initial Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question Pool Tab -->
+        <div id="poolTab" class="quiz-tab-content">
+          <div class="quiz-section">
+            <div class="section-header">
+              <h2><i class="fas fa-database"></i> Question Pool</h2>
+              <p>
+                Questions available for remedial quizzes based on student weak
+                areas.
+              </p>
+              <div class="section-actions">
+                <button class="btn-primary" onclick="addQuestion('pool')">
+                  <i class="fas fa-plus"></i>
+                  Add Question
+                </button>
+              </div>
+            </div>
+
+            <div id="poolQuestions" class="questions-container">
+              {% for question in question_pool.questions %}
+              <div class="question-card" data-index="{{ loop.index0 }}">
+                <div class="question-header">
+                  <div class="question-number">Question {{ loop.index }}</div>
+                  <div class="question-type-badge {{ question.type }}">
+                    {% if question.type == 'multiple_choice' %}
+                    <i class="fas fa-list"></i> Multiple Choice {% elif
+                    question.type == 'fill_in_the_blank' %}
+                    <i class="fas fa-edit"></i> Fill in the Blank {% elif
+                    question.type == 'coding' %}
+                    <i class="fas fa-code"></i> Coding {% else %}
+                    <i class="fas fa-question"></i> {{ question.type.title() }}
+                    {% endif %}
+                  </div>
+                  <div class="question-actions">
+                    <button
+                      class="btn-icon"
+                      onclick="editQuestion('pool', {{ loop.index0 }})"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn-icon btn-danger"
+                      onclick="deleteQuestion('pool', {{ loop.index0 }})"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="question-content">
+                  <div class="question-text">{{ question.question }}</div>
+                  {% if question.type == 'multiple_choice' and question.options
+                  %}
+                  <div class="question-options">
+                    {% for option in question.options %}
+                    <div
+                      class="option {% if loop.index0 == question.answer_index %}correct{% endif %}"
+                    >
+                      {{ loop.index }}. {{ option }} {% if loop.index0 ==
+                      question.answer_index %}
+                      <i class="fas fa-check correct-icon"></i>
+                      {% endif %}
+                    </div>
+                    {% endfor %}
+                  </div>
+                  {% elif question.type == 'fill_in_the_blank' %}
+                  <div class="correct-answer">
+                    <strong>Answer:</strong> {{ question.correct_answer }}
+                  </div>
+                  {% elif question.type == 'coding' %}
+                  <div class="coding-details">
+                    {% if question.starter_code %}
+                    <div class="starter-code">
+                      <strong>Starter Code:</strong>
+                      <pre>{{ question.starter_code }}</pre>
+                    </div>
+                    {% endif %} {% if question.sample_solution %}
+                    <div class="sample-solution">
+                      <strong>Sample Solution:</strong>
+                      <pre>{{ question.sample_solution }}</pre>
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %} {% if question.tags %}
+                  <div class="question-tags">
+                    {% for tag in question.tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            {% if not question_pool.questions %}
+            <div class="empty-state">
+              <i class="fas fa-database"></i>
+              <h3>No Question Pool Questions</h3>
+              <p>
+                Add questions that can be used for remedial quizzes based on
+                student performance.
+              </p>
+              <button class="btn-primary" onclick="addQuestion('pool')">
+                <i class="fas fa-plus"></i>
+                Add First Question
+              </button>
+            </div>
+            {% endif %}
+
+            <div class="quiz-actions">
+              <button id="savePoolBtn" class="btn-success">
+                <i class="fas fa-save"></i>
+                Save Question Pool
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Question Editor Modal -->
+    <div id="questionModal" class="modal">
+      <div class="modal-content large-modal">
+        <div class="modal-header">
+          <h2 id="questionModalTitle">Add Question</h2>
+          <button class="modal-close" onclick="closeQuestionModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="questionForm" novalidate>
+            <input type="hidden" id="questionQuizType" value="" />
+            <input type="hidden" id="questionIndex" value="" />
+            <input type="hidden" id="editMode" value="false" />
+
+            <!-- Question Type Selection -->
+            <div class="form-group">
+              <label for="questionType">Question Type *</label>
+              <select id="questionType" required>
+                <option value="multiple_choice">Multiple Choice</option>
+                <option value="fill_in_the_blank">Fill in the Blank</option>
+                <option value="coding">Coding</option>
+              </select>
+              <div class="error-message" id="questionTypeError"></div>
+            </div>
+
+            <!-- Question Text -->
+            <div class="form-group">
+              <label for="questionText">Question Text *</label>
+              <textarea
+                id="questionText"
+                rows="3"
+                required
+                placeholder="Enter your question here..."
+                maxlength="1000"
+              ></textarea>
+              <small id="questionTextHelp"
+                >For fill-in-the-blank questions, use ____ where the answer
+                should go</small
+              >
+              <div class="char-counter">
+                <span id="questionTextCounter">0</span>/1000 characters
+              </div>
+              <div class="error-message" id="questionTextError"></div>
+            </div>
+
+            <!-- Multiple Choice Options -->
+            <div id="multipleChoiceSection" class="question-type-section">
+              <div class="form-group">
+                <label
+                  >Answer Options *
+                  <span class="option-counter">(2 minimum)</span></label
+                >
+                <div id="optionsContainer">
+                  <!-- Options will be populated here -->
+                </div>
+                <div class="option-actions">
+                  <button
+                    type="button"
+                    class="btn-secondary btn-sm"
+                    onclick="addOption()"
+                  >
+                    <i class="fas fa-plus"></i>
+                    Add Option
+                  </button>
+                  <span class="option-help"
+                    >Select the radio button next to the correct answer</span
+                  >
+                </div>
+                <div class="error-message" id="optionsError"></div>
+              </div>
+            </div>
+
+            <!-- Fill in the Blank -->
+            <div
+              id="fillBlankSection"
+              class="question-type-section"
+              style="display: none"
+            >
+              <div class="form-group">
+                <label for="correctAnswer">Correct Answer *</label>
+                <input
+                  type="text"
+                  id="correctAnswer"
+                  placeholder="Enter the correct answer"
+                  maxlength="200"
+                />
+                <small>What should replace the ____ in the question?</small>
+                <div class="error-message" id="correctAnswerError"></div>
+              </div>
+            </div>
+
+            <!-- Coding Question -->
+            <div
+              id="codingSection"
+              class="question-type-section"
+              style="display: none"
+            >
+              <div class="form-group">
+                <label for="starterCode">Starter Code (Optional)</label>
+                <textarea
+                  id="starterCode"
+                  rows="4"
+                  placeholder="# Any code to help students get started..."
+                ></textarea>
+                <small>This code will be pre-filled for students</small>
+              </div>
+              <div class="form-group">
+                <label for="sampleSolution">Sample Solution *</label>
+                <textarea
+                  id="sampleSolution"
+                  rows="6"
+                  required
+                  placeholder="# Write a complete working solution here..."
+                ></textarea>
+                <small
+                  >This helps grade student submissions and provides
+                  reference</small
+                >
+                <div class="error-message" id="sampleSolutionError"></div>
+              </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="form-group">
+              <label for="questionTags">Tags *</label>
+              <div class="tag-input-container">
+                <div class="tag-multiselect" id="tagMultiselect">
+                  <div class="multiselect-display" id="multiselectDisplay">
+                    <div
+                      class="selected-tags-container"
+                      id="selectedTagsContainer"
+                    ></div>
+                    <input
+                      type="text"
+                      id="questionTags"
+                      placeholder="Click to select tags..."
+                      readonly
+                      required
+                      style="
+                        border: none;
+                        outline: none;
+                        flex: 1;
+                        background: transparent;
+                        cursor: pointer;
+                      "
+                    />
+                    <div class="multiselect-arrow" id="multiselectArrow">
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                  </div>
+                  <div class="multiselect-dropdown" id="multiselectDropdown">
+                    <div class="multiselect-search">
+                      <input
+                        type="text"
+                        id="tagSearchInput"
+                        placeholder="Search tags..."
+                      />
+                    </div>
+                    <div class="multiselect-options" id="multiselectOptions">
+                      <!-- Options will be populated here -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <small
+                >Select from available tags below. Tags help categorize
+                questions for targeted learning</small
+              >
+              <div
+                class="tags-preview"
+                id="tagsPreview"
+                style="display: none"
+              ></div>
+              <div
+                class="available-tags"
+                id="availableTags"
+                style="display: none"
+              ></div>
+              <div class="error-message" id="questionTagsError"></div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary form-btn"
+                onclick="closeQuestionModal()"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary form-btn">
+                <i class="fas fa-save"></i>
+                <span id="questionSubmitText">Add Question</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiz Preview Modal -->
+    <div id="previewModal" class="modal">
+      <div class="modal-content large-modal">
+        <div class="modal-header">
+          <h2>Quiz Preview</h2>
+          <button class="modal-close" onclick="closePreviewModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="previewContent">
+            <!-- Preview content will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .admin-body {
+        background: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        width: 280px;
+        background: #1a2332;
+        color: white;
+        padding: 0;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 20px;
+        border-bottom: 1px solid #2d3748;
+        text-align: center;
+      }
+
+      .admin-logo h2 {
+        margin: 0;
+        color: white;
+        font-size: 1.5rem;
+      }
+
+      .back-to-site {
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .back-to-site:hover {
+        color: #4299e1;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: block;
+        padding: 15px 20px;
+        color: #a0aec0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: #2d3748;
+        color: #4299e1;
+        border-left-color: #4299e1;
+      }
+
+      .admin-nav li a i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .admin-header {
+        margin-bottom: 30px;
+      }
+
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 2.5rem;
+      }
+
+      .admin-header p {
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .admin-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .action-btn.primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .action-btn.primary:hover {
+        background: #3182ce;
+      }
+
+      .action-btn.secondary {
+        background: #718096;
+        color: white;
+      }
+
+      .action-btn.secondary:hover {
+        background: #4a5568;
+      }
+
+      .action-btn.tertiary {
+        background: #e2e8f0;
+        color: #4a5568;
+      }
+
+      .action-btn.tertiary:hover {
+        background: #cbd5e0;
+      }
+
+      /* Quiz Tabs */
+      .quiz-tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #e2e8f0;
+      }
+
+      .tab-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 15px 25px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #718096;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .tab-btn.active {
+        color: #4299e1;
+        border-bottom-color: #4299e1;
+      }
+
+      .tab-btn:hover {
+        color: #4299e1;
+      }
+
+      .tab-count {
+        background: #e2e8f0;
+        color: #4a5568;
+        font-size: 0.8rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 5px;
+      }
+
+      .tab-btn.active .tab-count {
+        background: #4299e1;
+        color: white;
+      }
+
+      /* Quiz Content */
+      .quiz-tab-content {
+        display: none;
+      }
+
+      .quiz-tab-content.active {
+        display: block;
+      }
+
+      .quiz-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+      }
+
+      .section-header {
+        padding: 25px 30px;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .section-header h2 {
+        margin: 0 0 8px 0;
+        font-size: 1.8rem;
+      }
+
+      .section-header p {
+        margin: 0 0 15px 0;
+        opacity: 0.9;
+      }
+
+      .section-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .quiz-title-input {
+        padding: 10px 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1rem;
+        min-width: 300px;
+      }
+
+      .quiz-title-input::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .quiz-title-input:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-primary {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-primary:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.6);
+      }
+
+      /* Questions Container */
+      .questions-container {
+        padding: 30px;
+      }
+
+      .question-card {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .question-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: white;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .question-number {
+        font-weight: 600;
+        color: #4a5568;
+      }
+
+      .question-type-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .question-type-badge.multiple_choice {
+        background: #e6f3ff;
+        color: #0066cc;
+      }
+
+      .question-type-badge.fill_in_the_blank {
+        background: #fff2e6;
+        color: #cc6600;
+      }
+
+      .question-type-badge.coding {
+        background: #e6ffe6;
+        color: #009900;
+      }
+
+      .question-actions {
+        display: flex;
+        gap: 5px;
+      }
+
+      .btn-icon {
+        padding: 8px;
+        border: none;
+        border-radius: 6px;
+        background: #e2e8f0;
+        color: #4a5568;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-icon:hover {
+        background: #cbd5e0;
+      }
+
+      .btn-icon.btn-danger {
+        background: #fed7d7;
+        color: #c53030;
+      }
+
+      .btn-icon.btn-danger:hover {
+        background: #feb2b2;
+      }
+
+      .question-content {
+        padding: 20px;
+      }
+
+      .question-text {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 15px;
+        color: #2d3748;
+        line-height: 1.5;
+      }
+
+      .question-options {
+        margin-bottom: 15px;
+      }
+
+      .option {
+        padding: 8px 15px;
+        margin: 5px 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        position: relative;
+      }
+
+      .option.correct {
+        background: #f0fff4;
+        border-color: #68d391;
+        color: #2f855a;
+      }
+
+      .correct-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .correct-answer {
+        padding: 10px 15px;
+        background: #f0fff4;
+        border: 1px solid #68d391;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        color: #2f855a;
+      }
+
+      .coding-details {
+        margin-bottom: 15px;
+      }
+
+      .starter-code,
+      .sample-solution {
+        margin-bottom: 15px;
+      }
+
+      .starter-code pre,
+      .sample-solution pre {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 15px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: "Courier New", monospace;
+        font-size: 0.9rem;
+        margin: 8px 0 0 0;
+      }
+
+      .question-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tag {
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 30px;
+        color: #718096;
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #cbd5e0;
+      }
+
+      .empty-state h3 {
+        color: #2d3748;
+        margin-bottom: 10px;
+      }
+
+      .empty-state p {
+        margin-bottom: 25px;
+      }
+
+      /* Quiz Actions */
+      .quiz-actions {
+        padding: 25px 30px;
+        border-top: 1px solid #e2e8f0;
+        background: #f7fafc;
+        text-align: center;
+      }
+
+      .btn-success {
+        background: #48bb78;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-success:hover {
+        background: #38a169;
+      }
+
+      /* Modal Styles */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-content.large-modal {
+        max-width: 800px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 25px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        color: #2d3748;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #718096;
+        cursor: pointer;
+        padding: 5px;
+      }
+
+      .modal-close:hover {
+        color: #4a5568;
+      }
+
+      .modal-body {
+        padding: 25px;
+      }
+
+      /* Form Styles */
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #718096;
+        font-size: 0.85rem;
+      }
+
+      /* Enhanced form styles */
+      .char-counter {
+        text-align: right;
+        font-size: 0.8rem;
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .error-message {
+        display: none;
+        color: #e53e3e;
+        font-size: 0.85rem;
+        margin-top: 5px;
+        padding: 5px 10px;
+        background: #fed7d7;
+        border-radius: 4px;
+        border-left: 3px solid #e53e3e;
+      }
+
+      .error-message.show {
+        display: block;
+      }
+
+      .form-group input.error,
+      .form-group textarea.error,
+      .form-group select.error {
+        border-color: #e53e3e;
+        box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+      }
+
+      .option-counter {
+        font-size: 0.8rem;
+        color: #718096;
+        font-weight: normal;
+      }
+
+      .option-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .option-help {
+        font-size: 0.85rem;
+        color: #718096;
+        font-style: italic;
+      }
+
+      .tags-preview {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .tag-preview {
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .tag-preview .remove-tag {
+        cursor: pointer;
+        color: #718096;
+        font-weight: bold;
+      }
+
+      .tag-preview .remove-tag:hover {
+        color: #e53e3e;
+      }
+
+      /* Enhanced Tag Multiselect Styles */
+      .tag-multiselect {
+        position: relative;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        transition: all 0.3s ease;
+      }
+
+      .tag-multiselect:focus-within {
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .multiselect-display {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 8px 12px;
+        cursor: pointer;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .selected-tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .selected-tag {
+        background: #4299e1;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        animation: tagAppear 0.2s ease;
+      }
+
+      .selected-tag .remove-btn {
+        background: rgba(255, 255, 255, 0.3);
+        border: none;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.7rem;
+        color: white;
+        transition: background-color 0.2s ease;
+      }
+
+      .selected-tag .remove-btn:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .multiselect-arrow {
+        margin-left: auto;
+        color: #718096;
+        transition: transform 0.3s ease;
+      }
+
+      .multiselect-arrow.open {
+        transform: rotate(180deg);
+      }
+
+      .multiselect-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        max-height: 300px;
+        overflow: hidden;
+        display: none;
+      }
+
+      .multiselect-dropdown.open {
+        display: block;
+        animation: dropdownFade 0.2s ease;
+      }
+
+      .multiselect-search {
+        padding: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f7fafc;
+      }
+
+      .multiselect-search input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.9rem;
+      }
+
+      .multiselect-search input:focus {
+        outline: none;
+        border-color: #4299e1;
+      }
+
+      .multiselect-options {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .multiselect-option {
+        padding: 10px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .multiselect-option:hover {
+        background: #f7fafc;
+      }
+
+      .multiselect-option.selected {
+        background: #e6fffa;
+        color: #00695c;
+        font-weight: 600;
+      }
+
+      .multiselect-option .option-check {
+        color: #00695c;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .multiselect-option.selected .option-check {
+        opacity: 1;
+      }
+
+      .multiselect-empty {
+        padding: 20px;
+        text-align: center;
+        color: #718096;
+        font-style: italic;
+      }
+
+      @keyframes tagAppear {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes dropdownFade {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Legacy tag input styles - keep for backwards compatibility */
+      .tag-input-container {
+        position: relative;
+      }
+
+      .tag-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+      }
+
+      .tag-suggestions.show {
+        display: block;
+      }
+
+      .tag-suggestion {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .tag-suggestion:hover,
+      .tag-suggestion.highlighted {
+        background-color: #f7fafc;
+      }
+
+      .tag-suggestion.selected {
+        background-color: #e6fffa;
+        color: #00695c;
+      }
+
+      .available-tags {
+        margin-top: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+      }
+
+      .available-tags h4 {
+        margin: 0 0 8px 0;
+        font-size: 0.9rem;
+        color: #495057;
+      }
+
+      .available-tags .tag-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .tag-chip {
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tag-chip:hover {
+        background: #bbdefb;
+      }
+
+      .tag-chip.used {
+        background: #c8e6c9;
+        color: #2e7d32;
+      }
+
+      .question-type-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background: #f7fafc;
+        transition: all 0.3s ease;
+      }
+
+      .question-type-section.active {
+        border-color: #4299e1;
+        background: #ebf8ff;
+      }
+
+      .option-input {
+        margin-bottom: 12px;
+        padding: 12px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .option-input:hover {
+        border-color: #cbd5e0;
+      }
+
+      .option-input.has-error {
+        border-color: #e53e3e;
+        background: #fef5f5;
+      }
+
+      /* Highlight correct answer option in green */
+      .option-input.correct-selected {
+        background: #f0fff4;
+        border-color: #68d391;
+      }
+
+      .option-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .option-label {
+        font-weight: 600;
+        color: #4a5568;
+        min-width: 25px;
+        text-align: center;
+      }
+
+      .option-text {
+        flex: 1;
+        border: 1px solid #e2e8f0;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        background: white;
+        color: #2d3748;
+        min-height: 20px;
+      }
+
+      .option-text:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+        background: white;
+      }
+
+      .option-text.error {
+        border-color: #e53e3e;
+        background: #fed7d7;
+      }
+
+      .option-text::placeholder {
+        color: #a0aec0;
+        font-style: italic;
+      }
+
+      /* Radio button styling */
+      .option-controls input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #48bb78;
+      }
+
+      /* Make correct answer more prominent */
+      .option-input.correct-selected .option-label {
+        color: #22543d;
+        background: #c6f6d5;
+        border-radius: 4px;
+        padding: 2px 6px;
+      }
+
+      .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 500;
+      }
+
+      .btn-secondary:hover {
+        background: #cbd5e0;
+        transform: translateY(-1px);
+      }
+
+      .btn-sm {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .form-btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-secondary.form-btn {
+        background: #e2e8f0;
+        color: #4a5568;
+      }
+
+      .btn-secondary.form-btn:hover {
+        background: #cbd5e0;
+      }
+
+      .btn-primary.form-btn {
+        background: #4299e1;
+        color: white;
+      }
+
+      .btn-primary.form-btn:hover {
+        background: #3182ce;
+        transform: translateY(-1px);
+      }
+
+      .btn-primary.form-btn:disabled {
+        background: #a0aec0;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .question-type-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background: #f7fafc;
+      }
+
+      .option-input {
+        margin-bottom: 10px;
+      }
+
+      .option-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .option-label {
+        font-weight: 600;
+        color: #4a5568;
+        min-width: 20px;
+      }
+
+      .option-text {
+        flex: 1;
+      }
+
+      .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .btn-secondary:hover {
+        background: #cbd5e0;
+      }
+
+      .btn-sm {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 30px;
+      }
+
+      .btn-secondary.form-btn {
+        padding: 12px 25px;
+      }
+
+      .btn-primary.form-btn {
+        background: #4299e1;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .btn-primary.form-btn:hover {
+        background: #3182ce;
+      }
+
+      @media (max-width: 768px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .header-actions {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .admin-actions {
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .section-actions {
+          flex-direction: column;
+        }
+
+        .quiz-title-input {
+          min-width: 100%;
+        }
+
+        .option-controls {
+          flex-wrap: wrap;
+        }
+
+        .modal-content {
+          margin: 20px;
+          width: calc(100% - 40px);
+        }
+      }
+    </style>
+
+    <script>
+      // Global variables
+      let currentQuizType = 'initial';
+      let currentQuestionIndex = -1;
+      let initialQuizData = {{ quiz_data | tojson }};
+      let questionPoolData = {{ question_pool | tojson }};
+      const subject = "{{ subject }}";
+      const subtopic = "{{ subtopic }}";
+      let availableTags = [];
+      let selectedTags = [];
+
+      // Load available tags from API
+      async function loadAvailableTags() {
+          try {
+              const response = await fetch(`/api/subjects/${subject}/tags`);
+              if (response.ok) {
+                  const data = await response.json();
+                  availableTags = data.tags || [];
+                  displayAvailableTags();
+              } else {
+                  console.error('Failed to load available tags');
+                  availableTags = [];
+              }
+          } catch (error) {
+              console.error('Error loading tags:', error);
+              availableTags = [];
+          }
+      }
+
+      // Enhanced Tags functionality with mouse-clickable multiselect (GLOBAL FUNCTIONS)
+      let multiselectOpen = false;
+
+      // Initialize multiselect functionality
+      function initializeMultiselect() {
+          const display = document.getElementById('multiselectDisplay');
+          const dropdown = document.getElementById('multiselectDropdown');
+          const arrow = document.getElementById('multiselectArrow');
+          const searchInput = document.getElementById('tagSearchInput');
+
+          // Toggle dropdown on display click
+          display.addEventListener('click', function(e) {
+              e.stopPropagation();
+              toggleMultiselect();
+          });
+
+          // Search functionality
+          searchInput.addEventListener('input', function() {
+              filterOptions(this.value);
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener('click', function(e) {
+              if (!document.getElementById('tagMultiselect').contains(e.target)) {
+                  closeMultiselect();
+              }
+          });
+
+          // Keyboard navigation
+          searchInput.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                  closeMultiselect();
+              }
+          });
+      }
+
+      function toggleMultiselect() {
+          if (multiselectOpen) {
+              closeMultiselect();
+          } else {
+              openMultiselect();
+          }
+      }
+
+      function openMultiselect() {
+          const dropdown = document.getElementById('multiselectDropdown');
+          const arrow = document.getElementById('multiselectArrow');
+
+          dropdown.classList.add('open');
+          arrow.classList.add('open');
+          multiselectOpen = true;
+
+          // Focus search input
+          setTimeout(() => {
+              document.getElementById('tagSearchInput').focus();
+          }, 100);
+
+          renderMultiselectOptions();
+      }
+
+      function closeMultiselect() {
+          const dropdown = document.getElementById('multiselectDropdown');
+          const arrow = document.getElementById('multiselectArrow');
+
+          dropdown.classList.remove('open');
+          arrow.classList.remove('open');
+          multiselectOpen = false;
+
+          // Clear search
+          document.getElementById('tagSearchInput').value = '';
+          renderMultiselectOptions();
+      }
+
+      function renderMultiselectOptions(searchTerm = '') {
+          const container = document.getElementById('multiselectOptions');
+
+          if (availableTags.length === 0) {
+              container.innerHTML = '<div class="multiselect-empty">No tags available for this subject</div>';
+              return;
+          }
+
+          const filteredTags = availableTags.filter(tag =>
+              tag.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+
+          if (filteredTags.length === 0) {
+              container.innerHTML = '<div class="multiselect-empty">No tags match your search</div>';
+              return;
+          }
+
+          container.innerHTML = filteredTags.map(tag => `
+              <div class="multiselect-option ${selectedTags.includes(tag) ? 'selected' : ''}"
+                   onclick="toggleTag('${tag}')">
+                  <span>${tag}</span>
+                  <i class="fas fa-check option-check"></i>
+              </div>
+          `).join('');
+      }
+
+      function filterOptions(searchTerm) {
+          renderMultiselectOptions(searchTerm);
+      }
+
+      function toggleTag(tag) {
+          if (selectedTags.includes(tag)) {
+              removeTagFromSelection(tag);
+          } else {
+              addTagToSelection(tag);
+          }
+      }
+
+      function addTagToSelection(tag) {
+          if (!selectedTags.includes(tag)) {
+              selectedTags.push(tag);
+              updateSelectedTagsDisplay();
+              updateHiddenInput();
+              renderMultiselectOptions(document.getElementById('tagSearchInput').value);
+          }
+      }
+
+      function removeTagFromSelection(tag) {
+          selectedTags = selectedTags.filter(t => t !== tag);
+          updateSelectedTagsDisplay();
+          updateHiddenInput();
+          renderMultiselectOptions(document.getElementById('tagSearchInput').value);
+      }
+
+      function updateSelectedTagsDisplay() {
+          const container = document.getElementById('selectedTagsContainer');
+
+          container.innerHTML = selectedTags.map(tag => `
+              <div class="selected-tag">
+                  <span>${tag}</span>
+                  <button type="button" class="remove-btn" onclick="removeTagFromSelection('${tag}')">
+                      <i class="fas fa-times" style="font-size: 0.6rem;"></i>
+                  </button>
+              </div>
+          `).join('');
+
+          // Update placeholder
+          const input = document.getElementById('questionTags');
+          if (selectedTags.length === 0) {
+              input.placeholder = 'Click to select tags...';
+          } else {
+              input.placeholder = `${selectedTags.length} tag${selectedTags.length === 1 ? '' : 's'} selected`;
+          }
+      }
+
+      function updateHiddenInput() {
+          document.getElementById('questionTags').value = selectedTags.join(', ');
+      }
+
+      // Legacy compatibility functions - simplified versions
+      function displayAvailableTags() {
+          // This is now handled by the multiselect dropdown
+          // Keep function for backwards compatibility but make it do nothing
+          const container = document.getElementById('availableTags');
+          container.style.display = 'none';
+      }
+
+      function updateTagChipsDisplay() {
+          // Legacy function - no longer needed with multiselect
+      }
+
+      function addTagFromChip(tag) {
+          addTagToSelection(tag);
+      }
+
+      function updateTagInput() {
+          updateHiddenInput();
+      }
+
+      function updateTagsPreview() {
+          // This is now handled by updateSelectedTagsDisplay
+          const preview = document.getElementById('tagsPreview');
+          preview.style.display = 'none';
+      }
+
+      function removeTag(tagToRemove) {
+          removeTagFromSelection(tagToRemove);
+      }
+
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+              const tabName = this.dataset.tab;
+              switchTab(tabName);
+          });
+      });
+
+      function switchTab(tabName) {
+          // Update tab buttons
+          document.querySelectorAll('.tab-btn').forEach(btn => {
+              btn.classList.remove('active');
+          });
+          document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+          // Update tab content
+          document.querySelectorAll('.quiz-tab-content').forEach(content => {
+              content.classList.remove('active');
+          });
+          document.getElementById(`${tabName}Tab`).classList.add('active');
+
+          currentQuizType = tabName;
+      }
+
+      // Question type switching in modal
+      document.getElementById('questionType').addEventListener('change', function() {
+          showQuestionTypeSection(this.value);
+          clearErrors();
+      });
+
+      function showQuestionTypeSection(type) {
+          // Hide all sections
+          document.querySelectorAll('.question-type-section').forEach(section => {
+              section.style.display = 'none';
+              section.classList.remove('active');
+          });
+
+          // Show selected section
+          if (type === 'multiple_choice') {
+              const section = document.getElementById('multipleChoiceSection');
+              section.style.display = 'block';
+              section.classList.add('active');
+              document.getElementById('questionTextHelp').textContent = 'Write a clear question with the options below';
+          } else if (type === 'fill_in_the_blank') {
+              const section = document.getElementById('fillBlankSection');
+              section.style.display = 'block';
+              section.classList.add('active');
+              document.getElementById('questionTextHelp').textContent = 'Use ____ where the answer should go (e.g., "The ____ keyword defines a function")';
+          } else if (type === 'coding') {
+              const section = document.getElementById('codingSection');
+              section.style.display = 'block';
+              section.classList.add('active');
+              document.getElementById('questionTextHelp').textContent = 'Describe what code the student should write';
+          }
+      }
+
+      // Character counter for question text
+      document.getElementById('questionText').addEventListener('input', function() {
+          const counter = document.getElementById('questionTextCounter');
+          counter.textContent = this.value.length;
+
+          if (this.value.length > 800) {
+              counter.style.color = '#e53e3e';
+          } else if (this.value.length > 600) {
+              counter.style.color = '#dd6b20';
+          } else {
+              counter.style.color = '#718096';
+          }
+      });
+
+
+
+      // Add question
+      function addQuestion(quizType) {
+          currentQuizType = quizType;
+          currentQuestionIndex = -1;
+          document.getElementById('editMode').value = 'false';
+          document.getElementById('questionModalTitle').textContent = 'Add Question';
+          document.getElementById('questionSubmitText').textContent = 'Add Question';
+          resetQuestionForm();
+          document.getElementById('questionModal').classList.add('show');
+      }
+
+      // Edit question
+      function editQuestion(quizType, index) {
+          currentQuizType = quizType;
+          currentQuestionIndex = index;
+          document.getElementById('editMode').value = 'true';
+          document.getElementById('questionModalTitle').textContent = 'Edit Question';
+          document.getElementById('questionSubmitText').textContent = 'Update Question';
+
+          const questions = quizType === 'initial' ? initialQuizData.questions : questionPoolData.questions;
+          const question = questions[index];
+
+          populateQuestionForm(question);
+          document.getElementById('questionModal').classList.add('show');
+      }
+
+      // Delete question
+      function deleteQuestion(quizType, index) {
+          if (confirm('Are you sure you want to delete this question?')) {
+              const questions = quizType === 'initial' ? initialQuizData.questions : questionPoolData.questions;
+              questions.splice(index, 1);
+              renderQuestions(quizType);
+              updateTabCounts();
+          }
+      }
+
+      // Reset question form
+      function resetQuestionForm() {
+          document.getElementById('questionForm').reset();
+          document.getElementById('questionType').value = 'multiple_choice';
+          document.getElementById('questionTextCounter').textContent = '0';
+          showQuestionTypeSection('multiple_choice');
+          resetOptions();
+          clearErrors();
+
+          // Reset tags with new multiselect system
+          selectedTags = [];
+          updateSelectedTagsDisplay();
+          updateHiddenInput();
+          closeMultiselect();
+      }
+
+      // Clear all error messages
+      function clearErrors() {
+          document.querySelectorAll('.error-message').forEach(error => {
+              error.classList.remove('show');
+          });
+          document.querySelectorAll('.error').forEach(field => {
+              field.classList.remove('error');
+          });
+          document.querySelectorAll('.has-error').forEach(field => {
+              field.classList.remove('has-error');
+          });
+      }
+
+      // Show error message
+      function showError(fieldId, message) {
+          const field = document.getElementById(fieldId);
+          const errorElement = document.getElementById(fieldId + 'Error');
+
+          if (field) {
+              field.classList.add('error');
+          }
+
+          if (errorElement) {
+              errorElement.textContent = message;
+              errorElement.classList.add('show');
+          }
+      }
+
+      // Populate question form for editing
+      function populateQuestionForm(question) {
+          clearErrors();
+
+          document.getElementById('questionType').value = question.type || 'multiple_choice';
+          document.getElementById('questionText').value = question.question || '';
+
+          // Handle tags with new multiselect system
+          selectedTags = question.tags || [];
+          updateSelectedTagsDisplay();
+          updateHiddenInput();
+
+          // Update character counter
+          const counter = document.getElementById('questionTextCounter');
+          counter.textContent = (question.question || '').length;
+
+          showQuestionTypeSection(question.type || 'multiple_choice');
+
+          if (question.type === 'multiple_choice') {
+              resetOptions();
+              const options = question.options || [];
+              const answerIndex = question.answer_index !== undefined ? question.answer_index : 0;
+
+              // Add extra options if needed
+              while (document.querySelectorAll('.option-input').length < options.length) {
+                  addOption();
+              }
+
+              // Set option values
+              options.forEach((option, i) => {
+                  const optionInput = document.querySelector(`[data-index="${i}"] .option-text`);
+                  if (optionInput) {
+                      optionInput.value = option;
+                  }
+              });
+
+              // Set correct answer
+              const correctRadio = document.querySelector(`input[name="correctOption"][value="${answerIndex}"]`);
+              if (correctRadio) {
+                  correctRadio.checked = true;
+                  // Trigger highlighting for the correct answer
+                  updateCorrectAnswerHighlight();
+              }
+
+          } else if (question.type === 'fill_in_the_blank') {
+              document.getElementById('correctAnswer').value = question.correct_answer || '';
+
+          } else if (question.type === 'coding') {
+              document.getElementById('starterCode').value = question.starter_code || '';
+              document.getElementById('sampleSolution').value = question.sample_solution || '';
+          }
+      }
+
+      // Options management
+      function resetOptions() {
+          const container = document.getElementById('optionsContainer');
+          container.innerHTML = '';
+
+          // Create default 2 options
+          for (let i = 0; i < 2; i++) {
+              createOption(i);
+          }
+      }
+
+      function createOption(index) {
+          const container = document.getElementById('optionsContainer');
+          const letter = String.fromCharCode(65 + index); // A, B, C, D, etc.
+
+          const optionDiv = document.createElement('div');
+          optionDiv.className = 'option-input';
+          optionDiv.setAttribute('data-index', index);
+          optionDiv.innerHTML = `
+              <div class="option-controls">
+                  <input type="radio" name="correctOption" value="${index}" required>
+                  <span class="option-label">${letter}.</span>
+                  <input type="text" class="option-text" placeholder="Option ${letter}" required maxlength="300">
+                  <button type="button" class="btn-icon btn-danger" onclick="removeOption(${index})" ${index < 2 ? 'disabled' : ''}>
+                      <i class="fas fa-trash"></i>
+                  </button>
+              </div>
+          `;
+          container.appendChild(optionDiv);
+
+          // Add event listener for validation
+          const optionText = optionDiv.querySelector('.option-text');
+          optionText.addEventListener('input', function() {
+              validateOptions();
+          });
+
+          // Add event listener for radio button to highlight correct answer
+          const radioButton = optionDiv.querySelector('input[type="radio"]');
+          radioButton.addEventListener('change', function() {
+              updateCorrectAnswerHighlight();
+          });
+      }
+
+      // Function to update correct answer highlighting
+      function updateCorrectAnswerHighlight() {
+          const container = document.getElementById('optionsContainer');
+          const options = container.querySelectorAll('.option-input');
+          const selectedRadio = container.querySelector('input[name="correctOption"]:checked');
+
+          // Remove highlight from all options
+          options.forEach(option => {
+              option.classList.remove('correct-selected');
+          });
+
+          // Add highlight to selected option
+          if (selectedRadio) {
+              const selectedOption = selectedRadio.closest('.option-input');
+              selectedOption.classList.add('correct-selected');
+          }
+      }
+
+      function addOption() {
+          const container = document.getElementById('optionsContainer');
+          const currentOptions = container.querySelectorAll('.option-input');
+          const newIndex = currentOptions.length;
+
+          if (newIndex >= 6) {
+              alert('Maximum 6 options allowed');
+              return;
+          }
+
+          createOption(newIndex);
+          updateOptionLabels();
+      }
+
+      function removeOption(index) {
+          const container = document.getElementById('optionsContainer');
+          const options = container.querySelectorAll('.option-input');
+
+          if (options.length <= 2) {
+              alert('You must have at least 2 options for a multiple choice question.');
+              return;
+          }
+
+          const optionToRemove = container.querySelector(`[data-index="${index}"]`);
+          if (optionToRemove) {
+              optionToRemove.remove();
+              updateOptionLabels();
+              validateOptions();
+          }
+      }
+
+      function updateOptionLabels() {
+          const container = document.getElementById('optionsContainer');
+          const options = container.querySelectorAll('.option-input');
+
+          options.forEach((option, newIndex) => {
+              option.setAttribute('data-index', newIndex);
+              const letter = String.fromCharCode(65 + newIndex);
+              option.querySelector('.option-label').textContent = letter + '.';
+
+              const radioButton = option.querySelector('input[type="radio"]');
+              radioButton.value = newIndex;
+
+              option.querySelector('.option-text').placeholder = `Option ${letter}`;
+
+              const removeBtn = option.querySelector('button');
+              removeBtn.setAttribute('onclick', `removeOption(${newIndex})`);
+              removeBtn.disabled = newIndex < 2;
+
+              // Re-add event listener for radio button highlighting
+              radioButton.removeEventListener('change', updateCorrectAnswerHighlight);
+              radioButton.addEventListener('change', updateCorrectAnswerHighlight);
+          });
+
+          // Update highlighting after re-indexing
+          updateCorrectAnswerHighlight();
+      }
+
+      function validateOptions() {
+          const options = document.querySelectorAll('.option-text');
+          let hasError = false;
+
+          options.forEach(option => {
+              option.classList.remove('error');
+              option.parentElement.parentElement.classList.remove('has-error');
+
+              if (!option.value.trim()) {
+                  option.classList.add('error');
+                  option.parentElement.parentElement.classList.add('has-error');
+                  hasError = true;
+              }
+          });
+
+          return !hasError;
+      }
+
+      // Question form submission with validation
+      document.getElementById('questionForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+          submitQuestion();
+      });
+
+      function submitQuestion() {
+          clearErrors();
+
+          const questionData = {
+              type: document.getElementById('questionType').value,
+              question: document.getElementById('questionText').value.trim(),
+              tags: document.getElementById('questionTags').value.split(',').map(tag => tag.trim()).filter(tag => tag)
+          };
+
+          // Validate common fields
+          if (!validateCommonFields(questionData)) {
+              return;
+          }
+
+          // Type-specific validation
+          if (questionData.type === 'multiple_choice') {
+              if (!validateMultipleChoice(questionData)) {
+                  return;
+              }
+          } else if (questionData.type === 'fill_in_the_blank') {
+              if (!validateFillInBlank(questionData)) {
+                  return;
+              }
+          } else if (questionData.type === 'coding') {
+              if (!validateCoding(questionData)) {
+                  return;
+              }
+          }
+
+          // Submit to server
+          submitToServer(questionData);
+      }
+
+      function validateCommonFields(questionData) {
+          let isValid = true;
+
+          if (!questionData.question || questionData.question.length === 0) {
+              showError('questionText', 'Question text is required');
+              isValid = false;
+          } else if (questionData.question.length > 1000) {
+              showError('questionText', 'Question text is too long (max 1000 characters)');
+              isValid = false;
+          }
+
+          if (questionData.tags.length > 10) {
+              showError('questionTags', 'Too many tags (max 10)');
+              isValid = false;
+          }
+
+          return isValid;
+      }
+
+      function validateMultipleChoice(questionData) {
+          const options = [];
+          const optionTexts = document.querySelectorAll('.option-text');
+          const correctAnswer = document.querySelector('input[name="correctOption"]:checked');
+
+          // Check options
+          optionTexts.forEach((input, index) => {
+              const text = input.value.trim();
+              if (!text) {
+                  input.classList.add('error');
+                  return false;
+              }
+              if (text.length > 300) {
+                  input.classList.add('error');
+                  return false;
+              }
+              options.push(text);
+          });
+
+          if (options.length < 2) {
+              alert('At least 2 options are required for multiple choice questions');
+              return false;
+          }
+
+          if (!correctAnswer) {
+              alert('Please select the correct answer');
+              return false;
+          }
+
+          // Check for duplicate options
+          const uniqueOptions = [...new Set(options)];
+          if (uniqueOptions.length !== options.length) {
+              alert('Options must be unique');
+              return false;
+          }
+
+          questionData.options = options;
+          questionData.answer_index = parseInt(correctAnswer.value);
+          return true;
+      }
+
+      function validateFillInBlank(questionData) {
+          const correctAnswer = document.getElementById('correctAnswer').value.trim();
+
+          if (!correctAnswer) {
+              showError('correctAnswer', 'Correct answer is required');
+              return false;
+          }
+
+          if (correctAnswer.length > 200) {
+              showError('correctAnswer', 'Answer is too long (max 200 characters)');
+              return false;
+          }
+
+          if (!questionData.question.includes('____')) {
+              showError('questionText', 'Question must contain ____ where the answer should go');
+              return false;
+          }
+
+          questionData.correct_answer = correctAnswer;
+          return true;
+      }
+
+      function validateCoding(questionData) {
+          const starterCode = document.getElementById('starterCode').value;
+          const sampleSolution = document.getElementById('sampleSolution').value;
+
+          if (starterCode.length > 5000) {
+              showError('starterCode', 'Starter code is too long (max 5000 characters)');
+              return false;
+          }
+
+          if (sampleSolution.length > 5000) {
+              showError('sampleSolution', 'Sample solution is too long (max 5000 characters)');
+              return false;
+          }
+
+          questionData.starter_code = starterCode;
+          questionData.sample_solution = sampleSolution;
+          return true;
+      }
+
+      function submitToServer(questionData) {
+          const editMode = document.getElementById('editMode').value === 'true';
+          const isInitialQuiz = currentQuizType === 'initial';
+
+          // Show loading state
+          const submitBtn = document.querySelector('#questionModal .btn-primary');
+          const originalText = submitBtn.textContent;
+          submitBtn.textContent = 'Saving...';
+          submitBtn.disabled = true;
+
+          // For now, just save locally (can add server validation later)
+          try {
+              // Update local data
+              const questions = isInitialQuiz ? initialQuizData.questions : questionPoolData.questions;
+
+              if (editMode) {
+                  questions[currentQuestionIndex] = questionData;
+              } else {
+                  questions.push(questionData);
+              }
+
+              // Re-render questions
+              renderQuestions(currentQuizType);
+              updateTabCounts();
+              closeQuestionModal();
+
+              // Show success message
+              showSuccessMessage(editMode ? 'Question updated successfully!' : 'Question added successfully!');
+
+              // Auto-save to server after a short delay (silent save)
+              setTimeout(() => {
+                  autoSaveQuiz(currentQuizType);
+              }, 500);
+
+          } catch (error) {
+              console.error('Error:', error);
+              alert('An error occurred while saving the question.');
+          } finally {
+              // Restore button state
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+          }
+      }
+
+      function showSuccessMessage(message) {
+          // Create or update success message element
+          let successDiv = document.getElementById('successMessage');
+          if (!successDiv) {
+              successDiv = document.createElement('div');
+              successDiv.id = 'successMessage';
+              successDiv.className = 'alert alert-success';
+              successDiv.style.cssText = `
+                  position: fixed;
+                  top: 20px;
+                  right: 20px;
+                  z-index: 10000;
+                  max-width: 400px;
+                  padding: 12px 16px;
+                  background: #48bb78;
+                  color: white;
+                  border-radius: 8px;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                  transform: translateX(100%);
+                  transition: transform 0.3s ease;
+              `;
+              document.body.appendChild(successDiv);
+          }
+
+          successDiv.textContent = message;
+
+          // Animate in
+          setTimeout(() => {
+              successDiv.style.transform = 'translateX(0)';
+          }, 100);
+
+          // Animate out after 3 seconds
+          setTimeout(() => {
+              successDiv.style.transform = 'translateX(100%)';
+              setTimeout(() => {
+                  if (successDiv.parentNode) {
+                      successDiv.parentNode.removeChild(successDiv);
+                  }
+              }, 300);
+          }, 3000);
+      }
+
+      // Render questions
+      function renderQuestions(quizType) {
+          const container = document.getElementById(quizType === 'initial' ? 'initialQuestions' : 'poolQuestions');
+          const questions = quizType === 'initial' ? initialQuizData.questions : questionPoolData.questions;
+
+          if (questions.length === 0) {
+              container.innerHTML = `
+                  <div class="empty-state">
+                      <i class="fas fa-${quizType === 'initial' ? 'clipboard-list' : 'database'}"></i>
+                      <h3>No ${quizType === 'initial' ? 'Initial Quiz' : 'Question Pool'} Questions</h3>
+                      <p>${quizType === 'initial' ? 'Add questions that students will encounter in their first quiz for this subtopic.' : 'Add questions that can be used for remedial quizzes based on student performance.'}</p>
+                      <button class="btn-primary" onclick="addQuestion('${quizType}')">
+                          <i class="fas fa-plus"></i>
+                          Add First Question
+                      </button>
+                  </div>
+              `;
+              return;
+          }
+
+          container.innerHTML = questions.map((question, index) => {
+              const typeIcon = {
+                  'multiple_choice': 'fas fa-list',
+                  'fill_in_the_blank': 'fas fa-edit',
+                  'coding': 'fas fa-code'
+              }[question.type] || 'fas fa-question';
+
+              const typeName = {
+                  'multiple_choice': 'Multiple Choice',
+                  'fill_in_the_blank': 'Fill in the Blank',
+                  'coding': 'Coding'
+              }[question.type] || question.type.replace('_', ' ').title();
+
+              let contentHtml = '';
+
+              if (question.type === 'multiple_choice' && question.options) {
+                  contentHtml = `
+                      <div class="question-options">
+                          ${question.options.map((option, optIndex) => `
+                              <div class="option ${optIndex === question.answer_index ? 'correct' : ''}">
+                                  ${optIndex + 1}. ${option}
+                                  ${optIndex === question.answer_index ? '<i class="fas fa-check correct-icon"></i>' : ''}
+                              </div>
+                          `).join('')}
+                      </div>
+                  `;
+              } else if (question.type === 'fill_in_the_blank') {
+                  contentHtml = `
+                      <div class="correct-answer">
+                          <strong>Answer:</strong> ${question.correct_answer || 'N/A'}
+                      </div>
+                  `;
+              } else if (question.type === 'coding') {
+                  contentHtml = `
+                      <div class="coding-details">
+                          ${question.starter_code ? `
+                              <div class="starter-code">
+                                  <strong>Starter Code:</strong>
+                                  <pre>${question.starter_code}</pre>
+                              </div>
+                          ` : ''}
+                          ${question.sample_solution ? `
+                              <div class="sample-solution">
+                                  <strong>Sample Solution:</strong>
+                                  <pre>${question.sample_solution}</pre>
+                              </div>
+                          ` : ''}
+                      </div>
+                  `;
+              }
+
+              const tagsHtml = question.tags && question.tags.length > 0 ? `
+                  <div class="question-tags">
+                      ${question.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                  </div>
+              ` : '';
+
+              return `
+                  <div class="question-card" data-index="${index}">
+                      <div class="question-header">
+                          <div class="question-number">Question ${index + 1}</div>
+                          <div class="question-type-badge ${question.type}">
+                              <i class="${typeIcon}"></i> ${typeName}
+                          </div>
+                          <div class="question-actions">
+                              <button class="btn-icon" onclick="editQuestion('${quizType}', ${index})">
+                                  <i class="fas fa-edit"></i>
+                              </button>
+                              <button class="btn-icon btn-danger" onclick="deleteQuestion('${quizType}', ${index})">
+                                  <i class="fas fa-trash"></i>
+                              </button>
+                          </div>
+                      </div>
+                      <div class="question-content">
+                          <div class="question-text">${question.question}</div>
+                          ${contentHtml}
+                          ${tagsHtml}
+                      </div>
+                  </div>
+              `;
+          }).join('');
+      }
+
+      // Update tab counts
+      function updateTabCounts() {
+          document.getElementById('initialCount').textContent = initialQuizData.questions.length;
+          document.getElementById('poolCount').textContent = questionPoolData.questions.length;
+      }
+
+      // Modal functions
+      function closeQuestionModal() {
+          document.getElementById('questionModal').classList.remove('show');
+          clearErrors();
+          resetQuestionForm();
+      }
+
+      function closePreviewModal() {
+          document.getElementById('previewModal').classList.remove('show');
+      }
+
+      // Initialize modal events
+      document.addEventListener('DOMContentLoaded', function() {
+          // Initialize multiselect functionality
+          initializeMultiselect();
+
+          // Close modal on overlay click
+          document.getElementById('questionModal').addEventListener('click', function(e) {
+              if (e.target === this) {
+                  closeQuestionModal();
+              }
+          });
+
+          // Close modal on escape key
+          document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape' && document.getElementById('questionModal').classList.contains('show')) {
+                  closeQuestionModal();
+              }
+          });
+
+          // Initialize form on page load
+          resetQuestionForm();
+      });
+
+      // Save functions
+      document.getElementById('saveInitialBtn').addEventListener('click', function() {
+          saveQuiz('initial');
+      });
+
+      document.getElementById('savePoolBtn').addEventListener('click', function() {
+          saveQuiz('pool');
+      });
+
+      async function saveQuiz(type) {
+          const btn = document.getElementById(type === 'initial' ? 'saveInitialBtn' : 'savePoolBtn');
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+          btn.disabled = true;
+
+          try {
+              let data;
+              let endpoint;
+
+              if (type === 'initial') {
+                  data = {
+                      quiz_title: document.getElementById('initialQuizTitle').value || `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${subtopic.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Quiz`,
+                      questions: initialQuizData.questions
+                  };
+                  endpoint = `/admin/quiz/${subject}/${subtopic}/initial`;
+              } else {
+                  data = {
+                      questions: questionPoolData.questions
+                  };
+                  endpoint = `/admin/quiz/${subject}/${subtopic}/pool`;
+              }
+
+              const response = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+              });
+
+              const result = await response.json();
+
+              if (response.ok) {
+                  alert(result.message);
+              } else {
+                  alert('Error: ' + (result.error || 'Failed to save quiz'));
+              }
+
+          } catch (error) {
+              alert('Error: ' + error.message);
+          } finally {
+              btn.innerHTML = originalText;
+              btn.disabled = false;
+          }
+      }
+
+      // Silent auto-save function (no alerts)
+      async function autoSaveQuiz(type) {
+          try {
+              let data;
+              let endpoint;
+
+              if (type === 'initial') {
+                  data = {
+                      quiz_title: document.getElementById('initialQuizTitle').value || `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${subtopic.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Quiz`,
+                      questions: initialQuizData.questions
+                  };
+                  endpoint = `/admin/quiz/${subject}/${subtopic}/initial`;
+              } else {
+                  data = {
+                      questions: questionPoolData.questions
+                  };
+                  endpoint = `/admin/quiz/${subject}/${subtopic}/pool`;
+              }
+
+              const response = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(data)
+              });
+
+              if (response.ok) {
+                  // Show subtle success indicator
+                  showAutoSaveIndicator('saved');
+              } else {
+                  // Show subtle error indicator
+                  showAutoSaveIndicator('error');
+              }
+
+          } catch (error) {
+              console.error('Auto-save error:', error);
+              showAutoSaveIndicator('error');
+          }
+      }
+
+      // Show auto-save status indicator
+      function showAutoSaveIndicator(status) {
+          let indicator = document.getElementById('autoSaveIndicator');
+          if (!indicator) {
+              indicator = document.createElement('div');
+              indicator.id = 'autoSaveIndicator';
+              indicator.style.cssText = `
+                  position: fixed;
+                  top: 80px;
+                  right: 20px;
+                  z-index: 9999;
+                  padding: 8px 12px;
+                  border-radius: 4px;
+                  font-size: 13px;
+                  opacity: 0;
+                  transition: opacity 0.3s ease;
+              `;
+              document.body.appendChild(indicator);
+          }
+
+          if (status === 'saved') {
+              indicator.style.background = '#48bb78';
+              indicator.style.color = 'white';
+              indicator.innerHTML = '<i class="fas fa-check"></i> Saved';
+          } else {
+              indicator.style.background = '#e53e3e';
+              indicator.style.color = 'white';
+              indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Save failed';
+          }
+
+          // Show indicator
+          indicator.style.opacity = '1';
+
+          // Hide after 2 seconds
+          setTimeout(() => {
+              indicator.style.opacity = '0';
+          }, 2000);
+      }
+
+      // Preview quiz
+      document.getElementById('previewQuizBtn').addEventListener('click', function() {
+          const questions = currentQuizType === 'initial' ? initialQuizData.questions : questionPoolData.questions;
+          const quizTitle = currentQuizType === 'initial' ?
+              (document.getElementById('initialQuizTitle').value || `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${subtopic.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Quiz`) :
+              'Question Pool Preview';
+
+          const previewContent = document.getElementById('previewContent');
+
+          if (questions.length === 0) {
+              previewContent.innerHTML = `
+                  <div class="empty-state">
+                      <i class="fas fa-clipboard-question"></i>
+                      <h3>No Questions to Preview</h3>
+                      <p>Add some questions first to see the preview.</p>
+                  </div>
+              `;
+          } else {
+              previewContent.innerHTML = `
+                  <h2>${quizTitle}</h2>
+                  <div class="quiz-preview">
+                      ${questions.map((question, index) => {
+                          let questionHtml = `
+                              <div class="preview-question">
+                                  <p><strong>${index + 1}. ${question.question}</strong></p>
+                          `;
+
+                          if (question.type === 'multiple_choice' && question.options) {
+                              questionHtml += `
+                                  <div class="preview-options">
+                                      ${question.options.map((option, optIndex) => `
+                                          <label style="display: block; margin: 5px 0;">
+                                              <input type="radio" name="q${index}" value="${option}" disabled>
+                                              ${option}
+                                          </label>
+                                      `).join('')}
+                                  </div>
+                              `;
+                          } else if (question.type === 'fill_in_the_blank') {
+                              questionHtml += `
+                                  <input type="text" placeholder="Fill in the blank..." disabled style="margin: 10px 0;">
+                              `;
+                          } else if (question.type === 'coding') {
+                              questionHtml += `
+                                  <textarea rows="6" placeholder="Write your code here..." disabled style="width: 100%; margin: 10px 0; font-family: monospace;">${question.starter_code || ''}</textarea>
+                              `;
+                          }
+
+                          questionHtml += '</div>';
+                          return questionHtml;
+                      }).join('')}
+                  </div>
+              `;
+          }
+
+          document.getElementById('previewModal').classList.add('show');
+      });
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', function() {
+          renderQuestions('initial');
+          renderQuestions('pool');
+          updateTabCounts();
+          showQuestionTypeSection('multiple_choice');
+          loadAvailableTags(); // Load tags from API
+      });
+    </script>
+  </body>
+</html>

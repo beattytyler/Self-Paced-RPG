@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if edit_mode %}Edit Lesson{% else %}Create Lesson{% endif %} - Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-body">
+    <div class="admin-layout">
+        <!-- Admin Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="admin-logo">
+                <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+                <a href="/" class="back-to-site">← Back to Site</a>
+            </div>
+            
+            <ul class="admin-nav">
+                <li><a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/subjects"><i class="fas fa-book-open"></i> Subjects</a></li>
+                <li><a href="/admin/subtopics"><i class="fas fa-sitemap"></i> Manage Subtopics</a></li>
+                <li><a href="/admin/lessons" class="active"><i class="fas fa-chalkboard-teacher"></i> Lessons</a></li>
+                <li><a href="/admin/questions"><i class="fas fa-question-circle"></i> Questions</a></li>
+                <li><a href="/admin/export"><i class="fas fa-download"></i> Export/Import</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <header class="admin-header">
+                <h1>{% if edit_mode %}Edit Lesson{% else %}Create New Lesson{% endif %}</h1>
+                <p>{% if edit_mode %}Modify the lesson content and structure{% else %}Create a comprehensive lesson with rich content{% endif %}</p>
+                <div class="breadcrumb">
+                    <a href="/admin/lessons">Lessons</a> > 
+                    {% if edit_mode %}
+                        <span>Edit: {{ lesson_data.title }}</span>
+                    {% else %}
+                        <span>Create New</span>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Lesson Form -->
+            <div class="lesson-form-container">
+                <form id="lessonForm" class="lesson-form">
+                    <!-- Basic Info Section -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="subject">Subject *</label>
+                                <select id="subject" name="subject" required {% if edit_mode %}disabled{% endif %}>
+                                    <option value="">Select Subject</option>
+                                    {% for subject_id, subject_data in subjects.items() %}
+                                        <option value="{{ subject_id }}" 
+                                                {% if edit_mode and subject == subject_id %}selected{% endif %}>
+                                            {{ subject_data.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="subtopic">Subtopic *</label>
+                                <select id="subtopic" name="subtopic" required {% if edit_mode %}disabled{% endif %}>
+                                    <option value="">Select Subtopic</option>
+                                    {% if edit_mode and subject_subtopics %}
+                                        {% for subtopic_id, subtopic_data in subject_subtopics.items() %}
+                                            <option value="{{ subtopic_id }}" 
+                                                    {% if subtopic_id == subtopic %}selected{% endif %}>
+                                                {{ subtopic_data.name }}
+                                            </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <small>Choose from available subtopics for the selected subject</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lesson_id">Lesson ID *</label>
+                                <input type="text" id="lesson_id" name="lesson_id" required 
+                                       placeholder="e.g., python-basics, advanced-functions"
+                                       {% if edit_mode %}value="{{ lesson_id }}" readonly{% endif %}>
+                                <small>Unique identifier for this lesson (lowercase, hyphens only)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="title">Lesson Title *</label>
+                                <input type="text" id="title" name="title" required 
+                                       placeholder="e.g., A Comprehensive Guide to Python Functions"
+                                       {% if edit_mode %}value="{{ lesson_data.title }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="videoId">YouTube Video ID</label>
+                            <input type="text" id="videoId" name="videoId" 
+                                   placeholder="e.g., kvO_nHnvPtQ (from youtube.com/watch?v=kvO_nHnvPtQ)"
+                                   {% if edit_mode %}value="{{ lesson_data.videoId or '' }}"{% endif %}>
+                            <small>Optional: YouTube video ID to embed with this lesson</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lessonTags">Lesson Tags *</label>
+                            <div class="tag-input-container">
+                                <input type="text" id="lessonTags" name="lessonTags" 
+                                       placeholder="Start typing to search tags..."
+                                       {% if edit_mode and lesson_data.tags %}value="{{ lesson_data.tags | join(', ') }}"{% endif %}
+                                       required autocomplete="off">
+                                <div class="tag-suggestions" id="lessonTagSuggestions"></div>
+                            </div>
+                            <small>Select from available tags or type to search. Tags help the AI match lessons to student needs</small>
+                            <div class="tags-preview" id="lessonTagsPreview"></div>
+                            <div class="available-tags" id="lessonAvailableTags"></div>
+                            <div class="error-message" id="lessonTagsError"></div>
+                        </div>
+                    </div>
+
+                    <!-- Content Section -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-edit"></i> Lesson Content</h3>
+                        <p>Build your lesson using different content types. Drag to reorder.</p>
+                        
+                        <div class="content-toolbar">
+                            <button type="button" class="btn-add-content" data-type="header">
+                                <i class="fas fa-heading"></i> Add Header
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="paragraph">
+                                <i class="fas fa-paragraph"></i> Add Paragraph
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="code">
+                                <i class="fas fa-code"></i> Add Code
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="list">
+                                <i class="fas fa-list-ul"></i> Add List
+                            </button>
+                            <button type="button" class="btn-add-content" data-type="summary">
+                                <i class="fas fa-lightbulb"></i> Add Summary
+                            </button>
+                        </div>
+                        
+                        <div id="contentBlocks" class="content-blocks">
+                            <!-- Content blocks will be dynamically added here -->
+                        </div>
+                        
+                        <div class="content-empty-state" id="contentEmptyState">
+                            <i class="fas fa-plus-circle"></i>
+                            <p>No content blocks yet. Use the buttons above to add content.</p>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" class="action-btn secondary" onclick="window.history.back()">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </button>
+                        <button type="button" id="previewBtn" class="action-btn tertiary">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                        <button type="submit" class="action-btn primary">
+                            <i class="fas fa-save"></i> {% if edit_mode %}Update Lesson{% else %}Create Lesson{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lesson Preview</h2>
+                <button class="modal-close" onclick="closePreview()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <!-- Preview content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .admin-body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .admin-sidebar {
+            width: 280px;
+            background: #1a2332;
+            color: white;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .admin-logo {
+            padding: 20px;
+            border-bottom: 1px solid #2d3748;
+            text-align: center;
+        }
+
+        .admin-logo h2 {
+            margin: 0;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .back-to-site {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .back-to-site:hover {
+            color: #4299e1;
+        }
+
+        .admin-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .admin-nav li a {
+            display: block;
+            padding: 15px 20px;
+            color: #a0aec0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .admin-nav li a:hover,
+        .admin-nav li a.active {
+            background: #2d3748;
+            color: #4299e1;
+            border-left-color: #4299e1;
+        }
+
+        .admin-nav li a i {
+            margin-right: 10px;
+            width: 16px;
+        }
+
+        .admin-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .admin-header {
+            margin-bottom: 30px;
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 2.5rem;
+        }
+
+        .admin-header p {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .breadcrumb {
+            margin-top: 10px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: #4299e1;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .lesson-form-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .lesson-form {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-section {
+            padding: 30px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+        }
+
+        .form-section h3 {
+            color: #2d3748;
+            margin: 0 0 25px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .form-section h3 i {
+            color: #4299e1;
+            font-size: 1.2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 8px;
+            color: #718096;
+            font-size: 0.85rem;
+        }
+
+        .tags-preview {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tag-preview {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tag-preview .remove-tag {
+            cursor: pointer;
+            color: #718096;
+            font-weight: bold;
+        }
+
+        .tag-preview .remove-tag:hover {
+            color: #e53e3e;
+        }
+
+        /* New tag input styles */
+        .tag-input-container {
+            position: relative;
+        }
+
+        .tag-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .tag-suggestions.show {
+            display: block;
+        }
+
+        .tag-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .tag-suggestion:hover,
+        .tag-suggestion.highlighted {
+            background-color: #f7fafc;
+        }
+
+        .tag-suggestion.selected {
+            background-color: #e6fffa;
+            color: #00695c;
+        }
+
+        .available-tags {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .available-tags h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .available-tags .tag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .tag-chip {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tag-chip:hover {
+            background: #bbdefb;
+        }
+
+        .tag-chip.used {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .error-message {
+            display: none;
+            color: #e53e3e;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #fed7d7;
+            border-radius: 4px;
+            border-left: 3px solid #e53e3e;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .content-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-add-content {
+            padding: 10px 16px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-add-content:hover {
+            background: #3182ce;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .content-blocks {
+            min-height: 200px;
+        }
+
+        .content-block {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .content-block:hover {
+            border-color: #4299e1;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.15);
+        }
+
+        .content-block-header {
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .content-block-type {
+            font-weight: 600;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+
+        .content-block-type i {
+            color: #4299e1;
+        }
+
+        .content-block-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-block-action {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-move-up, .btn-move-down {
+            background: #718096;
+            color: white;
+        }
+
+        .btn-move-up:hover, .btn-move-down:hover {
+            background: #4a5568;
+        }
+
+        .btn-delete-block {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .btn-delete-block:hover {
+            background: #c53030;
+        }
+
+        .content-block-body {
+            padding: 20px;
+        }
+
+        .content-block-body textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .content-block-body input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+
+        .list-items {
+            margin-top: 15px;
+        }
+
+        .list-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: flex-start;
+        }
+
+        .list-item textarea {
+            min-height: 80px;
+        }
+
+        .btn-add-list-item {
+            background: #48bb78;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-add-list-item:hover {
+            background: #38a169;
+        }
+
+        .btn-remove-list-item {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .btn-remove-list-item:hover {
+            background: #c53030;
+        }
+
+        .content-empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #718096;
+            border: 2px dashed #e2e8f0;
+            border-radius: 10px;
+            background: #f7fafc;
+        }
+
+        .content-empty-state i {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #cbd5e0;
+        }
+
+        .content-empty-state h4 {
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+
+        .form-actions {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-primary, .btn-secondary, .btn-danger {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3182ce;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4a5568;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c53030;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 1.3rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.3em;
+            cursor: pointer;
+            color: #718096;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: #2d3748;
+        }
+
+        .modal-body {
+            padding: 20px 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .admin-layout {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                width: 100%;
+            }
+
+            .admin-content {
+                padding: 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .content-toolbar {
+                flex-direction: column;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .lesson-form-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+
+    <script>
+        let contentBlockCounter = 0;
+        
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if edit_mode and lesson_data.content %}
+                // Load existing content for editing
+                const existingContent = {{ lesson_data.content | tojson }};
+                existingContent.forEach(contentItem => {
+                    addContentBlock(contentItem.type, contentItem);
+                });
+            {% endif %}
+            
+            updateContentVisibility();
+            
+            // Tag API integration variables
+            let availableTags = [];
+            let selectedTags = [];
+            
+            // Load available tags from API
+            async function loadAvailableTags() {
+                const subjectSelect = document.getElementById('subject');
+                const currentSubject = subjectSelect.value;
+                
+                if (!currentSubject) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/subjects/${currentSubject}/tags`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        availableTags = data.tags || [];
+                        displayAvailableTags();
+                        
+                        // Initialize selected tags from input if in edit mode
+                        {% if edit_mode and lesson_data.tags %}
+                            selectedTags = {{ lesson_data.tags | tojson }};
+                            updateTagInput();
+                            updateTagsPreview();
+                            updateTagChipsDisplay();
+                        {% endif %}
+                    } else {
+                        console.error('Failed to load available tags');
+                        availableTags = [];
+                    }
+                } catch (error) {
+                    console.error('Error loading tags:', error);
+                    availableTags = [];
+                }
+            }
+
+            // Display available tags
+            function displayAvailableTags() {
+                const container = document.getElementById('lessonAvailableTags');
+                if (availableTags.length === 0) {
+                    container.innerHTML = '<small style="color: #666;">No tags available for this subject.</small>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <h4>Available Tags (${availableTags.length})</h4>
+                    <div class="tag-chips">
+                        ${availableTags.map(tag => `
+                            <span class="tag-chip" onclick="addTagFromChip('${tag}')" title="Click to add">${tag}</span>
+                        `).join('')}
+                    </div>
+                `;
+                updateTagChipsDisplay();
+            }
+
+            function updateTagChipsDisplay() {
+                document.querySelectorAll('.tag-chip').forEach(chip => {
+                    const tagText = chip.textContent;
+                    if (selectedTags.includes(tagText)) {
+                        chip.classList.add('used');
+                        chip.title = 'Already selected';
+                    } else {
+                        chip.classList.remove('used');
+                        chip.title = 'Click to add';
+                    }
+                });
+            }
+
+            function addTagFromChip(tag) {
+                if (!selectedTags.includes(tag)) {
+                    selectedTags.push(tag);
+                    updateTagInput();
+                    updateTagsPreview();
+                    updateTagChipsDisplay();
+                }
+            }
+
+            function updateTagInput() {
+                document.getElementById('lessonTags').value = selectedTags.join(', ');
+            }
+
+            function updateTagsPreview() {
+                const preview = document.getElementById('lessonTagsPreview');
+                preview.innerHTML = selectedTags.map(tag => `
+                    <span class="tag-preview">
+                        ${tag}
+                        <span class="remove-tag" onclick="removeTag('${tag}')">&times;</span>
+                    </span>
+                `).join('');
+            }
+
+            function removeTag(tagToRemove) {
+                selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
+                updateTagInput();
+                updateTagsPreview();
+                updateTagChipsDisplay();
+                hideSuggestions();
+            }
+
+            // Tag search and suggestions
+            let highlightedIndex = -1;
+
+            document.getElementById('lessonTags').addEventListener('input', function() {
+                const inputValue = this.value;
+                const lastComma = inputValue.lastIndexOf(',');
+                const currentTag = lastComma >= 0 ? inputValue.substring(lastComma + 1).trim() : inputValue.trim();
+                
+                // Update selected tags based on input
+                if (lastComma >= 0) {
+                    const tags = inputValue.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    selectedTags = tags.filter(tag => availableTags.includes(tag));
+                } else if (currentTag && availableTags.includes(currentTag)) {
+                    selectedTags = [currentTag];
+                } else {
+                    selectedTags = [];
+                }
+
+                updateTagsPreview();
+                updateTagChipsDisplay();
+
+                if (currentTag) {
+                    showSuggestions(currentTag);
+                } else {
+                    hideSuggestions();
+                }
+            });
+
+            document.getElementById('lessonTags').addEventListener('keydown', function(e) {
+                const suggestions = document.querySelectorAll('.tag-suggestion');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    highlightedIndex = Math.min(highlightedIndex + 1, suggestions.length - 1);
+                    updateHighlight();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    highlightedIndex = Math.max(highlightedIndex - 1, -1);
+                    updateHighlight();
+                } else if (e.key === 'Enter' && highlightedIndex >= 0 && suggestions.length > 0) {
+                    e.preventDefault();
+                    selectSuggestion(suggestions[highlightedIndex].textContent);
+                } else if (e.key === 'Escape') {
+                    hideSuggestions();
+                }
+            });
+
+            function showSuggestions(searchTerm) {
+                const filteredTags = availableTags.filter(tag => 
+                    tag.toLowerCase().includes(searchTerm.toLowerCase()) && 
+                    !selectedTags.includes(tag)
+                );
+
+                const container = document.getElementById('lessonTagSuggestions');
+                
+                if (filteredTags.length === 0) {
+                    hideSuggestions();
+                    return;
+                }
+
+                container.innerHTML = filteredTags.map(tag => `
+                    <div class="tag-suggestion" onclick="selectSuggestion('${tag}')">${tag}</div>
+                `).join('');
+                
+                container.classList.add('show');
+                highlightedIndex = -1;
+            }
+
+            function hideSuggestions() {
+                document.getElementById('lessonTagSuggestions').classList.remove('show');
+                highlightedIndex = -1;
+            }
+
+            function updateHighlight() {
+                document.querySelectorAll('.tag-suggestion').forEach((suggestion, index) => {
+                    suggestion.classList.toggle('highlighted', index === highlightedIndex);
+                });
+            }
+
+            function selectSuggestion(tag) {
+                const input = document.getElementById('lessonTags');
+                const inputValue = input.value;
+                const lastComma = inputValue.lastIndexOf(',');
+                
+                if (lastComma >= 0) {
+                    // Replace the part after the last comma
+                    const beforeComma = inputValue.substring(0, lastComma + 1).trim();
+                    input.value = beforeComma + (beforeComma ? ' ' : '') + tag;
+                } else {
+                    // Replace entire input
+                    input.value = tag;
+                }
+
+                if (!selectedTags.includes(tag)) {
+                    selectedTags.push(tag);
+                    updateTagsPreview();
+                    updateTagChipsDisplay();
+                }
+
+                hideSuggestions();
+                input.focus();
+            }
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.tag-input-container')) {
+                    hideSuggestions();
+                }
+            });
+            
+            // Add subject change handler
+            const subjectSelect = document.getElementById('subject');
+            const subtopicSelect = document.getElementById('subtopic');
+            
+            subjectSelect.addEventListener('change', function() {
+                const selectedSubject = this.value;
+                
+                // Clear subtopic dropdown
+                subtopicSelect.innerHTML = '<option value="">Select Subtopic</option>';
+                subtopicSelect.disabled = !selectedSubject;
+                
+                // Reset tags when subject changes
+                selectedTags = [];
+                availableTags = [];
+                updateTagInput();
+                updateTagsPreview();
+                document.getElementById('lessonAvailableTags').innerHTML = '';
+                
+                if (selectedSubject) {
+                    // Load tags for the new subject
+                    loadAvailableTags();
+                    
+                    // Fetch subtopics for the selected subject
+                    fetch(`/api/subjects/${selectedSubject}/subtopics`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.subtopics) {
+                                // Sort subtopics by order
+                                const sortedSubtopics = Object.entries(data.subtopics)
+                                    .sort(([,a], [,b]) => (a.order || 0) - (b.order || 0));
+                                
+                                sortedSubtopics.forEach(([subtopicId, subtopicData]) => {
+                                    const option = document.createElement('option');
+                                    option.value = subtopicId;
+                                    option.textContent = subtopicData.name;
+                                    subtopicSelect.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading subtopics:', error);
+                            alert('Error loading subtopics. Please try again.');
+                        });
+                }
+            });
+            
+            // Initially disable subtopic if no subject is selected
+            {% if not edit_mode %}
+                if (!subjectSelect.value) {
+                    subtopicSelect.disabled = true;
+                }
+            {% endif %}
+            
+            // For edit mode, populate subtopics on initial load if subject is already selected
+            {% if edit_mode and subject %}
+                if (subjectSelect.value) {
+                    // The subtopics are already populated via Jinja template in edit mode
+                    subtopicSelect.disabled = false;
+                    // Load tags for the current subject in edit mode
+                    loadAvailableTags();
+                }
+            {% endif %}
+            
+            // For new lessons, load tags if subject is preselected
+            {% if not edit_mode %}
+                if (subjectSelect.value) {
+                    loadAvailableTags();
+                }
+            {% endif %}
+        });
+
+        // Add event listeners for content type buttons
+        document.querySelectorAll('.btn-add-content').forEach(button => {
+            button.addEventListener('click', function() {
+                const type = this.dataset.type;
+                addContentBlock(type);
+            });
+        });
+
+        function addContentBlock(type, existingData = null) {
+            const contentBlocks = document.getElementById('contentBlocks');
+            const blockId = ++contentBlockCounter;
+            
+            let blockHTML = `
+                <div class="content-block" data-block-id="${blockId}" data-type="${type}">
+                    <div class="content-block-header">
+                        <div class="content-block-type">
+                            <i class="${getTypeIcon(type)}"></i>
+                            ${type.charAt(0).toUpperCase() + type.slice(1)} Block
+                        </div>
+                        <div class="content-block-actions">
+                            <button type="button" class="btn-block-action btn-move-up" onclick="moveBlock(${blockId}, 'up')">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn-block-action btn-move-down" onclick="moveBlock(${blockId}, 'down')">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn-block-action btn-delete-block" onclick="deleteBlock(${blockId})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="content-block-body">
+                        ${generateBlockContent(type, existingData)}
+                    </div>
+                </div>
+            `;
+            
+            contentBlocks.insertAdjacentHTML('beforeend', blockHTML);
+            updateContentVisibility();
+        }
+
+        function getTypeIcon(type) {
+            const icons = {
+                'header': 'fas fa-heading',
+                'paragraph': 'fas fa-paragraph',
+                'code': 'fas fa-code',
+                'list': 'fas fa-list-ul',
+                'summary': 'fas fa-lightbulb'
+            };
+            return icons[type] || 'fas fa-file-text';
+        }
+
+        function generateBlockContent(type, existingData) {
+            switch(type) {
+                case 'header':
+                    return `<input type="text" placeholder="Enter header text..." value="${existingData ? existingData.text || '' : ''}">`;
+                
+                case 'paragraph':
+                    return `<textarea placeholder="Enter paragraph content...">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'code':
+                    return `<textarea placeholder="Enter code content..." style="font-family: monospace;">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'summary':
+                    return `<textarea placeholder="Enter summary content...">${existingData ? existingData.text || '' : ''}</textarea>`;
+                
+                case 'list':
+                    let listHTML = '<div class="list-items">';
+                    if (existingData && existingData.items) {
+                        existingData.items.forEach(item => {
+                            listHTML += `
+                                <div class="list-item">
+                                    <textarea placeholder="List item content...">${item}</textarea>
+                                    <button type="button" class="btn-remove-list-item" onclick="removeListItem(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        listHTML += `
+                            <div class="list-item">
+                                <textarea placeholder="List item content..."></textarea>
+                                <button type="button" class="btn-remove-list-item" onclick="removeListItem(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                    listHTML += '</div>';
+                    listHTML += '<button type="button" class="btn-add-list-item" onclick="addListItem(this)"><i class="fas fa-plus"></i> Add Item</button>';
+                    return listHTML;
+            }
+        }
+
+        function addListItem(button) {
+            const listItems = button.previousElementSibling;
+            const newItem = document.createElement('div');
+            newItem.className = 'list-item';
+            newItem.innerHTML = `
+                <textarea placeholder="List item content..."></textarea>
+                <button type="button" class="btn-remove-list-item" onclick="removeListItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            listItems.appendChild(newItem);
+        }
+
+        function removeListItem(button) {
+            const listItem = button.parentElement;
+            const listItems = listItem.parentElement;
+            
+            if (listItems.children.length > 1) {
+                listItem.remove();
+            } else {
+                showNotification('At least one list item is required', 'error');
+            }
+        }
+
+        function moveBlock(blockId, direction) {
+            const block = document.querySelector(`[data-block-id="${blockId}"]`);
+            const sibling = direction === 'up' ? block.previousElementSibling : block.nextElementSibling;
+            
+            if (sibling) {
+                if (direction === 'up') {
+                    block.parentNode.insertBefore(block, sibling);
+                } else {
+                    block.parentNode.insertBefore(sibling, block);
+                }
+            }
+        }
+
+        function deleteBlock(blockId) {
+            if (confirm('Are you sure you want to delete this content block?')) {
+                const block = document.querySelector(`[data-block-id="${blockId}"]`);
+                block.remove();
+                updateContentVisibility();
+            }
+        }
+
+        function updateContentVisibility() {
+            const contentBlocks = document.getElementById('contentBlocks');
+            const emptyState = document.getElementById('contentEmptyState');
+            
+            if (contentBlocks.children.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+
+        // Form submission
+        document.getElementById('lessonForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                subject: document.getElementById('subject').value,
+                subtopic: document.getElementById('subtopic').value,
+                lesson_id: document.getElementById('lesson_id').value,
+                title: document.getElementById('title').value,
+                videoId: document.getElementById('videoId').value,
+                tags: document.getElementById('lessonTags').value.split(',').map(tag => tag.trim()).filter(tag => tag),
+                content: collectContentData()
+            };
+
+            // Validation
+            if (!formData.subject || !formData.subtopic || !formData.lesson_id || !formData.title) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            if (!formData.tags || formData.tags.length === 0) {
+                showNotification('Please add at least one tag to the lesson', 'error');
+                return;
+            }
+
+            // Submit form
+            const url = {% if edit_mode %}
+                `/admin/lessons/{{ subject }}/{{ subtopic }}/{{ lesson_id }}/edit`
+            {% else %}
+                '/admin/lessons/create'
+            {% endif %};
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/lessons';
+                    }, 1500);
+                } else {
+                    showNotification(data.error || 'An error occurred', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('An error occurred while saving the lesson', 'error');
+            });
+        });
+
+        function collectContentData() {
+            const blocks = document.querySelectorAll('.content-block');
+            const content = [];
+
+            blocks.forEach(block => {
+                const type = block.dataset.type;
+                const blockData = { type: type };
+
+                switch(type) {
+                    case 'header':
+                    case 'paragraph':
+                    case 'code':
+                    case 'summary':
+                        const textElement = block.querySelector('input, textarea');
+                        blockData.text = textElement ? textElement.value : '';
+                        break;
+                    
+                    case 'list':
+                        const listItems = block.querySelectorAll('.list-item textarea');
+                        blockData.items = Array.from(listItems)
+                            .map(textarea => textarea.value)
+                            .filter(value => value.trim() !== '');
+                        break;
+                }
+
+                if ((type === 'list' && blockData.items.length > 0) || 
+                    (type !== 'list' && blockData.text && blockData.text.trim() !== '')) {
+                    content.push(blockData);
+                }
+            });
+
+            return content;
+        }
+
+        // Preview functionality
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            const content = collectContentData();
+            const title = document.getElementById('title').value;
+            
+            if (!title) {
+                showNotification('Please enter a lesson title first', 'error');
+                return;
+            }
+
+            showPreview(title, content);
+        });
+
+        function showPreview(title, content) {
+            const previewContent = document.getElementById('previewContent');
+            
+            let html = `<h1>${title}</h1>`;
+            
+            content.forEach(block => {
+                switch(block.type) {
+                    case 'header':
+                        html += `<h2>${block.text}</h2>`;
+                        break;
+                    case 'paragraph':
+                        html += `<p>${block.text}</p>`;
+                        break;
+                    case 'code':
+                        html += `<pre><code>${block.text}</code></pre>`;
+                        break;
+                    case 'list':
+                        html += '<ul>';
+                        block.items.forEach(item => {
+                            html += `<li>${item}</li>`;
+                        });
+                        html += '</ul>';
+                        break;
+                    case 'summary':
+                        html += `<div class="summary-box"><strong>Summary:</strong> ${block.text}</div>`;
+                        break;
+                }
+            });
+
+            previewContent.innerHTML = html;
+            document.getElementById('previewModal').style.display = 'block';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                closePreview();
+            }
+        });
+
+        // Notification function
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                ${type === 'success' ? 'background-color: #28a745;' : 'background-color: #dc3545;'}
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Add CSS for notification animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            .summary-box {
+                background: #e8f4f8;
+                border-left: 4px solid #17a2b8;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 4px;
+            }
+            pre {
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 15px;
+                overflow-x: auto;
+            }
+            code {
+                font-family: 'Courier New', monospace;
+                color: #e83e8c;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -9,6 +9,31 @@
     />
   </head>
   <body class="quiz-page">
+    {% if admin_override %}
+    <div class="admin-controls">
+      <div class="admin-panel">
+        <div class="admin-info">
+          <i class="fas fa-shield-alt"></i>
+          <span>Admin Override Active</span>
+        </div>
+        <button
+          id="toggleOverride"
+          class="btn-override"
+          onclick="toggleAdminOverride()"
+        >
+          <i class="fas fa-power-off"></i>
+          Disable Override
+        </button>
+      </div>
+    </div>
+    {% endif %} {% if admin_override %}
+    <div class="admin-override-notice">
+      <i class="fas fa-exclamation-triangle"></i>
+      <strong>Admin Override Active:</strong> Correct answers are highlighted in
+      green for testing purposes.
+    </div>
+    {% endif %}
+
     <h1>{{ quiz_title or "Quiz" }}</h1>
     <form id="quiz-form" class="quiz-form">
       {% for q in questions %} {% set idx = loop.index0 %}
@@ -43,9 +68,13 @@
         {# --- MULTIPLE CHOICE (default if no type specified) --- #} {% if
         q.type == 'multiple_choice' or not q.type %} {% for option in q.options
         %}
-        <label>
+        <label
+          class="{% if admin_override and loop.index0 == q.answer_index %}correct-answer{% endif %}"
+        >
           <input type="radio" name="q{{ idx }}" value="{{ option }}" required />
-          {{ option }}
+          {{ option }} {% if admin_override and loop.index0 == q.answer_index %}
+          <i class="fas fa-check-circle correct-indicator"></i>
+          {% endif %}
         </label>
         {% endfor %} {# --- CODING QUESTION --- #} {% elif q.type == 'coding' %}
         <textarea
@@ -97,10 +126,171 @@
             responses[name] = value;
           }
 
-          // Store data in sessionStorage so results.html can access it
-          sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
-          window.location.href = "/results";
+          try {
+            // Submit answers to analyze route to preserve session context
+            const analyzeResponse = await fetch("/analyze", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ answers: responses }),
+            });
+
+            if (analyzeResponse.ok) {
+              // Store analysis results for results page
+              const analysisData = await analyzeResponse.json();
+              sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
+              sessionStorage.setItem(
+                "analysisResults",
+                JSON.stringify(analysisData)
+              );
+
+              // Navigate to results page
+              window.location.href = "/results";
+            } else {
+              console.error("Analysis failed:", analyzeResponse.status);
+              // Fallback: store data and redirect anyway
+              sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
+              window.location.href = "/results";
+            }
+          } catch (error) {
+            console.error("Error during analysis:", error);
+            // Fallback: store data and redirect anyway
+            sessionStorage.setItem("quizAnswers", JSON.stringify(responses));
+            window.location.href = "/results";
+          }
         });
+
+      // Admin override functionality
+      function toggleAdminOverride() {
+        fetch("/admin/toggle-override", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Reload page to reflect new override state
+              window.location.reload();
+            } else {
+              alert("Error toggling admin override: " + data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error toggling admin override");
+          });
+      }
     </script>
+
+    <style>
+      .admin-controls {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+      }
+
+      .admin-panel {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        backdrop-filter: blur(10px);
+      }
+
+      .admin-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .admin-info i {
+        color: #ffd700;
+      }
+
+      .btn-override {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-override:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+      }
+
+      @media (max-width: 768px) {
+        .admin-controls {
+          top: 10px;
+          right: 10px;
+        }
+
+        .admin-panel {
+          padding: 10px 15px;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .admin-info {
+          font-size: 12px;
+        }
+
+        .btn-override {
+          font-size: 11px;
+          padding: 5px 10px;
+        }
+      }
+
+      /* Correct answer highlighting */
+      .correct-answer {
+        background-color: #d4edda !important;
+        border: 2px solid #28a745 !important;
+        color: #155724 !important;
+        position: relative;
+      }
+
+      .correct-answer:hover {
+        background-color: #c3e6cb !important;
+      }
+
+      .correct-indicator {
+        color: #28a745;
+        margin-left: 10px;
+        font-size: 1.1em;
+      }
+
+      .admin-override-notice {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #856404;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .admin-override-notice i {
+        color: #ffc107;
+        font-size: 1.2em;
+      }
+    </style>
   </body>
 </html>

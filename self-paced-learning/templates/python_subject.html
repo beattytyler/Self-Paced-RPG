@@ -12,23 +12,42 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
   </head>
   <body>
     <header>
       <div class="header-content">
-        <div class="breadcrumb">
-          <a href="/">Learning Platform</a>
-          <span class="separator">›</span>
-          <span class="current">{{ subject_info.name }}</span>
+        <div class="header-actions">
+          <div class="breadcrumb-section">
+            <div class="breadcrumb">
+              <a href="/">Learning Platform</a>
+              <span class="separator">›</span>
+              <span class="current">{{ subject_info.name }}</span>
+            </div>
+            <h1>
+              <i
+                class="{{ subject_info.icon }}"
+                style="color: {{ subject_info.color }};"
+              ></i>
+              {{ subject_info.name }}
+            </h1>
+            <p class="subtitle">{{ subject_info.description }}</p>
+          </div>
+
+          <!-- Admin Override Controls -->
+          <div class="admin-actions" style="margin-top: 10px">
+            <button
+              id="toggleOverrideBtn"
+              onclick="toggleAdminOverride()"
+              class="action-btn secondary"
+              title="Toggle admin override to bypass prerequisites"
+            >
+              <i class="fas fa-key"></i>
+              <span id="overrideStatus">Enable Override</span>
+            </button>
+          </div>
         </div>
-        <h1>
-          <i
-            class="{{ subject_info.icon }}"
-            style="color: {{ subject_info.color }};"
-          ></i>
-          {{ subject_info.name }}
-        </h1>
-        <p class="subtitle">{{ subject_info.description }}</p>
       </div>
     </header>
 
@@ -39,7 +58,10 @@
         id="{{ subtopic_id }}-card"
         data-subtopic="{{ subtopic_id }}"
       >
-        <div class="topic-header">
+        <div
+          class="topic-header"
+          style="background: linear-gradient(135deg, {{ subject_info.color }} 0%, {{ subject_info.color }}cc 50%, {{ subject_info.color }}ee 100%); box-shadow: 0 4px 8px {{ subject_info.color }}33;"
+        >
           <h3>{{ subtopic_data.name }}</h3>
           <span class="completion-badge" id="{{ subtopic_id }}-badge">
             {% if subtopic_data.status == 'active' %} Available {% else %}
@@ -89,7 +111,10 @@
               Watch Lecture
             </button>
             {% endif %} {% if subtopic_data.question_count > 0 %}
-            <a href="/quiz/python/{{ subtopic_id }}" class="button quiz-btn">
+            <a
+              href="/quiz/{{ subject }}/{{ subtopic_id }}"
+              class="button quiz-btn"
+            >
               <i class="fas fa-brain"></i>
               Take Quiz
             </a>
@@ -102,20 +127,22 @@
 
     <!-- Video Modal -->
     <div class="video-container" id="video-modal">
-      <div class="close-button">×</div>
-      <h2 class="video-title" id="current-video-title">Video Title</h2>
-      <div class="video-player">
-        <iframe
-          id="video-iframe"
-          width="800"
-          height="450"
-          src=""
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
-        <div class="progress-container" style="margin-top: 10px">
-          <div class="progress-bar" id="video-progress-bar"></div>
+      <div class="modal-content">
+        <div class="close-button">×</div>
+        <h2 class="video-title" id="current-video-title">Video Title</h2>
+        <div class="video-player">
+          <iframe
+            id="video-iframe"
+            width="800"
+            height="450"
+            src=""
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+          <div class="progress-container" style="margin-top: 10px">
+            <div class="progress-bar" id="video-progress-bar"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -184,34 +211,155 @@
 
       .topic-actions {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
         justify-content: center;
         flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      /* Modern Button Styling */
+      .watch-btn,
+      .quiz-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 150px;
+        height: 44px;
+        justify-content: center;
+        letter-spacing: 0.025em;
+        box-sizing: border-box;
+        flex-shrink: 0;
       }
 
       .watch-btn {
-        background: #28a745;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         color: white;
       }
 
       .watch-btn:hover {
-        background: #218838;
+        background: linear-gradient(135deg, #218838 0%, #1ea080 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
       }
 
       .quiz-btn {
-        background: #007bff;
+        background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
         color: white;
         text-decoration: none;
-        align-items: center;
-        gap: 0.5rem;
       }
 
       .quiz-btn:hover {
-        background: #0056b3;
+        background: linear-gradient(135deg, #0056b3 0%, #5a0fc8 100%);
         text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+      }
+
+      /* Icon styling within buttons */
+      .watch-btn i,
+      .quiz-btn i {
+        font-size: 1rem;
+        opacity: 0.9;
+      }
+
+      /* Responsive design for smaller screens */
+      @media (max-width: 768px) {
+        .topic-actions {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .watch-btn,
+        .quiz-btn {
+          width: 180px;
+          height: 44px;
+        }
+      }
+
+      /* Admin Override Styles */
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+      }
+
+      .breadcrumb-section {
+        flex: 1;
+      }
+
+      .admin-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin-left: 20px;
+      }
+
+      .admin-actions .action-btn.secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .admin-actions .action-btn.secondary:hover {
+        background: #e9ecef;
+        color: #495057;
+      }
+
+      .admin-actions .action-btn.secondary.override-active {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+      }
+
+      .admin-actions .action-btn.secondary.override-active:hover {
+        background: #218838;
+        border-color: #1e7e34;
+      }
+
+      /* Notification styles */
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
       }
 
       @media (max-width: 768px) {
+        .header-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .admin-actions {
+          margin-left: 0;
+          margin-top: 15px;
+          justify-content: center;
+        }
+
         .topic-stats {
           flex-direction: column;
           align-items: center;
@@ -222,6 +370,104 @@
         }
       }
     </style>
+
+    <script>
+      // Admin override functionality
+      function toggleAdminOverride() {
+        fetch("/admin/toggle-override", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              updateOverrideButton(data.admin_override);
+              showNotification(data.message, "success");
+            } else {
+              showNotification("Error: " + data.error, "error");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showNotification("Error toggling admin override", "error");
+          });
+      }
+
+      function updateOverrideButton(isActive) {
+        const btn = document.getElementById("toggleOverrideBtn");
+        const status = document.getElementById("overrideStatus");
+
+        if (isActive) {
+          btn.classList.add("override-active");
+          status.textContent = "Disable Override";
+        } else {
+          btn.classList.remove("override-active");
+          status.textContent = "Enable Override";
+        }
+      }
+
+      // Notification system
+      function showNotification(message, type = "info") {
+        // Remove existing notifications
+        document.querySelectorAll(".notification").forEach((n) => n.remove());
+
+        const notification = document.createElement("div");
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 1000;
+          animation: slideIn 0.3s ease-out;
+          max-width: 350px;
+          word-wrap: break-word;
+        `;
+
+        if (type === "success") {
+          notification.style.background = "#d4edda";
+          notification.style.color = "#155724";
+          notification.style.border = "1px solid #c3e6cb";
+        } else if (type === "error") {
+          notification.style.background = "#f8d7da";
+          notification.style.color = "#721c24";
+          notification.style.border = "1px solid #f5c6cb";
+        } else {
+          notification.style.background = "#d1ecf1";
+          notification.style.color = "#0c5460";
+          notification.style.border = "1px solid #bee5eb";
+        }
+
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+          }
+        }, 4000);
+      }
+
+      // Check override status on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        fetch("/admin/toggle-override", {
+          method: "GET",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              updateOverrideButton(data.admin_override);
+            }
+          })
+          .catch((error) => {
+            console.error("Error checking override status:", error);
+          });
+      });
+    </script>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   </body>

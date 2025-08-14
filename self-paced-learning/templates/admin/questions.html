@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Questions - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions" class="active"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-content">
+        <header class="admin-header">
+          <div class="header-actions">
+            <div>
+              <h1>
+                <i class="fas fa-question-circle"></i> Question Management
+              </h1>
+              <p>Create and manage quiz questions for all subtopics</p>
+            </div>
+            <div class="admin-actions">
+              <div class="filter-controls">
+                <select id="subjectFilter" class="filter-select">
+                  <option value="">All Subjects</option>
+                  {% for subject_id, subject_data in subjects.items() %}
+                  <option value="{{ subject_id }}">
+                    {{ subject_data.name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="totalInitialQuestions">
+                {{ stats.total_initial_questions }}
+              </h3>
+              <p>Initial Quiz Questions</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-database"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="totalPoolQuestions">{{ stats.total_pool_questions }}</h3>
+              <p>Question Pool</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="totalSubtopics">{{ stats.total_subtopics }}</h3>
+              <p>Total Subtopics</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-info">
+              <h3 id="subtopicsWithoutQuestions">
+                {{ stats.subtopics_without_questions }}
+              </h3>
+              <p>Need Questions</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtopics with Quiz Status -->
+        <div class="questions-grid">
+          {% for subject_id, subject_data in subjects.items() %} {% if
+          subject_data.subtopics %} {% for subtopic_id, subtopic_data in
+          subject_data.subtopics.items() %}
+          <div class="question-status-card" data-subject="{{ subject_id }}">
+            <div class="card-header">
+              <div class="subject-info">
+                <i
+                  class="{{ subject_data.icon or 'fas fa-book' }}"
+                  style="color: {{ subject_data.color or '#007bff' }};"
+                ></i>
+                <span class="subject-name">{{ subject_data.name }}</span>
+              </div>
+              <div class="quiz-status">
+                {% set initial_count = subtopic_data.quiz_questions_count or 0
+                %} {% set pool_count = subtopic_data.pool_questions_count or 0
+                %} {% if initial_count > 0 and pool_count > 0 %}
+                <span class="status-badge complete">
+                  <i class="fas fa-check-circle"></i>
+                  Complete
+                </span>
+                {% elif initial_count > 0 or pool_count > 0 %}
+                <span class="status-badge partial">
+                  <i class="fas fa-exclamation-circle"></i>
+                  Partial
+                </span>
+                {% else %}
+                <span class="status-badge empty">
+                  <i class="fas fa-times-circle"></i>
+                  No Questions
+                </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="card-content">
+              <h3>
+                {{ subtopic_data.name or subtopic_id.replace('-', ' ').title()
+                }}
+              </h3>
+              {% if subtopic_data.description %}
+              <p class="description">{{ subtopic_data.description }}</p>
+              {% endif %}
+
+              <div class="question-stats">
+                <div class="question-stat">
+                  <div class="stat-number">{{ initial_count }}</div>
+                  <div class="stat-label">Initial Quiz</div>
+                </div>
+                <div class="question-stat">
+                  <div class="stat-number">{{ pool_count }}</div>
+                  <div class="stat-label">Question Pool</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <a
+                href="/admin/quiz/{{ subject_id }}/{{ subtopic_id }}"
+                class="btn-action primary"
+              >
+                <i class="fas fa-edit"></i>
+                Edit Questions
+              </a>
+              <a
+                href="/quiz/{{ subject_id }}/{{ subtopic_id }}"
+                class="btn-action secondary"
+                target="_blank"
+              >
+                <i class="fas fa-play"></i>
+                Preview Quiz
+              </a>
+            </div>
+          </div>
+          {% endfor %} {% endif %} {% endfor %}
+        </div>
+
+        <!-- Empty State -->
+        {% if not subjects or not (subjects.values() | selectattr('subtopics') |
+        list) %}
+        <div class="empty-state">
+          <i class="fas fa-question-circle"></i>
+          <h3>No Subtopics Found</h3>
+          <p>Create subjects and subtopics first to start adding questions.</p>
+          <a href="/admin/subjects/create" class="btn-primary">
+            <i class="fas fa-plus"></i>
+            Create Subject
+          </a>
+        </div>
+        {% endif %}
+      </main>
+    </div>
+
+    <style>
+      .admin-body {
+        background: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        width: 280px;
+        background: #1a2332;
+        color: white;
+        padding: 0;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 20px;
+        border-bottom: 1px solid #2d3748;
+        text-align: center;
+      }
+
+      .admin-logo h2 {
+        margin: 0;
+        color: white;
+        font-size: 1.5rem;
+      }
+
+      .back-to-site {
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .back-to-site:hover {
+        color: #4299e1;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: block;
+        padding: 15px 20px;
+        color: #a0aec0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: #2d3748;
+        color: #4299e1;
+        border-left-color: #4299e1;
+      }
+
+      .admin-nav li a i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .admin-header {
+        margin-bottom: 30px;
+      }
+
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 2.5rem;
+      }
+
+      .admin-header p {
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .admin-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .filter-select {
+        padding: 10px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        color: #4a5568;
+        font-size: 1rem;
+        min-width: 200px;
+      }
+
+      .filter-select:focus {
+        outline: none;
+        border-color: #4299e1;
+      }
+
+      /* Statistics Overview */
+      .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .stat-info h3 {
+        margin: 0;
+        font-size: 2rem;
+        color: #2d3748;
+      }
+
+      .stat-info p {
+        margin: 5px 0 0 0;
+        color: #718096;
+        font-weight: 500;
+      }
+
+      /* Questions Grid */
+      .questions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+      }
+
+      .question-status-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .question-status-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #6099d6 0%, #3346c5 100%);
+        color: white;
+      }
+
+      .subject-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .subject-info i {
+        font-size: 1.2rem;
+      }
+
+      .subject-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .status-badge.complete {
+        background: rgba(118, 253, 174, 0.2);
+        color: #5fe39c;
+      }
+
+      .status-badge.partial {
+        background: rgba(237, 137, 54, 0.2);
+        color: #dd6b20;
+      }
+
+      .status-badge.empty {
+        background: rgba(245, 101, 101, 0.2);
+        color: #e53e3e;
+      }
+
+      .card-content {
+        padding: 20px;
+      }
+
+      .card-content h3 {
+        margin: 0 0 10px 0;
+        color: #2d3748;
+        font-size: 1.3rem;
+      }
+
+      .description {
+        color: #718096;
+        margin: 0 0 15px 0;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .question-stats {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+      }
+
+      .question-stat {
+        text-align: center;
+        flex: 1;
+      }
+
+      .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #4299e1;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 10px;
+        padding: 15px 20px;
+        background: #f7fafc;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .btn-action {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+
+      .btn-action.primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .btn-action.primary:hover {
+        background: #3182ce;
+      }
+
+      .btn-action.secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+      }
+
+      .btn-action.secondary:hover {
+        background: #cbd5e0;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 30px;
+        background: white;
+        border-radius: 12px;
+        color: #718096;
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #cbd5e0;
+      }
+
+      .empty-state h3 {
+        color: #2d3748;
+        margin-bottom: 10px;
+      }
+
+      .empty-state p {
+        margin-bottom: 25px;
+      }
+
+      .btn-primary {
+        background: #4299e1;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary:hover {
+        background: #3182ce;
+      }
+
+      @media (max-width: 768px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .header-actions {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 15px;
+        }
+
+        .admin-actions {
+          width: 100%;
+        }
+
+        .filter-select {
+          width: 100%;
+        }
+
+        .stats-overview {
+          grid-template-columns: 1fr;
+        }
+
+        .questions-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .question-stats {
+          justify-content: space-around;
+        }
+
+        .card-actions {
+          flex-direction: column;
+        }
+      }
+    </style>
+
+    <script>
+      // Subject filtering
+      document
+        .getElementById("subjectFilter")
+        .addEventListener("change", function () {
+          const selectedSubject = this.value;
+          const cards = document.querySelectorAll(".question-status-card");
+
+          cards.forEach((card) => {
+            const cardSubject = card.dataset.subject;
+            if (!selectedSubject || cardSubject === selectedSubject) {
+              card.style.display = "block";
+            } else {
+              card.style.display = "none";
+            }
+          });
+        });
+    </script>
+  </body>
+</html>

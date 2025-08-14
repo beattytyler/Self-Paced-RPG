@@ -1,0 +1,8 @@
+{
+  "name": "Test Subject",
+  "description": "Test subject for development purposes",
+  "icon": "fas fa-vial",
+  "color": "#28a745",
+  "status": "development",
+  "created_date": "2025-01-01"
+}

@@ -1,0 +1,3489 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subtopics - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <nav class="admin-sidebar">
+        <div class="admin-logo">
+          <h2><i class="fas fa-cog"></i> Admin Panel</h2>
+          <a href="/" class="back-to-site">← Back to Site</a>
+        </div>
+
+        <ul class="admin-nav">
+          <li>
+            <a href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/admin/subjects"
+              ><i class="fas fa-book-open"></i> Subjects</a
+            >
+          </li>
+          <li>
+            <a href="/admin/subtopics" class="active"
+              ><i class="fas fa-sitemap"></i> Subtopics</a
+            >
+          </li>
+          <li>
+            <a href="/admin/lessons"
+              ><i class="fas fa-chalkboard-teacher"></i> Lessons</a
+            >
+          </li>
+          <li>
+            <a href="/admin/questions"
+              ><i class="fas fa-question-circle"></i> Questions</a
+            >
+          </li>
+          <li>
+            <a href="/admin/export"
+              ><i class="fas fa-download"></i> Export/Import</a
+            >
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="admin-content">
+        <header class="admin-header">
+          <div class="header-actions">
+            <div>
+              <h1>Subtopics</h1>
+              <p>Organize and manage subtopics for all subjects</p>
+            </div>
+            <div class="admin-actions">
+              <button
+                id="toggleOverrideBtn"
+                class="action-btn secondary"
+                onclick="toggleAdminOverride()"
+                title="Toggle admin override for testing prerequisites"
+              >
+                <i class="fas fa-shield-alt"></i>
+                <span id="overrideStatus">Enable Override</span>
+              </button>
+              <button id="addSubtopicBtn" class="action-btn primary">
+                <i class="fas fa-plus"></i>
+                Add New Subtopic
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+          <div class="filter-group">
+            <label for="subjectFilter">Filter by Subject:</label>
+            <select id="subjectFilter" class="filter-select">
+              <option value="">All Subjects</option>
+              {% for subject_id, subject_data in subjects.items() %}
+              <option value="{{ subject_id }}">{{ subject_data.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="searchSubtopics">Search Subtopics:</label>
+            <input
+              type="text"
+              id="searchSubtopics"
+              placeholder="Search by name or tags..."
+            />
+          </div>
+        </div>
+
+        <!-- Subtopics Grid -->
+        <div class="subtopics-container">
+          {% for subject_id, subject_data in subjects.items() %} {% if
+          subject_data.subtopics %} {% for subtopic_id, subtopic_data in
+          subject_data.subtopics.items() %}
+          <div
+            class="subtopic-card"
+            data-subject="{{ subject_id }}"
+            data-subtopic="{{ subtopic_id }}"
+          >
+            <div class="subtopic-header">
+              <div class="subtopic-info">
+                <h3>
+                  {{ subtopic_data.name or subtopic_id.replace('-', ' ').title()
+                  }}
+                </h3>
+                <div class="subtopic-meta">
+                  <span
+                    class="subject-badge"
+                    style="background-color: {{ subject_data.color or '#007bff' }}"
+                  >
+                    {{ subject_data.name }}
+                  </span>
+                  <span class="subtopic-id">{{ subtopic_id }}</span>
+                  {% if subtopic_data.order %}
+                  <span class="order-badge"
+                    >Order: {{ subtopic_data.order }}</span
+                  >
+                  {% endif %} {% if subtopic_data.prerequisites and
+                  subtopic_data.prerequisites|length > 0 %}
+                  <span
+                    class="prerequisites-badge"
+                    title="Has {{ subtopic_data.prerequisites|length }} prerequisite(s)"
+                  >
+                    <i class="fas fa-lock"></i>
+                    {{ subtopic_data.prerequisites|length }} prereq(s)
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="subtopic-actions">
+                <button
+                  class="btn-icon"
+                  title="Manage Quiz Questions"
+                  onclick="window.location.href='/admin/quiz/{{ subject_id }}/{{ subtopic_id }}'"
+                >
+                  <i class="fas fa-question-circle"></i>
+                </button>
+                <button
+                  class="btn-icon"
+                  title="Manage Tags"
+                  onclick="manageTags('{{ subject_id }}', '{{ subtopic_id }}')"
+                >
+                  <i class="fas fa-tags"></i>
+                </button>
+                <button
+                  class="btn-icon"
+                  title="Edit Subtopic"
+                  onclick="editSubtopic('{{ subject_id }}', '{{ subtopic_id }}')"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  class="btn-icon btn-danger"
+                  title="Delete Subtopic"
+                  onclick="deleteSubtopic('{{ subject_id }}', '{{ subtopic_id }}')"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            {% if subtopic_data.description %}
+            <p class="subtopic-description">{{ subtopic_data.description }}</p>
+            {% endif %} {% if subtopic_data.estimated_time %}
+            <div class="time-estimate">
+              <i class="fas fa-clock"></i>
+              <span>{{ subtopic_data.estimated_time }}</span>
+            </div>
+            {% endif %}
+
+            <div class="subtopic-stats">
+              <div class="stat">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>{{ subtopic_data.lesson_count or 0 }} Lessons</span>
+              </div>
+              <div class="stat">
+                <i class="fas fa-question-circle"></i>
+                <span>{{ subtopic_data.question_count or 0 }} Questions</span>
+              </div>
+              <div class="stat">
+                <i class="fas fa-video"></i>
+                <span>{{ subtopic_data.video_count or 0 }} Videos</span>
+              </div>
+            </div>
+
+            <!-- Quick Tags Preview -->
+            <div class="tags-preview">
+              <strong>Subject Tags Available:</strong>
+              <div class="tags-count">
+                {{ subject_data.allowed_keywords|length or 0 }} tags
+                <button class="btn-mini" onclick="viewTags('{{ subject_id }}')">
+                  <i class="fas fa-eye"></i> View All
+                </button>
+              </div>
+            </div>
+          </div>
+          {% endfor %} {% endif %} {% endfor %}
+        </div>
+
+        <!-- Subject Tags Overview -->
+        <div class="tags-overview">
+          <h2><i class="fas fa-tags"></i> Subject Tags Overview</h2>
+          <p>
+            Tags help the AI understand and categorize content for personalized
+            learning recommendations.
+          </p>
+
+          {% for subject_id, subject_data in subjects.items() %}
+          <div class="subject-tags-section">
+            <div class="subject-tags-header">
+              <h3 style="color: {{ subject_data.color or '#007bff' }}">
+                <i class="{{ subject_data.icon or 'fas fa-book' }}"></i>
+                {{ subject_data.name }}
+              </h3>
+              <div class="subject-tags-actions">
+                <span class="tags-count"
+                  >{{ subject_data.allowed_keywords|length or 0 }} tags</span
+                >
+                <button
+                  class="btn-secondary btn-sm"
+                  onclick="editSubjectTags('{{ subject_id }}')"
+                >
+                  <i class="fas fa-edit"></i> Manage Tags
+                </button>
+              </div>
+            </div>
+
+            {% if subject_data.allowed_keywords %}
+            <div class="tags-grid">
+              {% for keyword in subject_data.allowed_keywords[:10] %}
+              <span class="tag-chip">{{ keyword }}</span>
+              {% endfor %} {% if subject_data.allowed_keywords|length > 10 %}
+              <span class="tag-more"
+                >+{{ subject_data.allowed_keywords|length - 10 }} more...</span
+              >
+              {% endif %}
+            </div>
+            {% else %}
+            <div class="no-tags">
+              <i class="fas fa-info-circle"></i>
+              No tags defined for this subject. Tags help the AI provide better
+              recommendations.
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none">
+          <i class="fas fa-sitemap"></i>
+          <h3>No Subtopics Found</h3>
+          <p>
+            No subtopics match your current filters. Try adjusting your search
+            criteria.
+          </p>
+        </div>
+      </main>
+    </div>
+
+    <!-- Add/Edit Subtopic Modal -->
+    <div id="subtopicModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">Add New Subtopic</h2>
+          <button class="modal-close" onclick="closeSubtopicModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="subtopicForm">
+            <input type="hidden" id="editMode" value="false" />
+            <input type="hidden" id="originalSubjectId" value="" />
+            <input type="hidden" id="originalSubtopicId" value="" />
+
+            <div class="form-group">
+              <label for="subtopicSubject">Subject *</label>
+              <select id="subtopicSubject" required>
+                <option value="">Select Subject</option>
+                {% for subject_id, subject_data in subjects.items() %}
+                <option value="{{ subject_id }}">
+                  {{ subject_data.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="subtopicId">Subtopic ID *</label>
+              <input
+                type="text"
+                id="subtopicId"
+                required
+                placeholder="e.g., functions, data-structures"
+              />
+              <small>Unique identifier (lowercase, hyphens only)</small>
+            </div>
+
+            <div class="form-group">
+              <label for="subtopicName">Display Name</label>
+              <input
+                type="text"
+                id="subtopicName"
+                placeholder="e.g., Python Functions"
+              />
+              <small>Leave empty to auto-generate from ID</small>
+            </div>
+
+            <div class="form-group">
+              <label for="subtopicDescription">Description</label>
+              <textarea
+                id="subtopicDescription"
+                rows="3"
+                placeholder="Brief description of this subtopic..."
+              ></textarea>
+            </div>
+
+            <!-- Video Section -->
+            <div class="form-group">
+              <label for="videoSection">Video Content</label>
+              <div class="video-config-section">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="videoTitle">Video Title</label>
+                    <input
+                      type="text"
+                      id="videoTitle"
+                      placeholder="e.g., Python Functions Masterclass"
+                    />
+                    <small>Display title for the video</small>
+                  </div>
+                  <div class="form-group">
+                    <label for="videoUrl">YouTube Video URL</label>
+                    <input
+                      type="url"
+                      id="videoUrl"
+                      placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+                    />
+                    <small
+                      >YouTube video URL (will be converted to embed
+                      format)</small
+                    >
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="videoDescription">Video Description</label>
+                  <textarea
+                    id="videoDescription"
+                    rows="2"
+                    placeholder="Brief description of what this video covers..."
+                  ></textarea>
+                </div>
+                <div
+                  class="video-preview"
+                  id="videoPreview"
+                  style="display: none"
+                >
+                  <div class="video-preview-header">
+                    <i class="fas fa-play-circle"></i> Video Preview
+                  </div>
+                  <div class="video-preview-content">
+                    <iframe
+                      id="previewIframe"
+                      width="300"
+                      height="169"
+                      frameborder="0"
+                      allowfullscreen
+                    ></iframe>
+                    <div class="video-preview-info">
+                      <div class="video-preview-title" id="previewTitle"></div>
+                      <div
+                        class="video-preview-description"
+                        id="previewDescription"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="subtopicKeywords">Tags for this Subtopic</label>
+              <input
+                type="text"
+                id="subtopicKeywords"
+                placeholder="Enter tags separated by commas"
+              />
+              <small
+                >These tags will be added to the subject's tag pool for AI
+                use</small
+              >
+            </div>
+
+            <!-- Subject Tags Selection -->
+            <div
+              id="subjectKeywordsSection"
+              class="form-group"
+              style="display: none"
+            >
+              <label>Select from existing subject tags:</label>
+              <div id="subjectKeywordsCards" class="tags-cards-container">
+                <!-- Tag cards will be populated here -->
+              </div>
+              <div class="keywords-actions">
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="selectAllKeywords()"
+                >
+                  <i class="fas fa-check-double"></i> Select All
+                </button>
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="clearAllKeywords()"
+                >
+                  <i class="fas fa-times"></i> Clear All
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="estimatedTime">Estimated Time</label>
+              <input
+                type="text"
+                id="estimatedTime"
+                placeholder="e.g., 2 hours, 45 minutes"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="subtopicOrder">Order</label>
+              <input
+                type="number"
+                id="subtopicOrder"
+                min="1"
+                placeholder="1"
+                value="1"
+              />
+              <small>Display order within the subject</small>
+            </div>
+
+            <div class="form-group">
+              <label for="prerequisites">Prerequisites</label>
+              <div id="prerequisitesSection">
+                <div class="prerequisites-help">
+                  <small
+                    >Select subtopics that must be completed before this one can
+                    be accessed</small
+                  >
+                </div>
+                <div
+                  id="prerequisitesCards"
+                  class="prerequisites-cards-container"
+                >
+                  <!-- Prerequisites cards will be populated here -->
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                onclick="closeSubtopicModal()"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">
+                <span id="submitButtonText">Add Subtopic</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keywords Management Modal -->
+    <div id="keywordsModal" class="modal">
+      <div class="modal-content large-modal">
+        <div class="modal-header">
+          <h2 id="keywordsModalTitle">Manage Keywords</h2>
+          <button class="modal-close" onclick="closeKeywordsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="keywords-manager">
+            <div class="keywords-section">
+              <h3><i class="fas fa-plus-circle"></i> Add New Keywords</h3>
+              <div class="add-keywords-form">
+                <input
+                  type="text"
+                  id="newKeywordsInput"
+                  placeholder="Enter keywords separated by commas..."
+                  class="keywords-input"
+                />
+                <button
+                  type="button"
+                  class="btn-primary"
+                  onclick="addNewKeywords()"
+                >
+                  <i class="fas fa-plus"></i> Add Keywords
+                </button>
+              </div>
+              <small
+                >Keywords help the AI understand content and provide better
+                recommendations</small
+              >
+            </div>
+
+            <div class="keywords-section">
+              <h3><i class="fas fa-tags"></i> Current Subject Keywords</h3>
+              <div id="currentKeywordsList" class="keywords-list-editable">
+                <!-- Keywords will be populated here -->
+              </div>
+            </div>
+
+            <div class="keywords-section">
+              <h3><i class="fas fa-lightbulb"></i> Suggested Keywords</h3>
+              <p>Based on existing content and common learning topics:</p>
+              <div id="suggestedKeywordsList" class="suggested-keywords">
+                <!-- Suggested keywords will be populated here -->
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeKeywordsModal()"
+            >
+              Close
+            </button>
+            <button type="button" class="btn-primary" onclick="saveKeywords()">
+              <i class="fas fa-save"></i> Save Keywords
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subject Keywords Modal -->
+    <div id="subjectKeywordsModal" class="modal">
+      <div class="modal-content large-modal">
+        <div class="modal-header">
+          <h2 id="subjectKeywordsModalTitle">Manage Subject Keywords</h2>
+          <button class="modal-close" onclick="closeSubjectKeywordsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="subject-keywords-manager">
+            <div class="keywords-stats">
+              <div class="stat-item">
+                <span class="stat-number" id="totalKeywordsCount">0</span>
+                <span class="stat-label">Total Keywords</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number" id="subtopicsCount">0</span>
+                <span class="stat-label">Subtopics</span>
+              </div>
+            </div>
+
+            <div class="keywords-section">
+              <h3><i class="fas fa-plus-circle"></i> Add New Keywords</h3>
+              <div class="add-keywords-form">
+                <input
+                  type="text"
+                  id="newSubjectKeywordsInput"
+                  placeholder="Enter keywords separated by commas..."
+                  class="keywords-input"
+                />
+                <button
+                  type="button"
+                  class="btn-primary"
+                  onclick="addNewSubjectKeywords()"
+                >
+                  <i class="fas fa-plus"></i> Add Keywords
+                </button>
+              </div>
+            </div>
+
+            <div class="keywords-section">
+              <h3><i class="fas fa-tags"></i> All Subject Keywords</h3>
+              <div class="keywords-search">
+                <input
+                  type="text"
+                  id="keywordsSearchInput"
+                  placeholder="Search keywords..."
+                  onkeyup="searchKeywords()"
+                />
+              </div>
+              <div id="allSubjectKeywordsList" class="keywords-list-editable">
+                <!-- Keywords will be populated here -->
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeSubjectKeywordsModal()"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              onclick="saveSubjectKeywords()"
+            >
+              <i class="fas fa-save"></i> Save Keywords
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Keywords Modal -->
+    <div id="viewKeywordsModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="viewKeywordsModalTitle">Subject Keywords</h2>
+          <button class="modal-close" onclick="closeViewKeywordsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="viewKeywordsContent" class="keywords-grid">
+            <!-- Keywords will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtopic Tags Management Modal -->
+    <div id="subtopicTagsModal" class="modal">
+      <div class="modal-content large-modal">
+        <div class="modal-header">
+          <h2 id="subtopicTagsModalTitle">Subtopic Tags</h2>
+          <button class="modal-close" onclick="closeSubtopicTagsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="subtopic-tags-manager">
+            <!-- Current Subtopic Tags Section -->
+            <div class="tags-section">
+              <h3><i class="fas fa-bookmark"></i> Current Subtopic Tags</h3>
+              <p>These tags are specifically associated with this subtopic:</p>
+              <div id="currentSubtopicTagsList" class="tags-list-editable">
+                <!-- Current subtopic tags will be populated here -->
+              </div>
+              <div class="add-tags-form">
+                <input
+                  type="text"
+                  id="newSubtopicTagsInput"
+                  placeholder="Add new tags for this subtopic (comma-separated)..."
+                  class="tags-input"
+                />
+                <button
+                  type="button"
+                  class="btn-primary"
+                  onclick="addNewSubtopicTags()"
+                >
+                  <i class="fas fa-plus"></i> Add Tags
+                </button>
+              </div>
+            </div>
+
+            <!-- Subject Tags Pool Section -->
+            <div class="tags-section">
+              <h3><i class="fas fa-tags"></i> Subject Tags Pool</h3>
+              <p>
+                Select tags from the subject's tag pool to assign to this
+                subtopic:
+              </p>
+              <div class="tags-search">
+                <input
+                  type="text"
+                  id="subjectTagsSearchInput"
+                  placeholder="Search subject tags..."
+                  onkeyup="searchSubjectTags()"
+                />
+              </div>
+              <div id="subjectTagsPool" class="tags-cards-container">
+                <!-- Subject tags will be populated here as selectable cards -->
+              </div>
+              <div class="tags-actions">
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="selectAllSubjectTags()"
+                >
+                  <i class="fas fa-check-double"></i> Select All
+                </button>
+                <button
+                  type="button"
+                  class="btn-link"
+                  onclick="clearAllSubjectTags()"
+                >
+                  <i class="fas fa-times"></i> Clear All
+                </button>
+              </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="tags-section">
+              <h3><i class="fas fa-eye"></i> Preview Final Tags</h3>
+              <p>These tags will be associated with this subtopic:</p>
+              <div id="finalTagsPreview" class="tags-preview">
+                <!-- Final tags preview will be shown here -->
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeSubtopicTagsModal()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              onclick="saveSubtopicTags()"
+            >
+              <i class="fas fa-save"></i> Save Tags
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .admin-body {
+        background: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .admin-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .admin-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .admin-actions .action-btn.secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+      }
+
+      .admin-actions .action-btn.secondary:hover {
+        background: #e9ecef;
+        color: #495057;
+      }
+
+      .admin-actions .action-btn.secondary.override-active {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+      }
+
+      .admin-actions .action-btn.secondary.override-active:hover {
+        background: #218838;
+        border-color: #1e7e34;
+      }
+
+      .admin-sidebar {
+        width: 280px;
+        background: #1a2332;
+        color: white;
+        padding: 0;
+        flex-shrink: 0;
+      }
+
+      .admin-logo {
+        padding: 20px;
+        border-bottom: 1px solid #2d3748;
+        text-align: center;
+      }
+
+      .admin-logo h2 {
+        margin: 0;
+        color: white;
+        font-size: 1.5rem;
+      }
+
+      .back-to-site {
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        display: inline-block;
+      }
+
+      .back-to-site:hover {
+        color: #4299e1;
+      }
+
+      .admin-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .admin-nav li a {
+        display: block;
+        padding: 15px 20px;
+        color: #a0aec0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+      }
+
+      .admin-nav li a:hover,
+      .admin-nav li a.active {
+        background: #2d3748;
+        color: #4299e1;
+        border-left-color: #4299e1;
+      }
+
+      .admin-nav li a i {
+        margin-right: 10px;
+        width: 16px;
+      }
+
+      .admin-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+      }
+
+      .admin-header {
+        margin-bottom: 30px;
+      }
+
+      .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 2.5rem;
+      }
+
+      .admin-header p {
+        color: #718096;
+        margin-top: 5px;
+      }
+
+      .action-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .action-btn.primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .action-btn.primary:hover {
+        background: #3182ce;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+      }
+
+      .filter-controls {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .filter-group label {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .filter-select,
+      .filter-group input {
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .filter-select:focus,
+      .filter-group input:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .subtopics-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+      }
+
+      .subtopic-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+      }
+
+      .subtopic-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: #4299e1;
+      }
+
+      .subtopic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+      }
+
+      .subtopic-info h3 {
+        margin: 0 0 10px 0;
+        color: #2d3748;
+        font-size: 1.2rem;
+      }
+
+      .subtopic-meta {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .subject-badge {
+        background: #4299e1;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .subtopic-id {
+        background: #f7fafc;
+        color: #718096;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-family: monospace;
+      }
+
+      .order-badge {
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+      }
+
+      .prerequisites-badge {
+        background: #fff3e0;
+        color: #f57c00;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .prerequisites-badge i {
+        font-size: 0.7rem;
+      }
+
+      .time-estimate {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        color: #718096;
+        font-size: 0.9rem;
+      }
+
+      .time-estimate i {
+        color: #4299e1;
+      }
+
+      .subtopic-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-icon {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        background: #f7fafc;
+        color: #718096;
+      }
+
+      .btn-icon:hover {
+        background: #edf2f7;
+        color: #2d3748;
+      }
+
+      .btn-icon.btn-danger {
+        background: #fed7d7;
+        color: #e53e3e;
+      }
+
+      .btn-icon.btn-danger:hover {
+        background: #feb2b2;
+        color: #c53030;
+      }
+
+      .subtopic-description {
+        color: #718096;
+        margin-bottom: 15px;
+        line-height: 1.5;
+      }
+
+      .keywords-section {
+        margin-bottom: 15px;
+      }
+
+      .keywords-section strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .keywords-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .keyword-tag {
+        background: #edf2f7;
+        color: #4a5568;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        border: 1px solid #e2e8f0;
+      }
+
+      .subtopic-stats {
+        display: flex;
+        gap: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #718096;
+        font-size: 0.9rem;
+      }
+
+      .stat i {
+        color: #4299e1;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #718096;
+      }
+
+      .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        color: #cbd5e0;
+      }
+
+      .empty-state h3 {
+        margin-bottom: 10px;
+        color: #2d3748;
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #f7fafc, #edf2f7);
+        flex-shrink: 0;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.3rem;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.3em;
+        cursor: pointer;
+        color: #718096;
+        transition: color 0.2s ease;
+      }
+
+      .modal-close:hover {
+        color: #2d3748;
+      }
+
+      .modal-body {
+        padding: 30px;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Custom scrollbar for modal body */
+      .modal-body::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .modal-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+      }
+
+      .modal-body::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+      }
+
+      .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 80%;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        font-family: inherit;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .form-group small {
+        display: block;
+        margin-top: 6px;
+        color: #718096;
+        font-size: 0.8rem;
+      }
+
+      /* Video Configuration Section */
+      .video-config-section {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 10px;
+      }
+
+      .video-config-section .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 15px;
+      }
+
+      .video-preview {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+      }
+
+      .video-preview-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #4299e1;
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+      }
+
+      .video-preview-content {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+      }
+
+      .video-preview-content iframe {
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .video-preview-info {
+        flex: 1;
+      }
+
+      .video-preview-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 8px;
+      }
+
+      .video-preview-description {
+        color: #718096;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      @media (max-width: 768px) {
+        .video-config-section .form-row {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+
+        .video-preview-content {
+          flex-direction: column;
+        }
+
+        .video-preview-content iframe {
+          width: 100%;
+          height: auto;
+          aspect-ratio: 16/9;
+        }
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 30px;
+        padding: 20px 30px;
+        background-color: white;
+        border-top: 1px solid #e2e8f0;
+        position: sticky;
+        bottom: 0;
+        margin-left: -30px;
+        margin-right: -30px;
+        margin-bottom: -30px;
+        flex-shrink: 0;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 30px;
+        padding: 20px 30px;
+        border-top: 1px solid #e2e8f0;
+        background-color: white;
+        position: sticky;
+        bottom: 0;
+        margin-left: -30px;
+        margin-right: -30px;
+        margin-bottom: -30px;
+        flex-shrink: 0;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary {
+        background: #4299e1;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #3182ce;
+      }
+
+      .btn-secondary {
+        background: #718096;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #4a5568;
+      }
+
+      /* Keywords Management Styles */
+      .keywords-preview {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .keywords-preview strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+
+      .keywords-count {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #718096;
+        font-size: 0.9rem;
+      }
+
+      .btn-mini {
+        padding: 4px 8px;
+        background: #e2e8f0;
+        color: #4a5568;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-mini:hover {
+        background: #cbd5e0;
+      }
+
+      .keywords-overview {
+        margin-top: 40px;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+      }
+
+      .keywords-overview h2 {
+        color: #2d3748;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .keywords-overview h2 i {
+        color: #4299e1;
+      }
+
+      .subject-keywords-section {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .subject-keywords-section:last-child {
+        border-bottom: none;
+      }
+
+      .subject-keywords-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .subject-keywords-header h3 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .subject-keywords-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .keywords-count {
+        color: #718096;
+        font-size: 0.9rem;
+      }
+
+      .btn-sm {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+      }
+
+      .keywords-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .keyword-more {
+        background: #f7fafc;
+        color: #718096;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        border: 1px dashed #e2e8f0;
+      }
+
+      .no-keywords {
+        color: #718096;
+        font-style: italic;
+        padding: 20px;
+        text-align: center;
+        background: #f7fafc;
+        border-radius: 8px;
+        border: 1px dashed #e2e8f0;
+      }
+
+      .no-keywords i {
+        margin-right: 8px;
+        color: #cbd5e0;
+      }
+
+      /* Large Modal Styles */
+      .large-modal {
+        max-width: 900px;
+        width: 95%;
+      }
+
+      .keywords-manager,
+      .subject-keywords-manager {
+        max-height: 600px;
+        overflow-y: auto;
+      }
+
+      .keywords-section {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .keywords-section:last-child {
+        border-bottom: none;
+      }
+
+      .keywords-section h3 {
+        color: #2d3748;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+      }
+
+      .keywords-section h3 i {
+        color: #4299e1;
+      }
+
+      .add-keywords-form {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .keywords-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+      }
+
+      .keywords-input:focus {
+        outline: none;
+        border-color: #4299e1;
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+      }
+
+      .keywords-list-editable {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 100px;
+        padding: 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f7fafc;
+      }
+
+      .keyword-tag-editable {
+        background: #4299e1;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .keyword-tag-editable:hover {
+        background: #3182ce;
+      }
+
+      .keyword-tag-editable .remove-keyword {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        cursor: pointer;
+      }
+
+      .keyword-tag-editable .remove-keyword:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .suggested-keywords {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .suggested-keyword {
+        background: #f0fff4;
+        color: #2f855a;
+        border: 1px solid #9ae6b4;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .suggested-keyword:hover {
+        background: #c6f6d5;
+        border-color: #68d391;
+      }
+
+      .keywords-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f7fafc;
+        border-radius: 8px;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-number {
+        display: block;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4299e1;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.9rem;
+        color: #718096;
+        margin-top: 4px;
+      }
+
+      .keywords-search {
+        margin-bottom: 15px;
+      }
+
+      .keywords-search input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .admin-layout {
+          flex-direction: column;
+        }
+
+        .admin-sidebar {
+          width: 100%;
+        }
+
+        .admin-content {
+          padding: 20px;
+        }
+
+        .filter-controls {
+          grid-template-columns: 1fr;
+        }
+
+        .subtopics-container {
+          grid-template-columns: 1fr;
+        }
+
+        .header-actions {
+          flex-direction: column;
+          gap: 15px;
+          align-items: stretch;
+        }
+      }
+
+      /* Keyword Cards Styles */
+      .keywords-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .tag-card {
+        position: relative;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 48px;
+      }
+
+      .tag-card:hover {
+        border-color: #4285f4;
+        box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .tag-card.selected {
+        border-color: #4285f4;
+        background-color: #e8f0fe;
+        color: #1565c0;
+      }
+
+      .tag-card.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-weight: bold;
+        color: #4285f4;
+        font-size: 16px;
+      }
+
+      .tag-card-text {
+        flex: 1;
+        margin-right: 24px;
+      }
+
+      .tag-card-actions {
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .tag-card:hover .tag-card-actions {
+        opacity: 1;
+      }
+
+      .tag-card-btn {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        border-radius: 4px;
+        color: #666;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .tag-card-btn:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+        color: #333;
+      }
+
+      .tag-card-btn.edit-btn:hover {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #f57c00;
+      }
+
+      .tag-card-btn.delete-btn:hover {
+        background-color: rgba(244, 67, 54, 0.2);
+        color: #d32f2f;
+      }
+
+      /* Tag Card Styles (same as keyword cards) */
+      .tag-card {
+        position: relative;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 48px;
+      }
+
+      .tag-card:hover {
+        border-color: #4285f4;
+        box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .tag-card.selected {
+        border-color: #4285f4;
+        background-color: #e8f0fe;
+        color: #1565c0;
+      }
+
+      .tag-card.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-weight: bold;
+        color: #4285f4;
+        font-size: 16px;
+      }
+
+      .tag-card-text {
+        flex: 1;
+        margin-right: 24px;
+      }
+
+      .tags-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      .preview-tag-element {
+        background: #e2e8f0;
+        color: #4a5568;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        display: inline-block;
+      }
+
+      .editable-tag-element {
+        background: #f0f9ff;
+        color: #0369a1;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-right: 8px;
+        margin-bottom: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .editable-tag-element .remove-tag {
+        background: #dc2626;
+        color: white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .editable-tag-element .remove-tag:hover {
+        background: #b91c1c;
+        transform: scale(1.1);
+      }
+
+      .keywords-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .btn-link {
+        background: none;
+        border: none;
+        color: #4285f4;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+      }
+
+      .btn-link:hover {
+        background-color: rgba(66, 133, 244, 0.1);
+        text-decoration: none;
+      }
+
+      .btn-link i {
+        margin-right: 5px;
+      }
+
+      /* Tag card edit modal */
+      .edit-tag-modal,
+      .confirm-delete-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1001;
+      }
+
+      .edit-tag-content,
+      .confirm-delete-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        min-width: 400px;
+        max-width: 90%;
+      }
+
+      .edit-tag-header,
+      .confirm-delete-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .edit-tag-header h3,
+      .confirm-delete-header h3 {
+        margin: 0;
+        color: #333;
+      }
+
+      .edit-tag-body,
+      .confirm-delete-body {
+        margin-bottom: 20px;
+      }
+
+      .edit-tag-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      .edit-tag-actions,
+      .confirm-delete-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .confirm-delete-body p {
+        color: #666;
+        line-height: 1.5;
+      }
+
+      .tag-name {
+        font-weight: bold;
+        color: #d32f2f;
+      }
+
+      .btn-danger {
+        background-color: #d32f2f;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+      }
+
+      .btn-danger:hover {
+        background-color: #b71c1c;
+      }
+
+      /* Subtopic Keywords Management Styles */
+      .subtopic-keywords-manager {
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+
+      .keywords-list-editable {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+        min-height: 40px;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .editable-keyword-tag {
+        background-color: #e3f2fd;
+        color: #1565c0;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #bbdefb;
+        transition: all 0.3s ease;
+      }
+
+      .editable-keyword-tag:hover {
+        background-color: #bbdefb;
+        transform: translateY(-1px);
+      }
+
+      .editable-keyword-tag .remove-keyword {
+        cursor: pointer;
+        color: #d32f2f;
+        font-weight: bold;
+        padding: 2px;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+      }
+
+      .editable-keyword-tag .remove-keyword:hover {
+        background-color: rgba(211, 47, 47, 0.1);
+      }
+
+      .keywords-preview {
+        min-height: 50px;
+        padding: 15px;
+        border: 2px dashed #e0e0e0;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .preview-keyword-tag {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        border: 1px solid #c8e6c9;
+      }
+
+      .keywords-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-right: 10px;
+      }
+
+      .add-keywords-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      /* Prerequisites Styles */
+      .prerequisites-cards-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .prerequisite-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+      }
+
+      .prerequisite-card:hover {
+        border-color: #007bff;
+        background-color: #f0f7ff;
+      }
+
+      .prerequisite-card.selected {
+        border-color: #007bff;
+        background-color: #007bff;
+        color: white;
+      }
+
+      .prerequisite-card .card-text {
+        flex: 1;
+        font-weight: 500;
+      }
+
+      .prerequisite-card .card-check {
+        margin-left: 8px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .prerequisite-card.selected .card-check {
+        opacity: 1;
+      }
+
+      .prerequisites-help {
+        margin-bottom: 8px;
+      }
+
+      .prerequisites-help small {
+        color: #666;
+      }
+    </style>
+
+    <script>
+      let currentSubjects = {{ subjects | tojson }};
+
+      // Initialize page
+      document.addEventListener('DOMContentLoaded', function() {
+          updateSubtopicCounts();
+          setupEventListeners();
+          updateEmptyState();
+          checkAdminOverrideStatus();
+          setupVideoPreview();
+      });
+
+      // Video Preview Functionality
+      function setupVideoPreview() {
+          const videoUrlInput = document.getElementById('videoUrl');
+          const videoTitleInput = document.getElementById('videoTitle');
+          const videoDescriptionInput = document.getElementById('videoDescription');
+
+          if (videoUrlInput) {
+              videoUrlInput.addEventListener('input', function() {
+                  updateVideoPreview();
+              });
+          }
+
+          if (videoTitleInput) {
+              videoTitleInput.addEventListener('input', function() {
+                  updateVideoPreview();
+              });
+          }
+
+          if (videoDescriptionInput) {
+              videoDescriptionInput.addEventListener('input', function() {
+                  updateVideoPreview();
+              });
+          }
+      }
+
+      function updateVideoPreview() {
+          const videoUrl = document.getElementById('videoUrl').value;
+          const videoTitle = document.getElementById('videoTitle').value;
+          const videoDescription = document.getElementById('videoDescription').value;
+          const previewDiv = document.getElementById('videoPreview');
+          const previewIframe = document.getElementById('previewIframe');
+          const previewTitle = document.getElementById('previewTitle');
+          const previewDescriptionDiv = document.getElementById('previewDescription');
+
+          if (!videoUrl.trim()) {
+              previewDiv.style.display = 'none';
+              return;
+          }
+
+          // Convert YouTube URL to embed format
+          const embedUrl = convertToEmbedUrl(videoUrl);
+          if (embedUrl) {
+              previewIframe.src = embedUrl;
+              previewTitle.textContent = videoTitle || 'Video Title';
+              previewDescriptionDiv.textContent = videoDescription || 'Video description will appear here...';
+              previewDiv.style.display = 'block';
+          } else {
+              previewDiv.style.display = 'none';
+          }
+      }
+
+      function convertToEmbedUrl(url) {
+          // Handle various YouTube URL formats
+          const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+          const match = url.match(youtubeRegex);
+
+          if (match && match[1]) {
+              return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1`;
+          }
+
+          // If it's already an embed URL, return it
+          if (url.includes('youtube.com/embed/')) {
+              if (!url.includes('enablejsapi=1')) {
+                  const separator = url.includes('?') ? '&' : '?';
+                  return url + separator + 'enablejsapi=1';
+              }
+              return url;
+          }
+
+          return null;
+      }
+
+      // Load video data for editing
+      function loadVideoData(subjectId, subtopicId) {
+          // Fetch video data from server
+          fetch(`/admin/videos/${subjectId}/${subtopicId}`)
+          .then(response => response.json())
+          .then(data => {
+              if (data.success && data.video) {
+                  const video = data.video;
+                  document.getElementById('videoTitle').value = video.title || '';
+                  document.getElementById('videoDescription').value = video.description || '';
+
+                  // Convert embed URL back to regular YouTube URL for editing
+                  let displayUrl = video.url || '';
+                  if (displayUrl.includes('youtube.com/embed/')) {
+                      const videoId = displayUrl.match(/embed\/([^?]*)/)?.[1];
+                      if (videoId) {
+                          displayUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                      }
+                  }
+                  document.getElementById('videoUrl').value = displayUrl;
+
+                  // Update preview
+                  updateVideoPreview();
+              } else {
+                  // Clear video fields if no video data
+                  document.getElementById('videoTitle').value = '';
+                  document.getElementById('videoDescription').value = '';
+                  document.getElementById('videoUrl').value = '';
+                  document.getElementById('videoPreview').style.display = 'none';
+              }
+          })
+          .catch(error => {
+              console.error('Error loading video data:', error);
+              // Clear fields on error
+              document.getElementById('videoTitle').value = '';
+              document.getElementById('videoDescription').value = '';
+              document.getElementById('videoUrl').value = '';
+              document.getElementById('videoPreview').style.display = 'none';
+          });
+      }
+
+      // Initialize page
+
+      function checkAdminOverrideStatus() {
+          // Check current override status and update UI
+          fetch('/admin/toggle-override', {
+              method: 'GET',
+              headers: {
+                  'Content-Type': 'application/json',
+              }
+          })
+          .then(response => response.json())
+          .then(data => {
+              updateOverrideButton(data.admin_override || false);
+          })
+          .catch(error => {
+              console.error('Error checking override status:', error);
+          });
+      }
+
+      function toggleAdminOverride() {
+          fetch('/admin/toggle-override', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              }
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  updateOverrideButton(data.admin_override);
+                  showNotification(data.message, 'success');
+              } else {
+                  showNotification('Error toggling admin override: ' + data.error, 'error');
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              showNotification('Error toggling admin override', 'error');
+          });
+      }
+
+      function updateOverrideButton(isActive) {
+          const btn = document.getElementById('toggleOverrideBtn');
+          const status = document.getElementById('overrideStatus');
+
+          if (isActive) {
+              btn.classList.add('override-active');
+              status.textContent = 'Disable Override';
+              btn.title = 'Admin override is active - prerequisites are bypassed';
+          } else {
+              btn.classList.remove('override-active');
+              status.textContent = 'Enable Override';
+              btn.title = 'Enable admin override to bypass prerequisites for testing';
+          }
+      }
+
+      function setupEventListeners() {
+          // Filter controls
+          document.getElementById('subjectFilter').addEventListener('change', filterSubtopics);
+          document.getElementById('searchSubtopics').addEventListener('input', filterSubtopics);
+
+          // Add subtopic button
+          document.getElementById('addSubtopicBtn').addEventListener('click', function() {
+              openSubtopicModal();
+          });
+
+          // Modal form submission
+          document.getElementById('subtopicForm').addEventListener('submit', function(e) {
+              e.preventDefault();
+              submitSubtopicForm();
+          });
+
+          // Subject dropdown change in modal
+          document.getElementById('subtopicSubject').addEventListener('change', function(e) {
+              const selectedSubject = e.target.value;
+              if (selectedSubject) {
+                  loadKeywordCards(selectedSubject);
+                  loadPrerequisitesCards(selectedSubject, []);
+              } else {
+                  hideKeywordsSection();
+                  hidePrerequisitesSection();
+              }
+          });
+      }
+
+      function filterSubtopics() {
+          const subjectFilter = document.getElementById('subjectFilter').value;
+          const searchTerm = document.getElementById('searchSubtopics').value.toLowerCase();
+          const cards = document.querySelectorAll('.subtopic-card');
+          let visibleCount = 0;
+
+          cards.forEach(card => {
+              const subject = card.dataset.subject;
+              const subtopicId = card.dataset.subtopic;
+              const cardText = card.textContent.toLowerCase();
+
+              const matchesSubject = !subjectFilter || subject === subjectFilter;
+              const matchesSearch = !searchTerm ||
+                  cardText.includes(searchTerm) ||
+                  subtopicId.includes(searchTerm);
+
+              if (matchesSubject && matchesSearch) {
+                  card.style.display = 'block';
+                  visibleCount++;
+              } else {
+                  card.style.display = 'none';
+              }
+          });
+
+          updateEmptyState(visibleCount === 0);
+      }
+
+      function updateEmptyState(show = null) {
+          const emptyState = document.getElementById('emptyState');
+          const cards = document.querySelectorAll('.subtopic-card');
+
+          if (show === null) {
+              show = cards.length === 0;
+          }
+
+          emptyState.style.display = show ? 'block' : 'none';
+      }
+
+      function openSubtopicModal(subjectId = '', subtopicId = '') {
+          const modal = document.getElementById('subtopicModal');
+          const form = document.getElementById('subtopicForm');
+          const title = document.getElementById('modalTitle');
+          const submitBtn = document.getElementById('submitButtonText');
+
+          // Reset form
+          form.reset();
+
+          if (subtopicId) {
+              // Edit mode
+              title.textContent = 'Edit Subtopic';
+              submitBtn.textContent = 'Update Subtopic';
+              document.getElementById('editMode').value = 'true';
+              document.getElementById('originalSubjectId').value = subjectId;
+              document.getElementById('originalSubtopicId').value = subtopicId;
+
+              // Load existing data
+              const subtopic = currentSubjects[subjectId]?.subtopics?.[subtopicId];
+              if (subtopic) {
+                  document.getElementById('subtopicSubject').value = subjectId;
+                  document.getElementById('subtopicId').value = subtopicId;
+                  document.getElementById('subtopicName').value = subtopic.name || '';
+                  document.getElementById('subtopicDescription').value = subtopic.description || '';
+                  document.getElementById('estimatedTime').value = subtopic.estimated_time || '';
+                  document.getElementById('subtopicOrder').value = subtopic.order || 1;
+
+                  // Load video data if it exists
+                  loadVideoData(subjectId, subtopicId);
+
+                  // For edit mode, show current subject keywords as suggestions
+                  const subjectKeywords = currentSubjects[subjectId]?.allowed_keywords || [];
+                  document.getElementById('subtopicKeywords').value = subjectKeywords.slice(0, 5).join(', ');
+
+                  // Disable subject and ID fields in edit mode
+                  document.getElementById('subtopicSubject').disabled = true;
+                  document.getElementById('subtopicId').disabled = true;
+
+                  // Load keyword cards for editing
+                  loadKeywordCards(subjectId);
+
+                  // Load prerequisites for editing
+                  loadPrerequisitesCards(subjectId, subtopic.prerequisites || []);
+              }
+          } else {
+              // Add mode
+              title.textContent = 'Add New Subtopic';
+              submitBtn.textContent = 'Add Subtopic';
+              document.getElementById('editMode').value = 'false';
+
+              // Enable all fields
+              document.getElementById('subtopicSubject').disabled = false;
+              document.getElementById('subtopicId').disabled = false;
+
+              if (subjectId) {
+                  document.getElementById('subtopicSubject').value = subjectId;
+                  // Load keyword cards for the selected subject
+                  loadKeywordCards(subjectId);
+                  // Load prerequisites for the selected subject
+                  loadPrerequisitesCards(subjectId, []);
+              }
+          }
+
+          modal.style.display = 'block';
+      }
+
+      function closeSubtopicModal() {
+          document.getElementById('subtopicModal').style.display = 'none';
+      }
+
+      function editSubtopic(subjectId, subtopicId) {
+          openSubtopicModal(subjectId, subtopicId);
+      }
+
+      // Keyword management functions
+      function loadKeywordCards(subjectId) {
+          if (!subjectId) {
+              hideKeywordsSection();
+              return;
+          }
+
+          // Show the keywords section
+          const keywordsSection = document.getElementById('subjectKeywordsSection');
+          keywordsSection.style.display = 'block';
+
+          // Get keywords from current data or fetch from server
+          const keywords = currentSubjects[subjectId]?.allowed_keywords || [];
+          displayKeywordCards(keywords);
+      }
+
+      function hideKeywordsSection() {
+          const keywordsSection = document.getElementById('subjectKeywordsSection');
+          keywordsSection.style.display = 'none';
+      }
+
+      function displayKeywordCards(keywords) {
+          const container = document.getElementById('subjectKeywordsCards');
+          container.innerHTML = '';
+
+          keywords.forEach((keyword, index) => {
+              const card = createTagCard(keyword, index);
+              container.appendChild(card);
+          });
+      }
+
+      // Prerequisites management functions
+      function loadPrerequisitesCards(subjectId, selectedPrerequisites = []) {
+          const container = document.getElementById('prerequisitesCards');
+          container.innerHTML = '';
+
+          // Get all subtopics for the subject except the current one being edited
+          const subtopics = currentSubjects[subjectId]?.subtopics || {};
+          const currentSubtopicId = document.getElementById('subtopicId').value;
+
+          Object.keys(subtopics).forEach(subtopicId => {
+              // Don't include the current subtopic as a potential prerequisite
+              if (subtopicId !== currentSubtopicId) {
+                  const subtopic = subtopics[subtopicId];
+                  const isSelected = selectedPrerequisites.includes(subtopicId);
+                  const card = createPrerequisiteCard(subtopicId, subtopic, isSelected);
+                  container.appendChild(card);
+              }
+          });
+      }
+
+      function createPrerequisiteCard(subtopicId, subtopicData, isSelected = false) {
+          const card = document.createElement('div');
+          card.className = `prerequisite-card ${isSelected ? 'selected' : ''}`;
+          card.dataset.subtopicId = subtopicId;
+
+          card.innerHTML = `
+              <span class="card-text">${subtopicData.name || subtopicId.replace('-', ' ')}</span>
+              <span class="card-check"><i class="fas fa-check"></i></span>
+          `;
+
+          card.addEventListener('click', function() {
+              this.classList.toggle('selected');
+          });
+
+          return card;
+      }
+
+      function hidePrerequisitesSection() {
+          const container = document.getElementById('prerequisitesCards');
+          container.innerHTML = '';
+      }
+
+      function getSelectedPrerequisites() {
+          const selectedCards = document.querySelectorAll('#prerequisitesCards .prerequisite-card.selected');
+          return Array.from(selectedCards).map(card => card.dataset.subtopicId);
+      }
+
+      function createTagCard(tag, index) {
+          const card = document.createElement('div');
+          card.className = 'tag-card';
+          card.dataset.tag = tag;
+          card.dataset.index = index;
+
+          card.innerHTML = `
+              <div class="tag-card-text">${tag}</div>
+              <div class="tag-card-actions">
+                  <button type="button" class="tag-card-btn edit-btn" onclick="editTagCard(${index})" title="Edit tag">
+                      <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="tag-card-btn delete-btn" onclick="deleteTagCard(${index})" title="Delete tag">
+                      <i class="fas fa-trash"></i>
+                  </button>
+              </div>
+          `;
+
+          // Add click handler for selection
+          card.addEventListener('click', function(e) {
+              if (!e.target.closest('.tag-card-actions')) {
+                  toggleTagSelection(card);
+              }
+          });
+
+          return card;
+      }
+
+      function toggleTagSelection(card) {
+          card.classList.toggle('selected');
+          updateTagsInput();
+      }
+
+      function selectAllTags() {
+          const cards = document.querySelectorAll('.tag-card');
+          cards.forEach(card => {
+              card.classList.add('selected');
+          });
+          updateTagsInput();
+      }
+
+      function clearAllTags() {
+          const cards = document.querySelectorAll('.tag-card');
+          cards.forEach(card => {
+              card.classList.remove('selected');
+          });
+          updateTagsInput();
+      }
+
+      function updateTagsInput() {
+          const selectedCards = document.querySelectorAll('.tag-card.selected');
+          const selectedTags = Array.from(selectedCards).map(card => card.dataset.tag);
+          document.getElementById('subtopicKeywords').value = selectedTags.join(', ');
+      }
+
+      function editTagCard(index) {
+          const card = document.querySelector(`[data-index="${index}"]`);
+          const currentTag = card.dataset.tag;
+
+          // Create and show edit modal
+          showEditTagModal(currentTag, index);
+      }
+
+      function deleteTagCard(index) {
+          const card = document.querySelector(`[data-index="${index}"]`);
+          const tag = card.dataset.tag;
+
+          showDeleteConfirmationModal(tag, () => {
+              // Remove from subject tags
+              const subjectId = document.getElementById('subtopicSubject').value;
+              removeTagFromSubject(subjectId, tag);
+
+              // Remove card from display
+              card.remove();
+              updateTagsInput();
+          });
+      }
+
+      function showDeleteConfirmationModal(tag, onConfirm) {
+          // Create modal HTML
+          const modalHTML = `
+              <div id="confirmDeleteModal" class="confirm-delete-modal">
+                  <div class="confirm-delete-content">
+                      <div class="confirm-delete-header">
+                          <h3>Delete Keyword</h3>
+                          <button type="button" onclick="closeDeleteConfirmationModal()">
+                              <i class="fas fa-times"></i>
+                          </button>
+                      </div>
+                      <div class="confirm-delete-body">
+                          <p>Are you sure you want to delete the keyword <span class="keyword-name">"${keyword}"</span>?</p>
+                          <p>This will remove it from the subject's keyword pool and may affect AI analysis for this subject.</p>
+                      </div>
+                      <div class="confirm-delete-actions">
+                          <button type="button" class="btn-secondary" onclick="closeDeleteConfirmationModal()">Cancel</button>
+                          <button type="button" class="btn-danger" onclick="confirmDeleteTag()">Delete</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          // Remove existing modal if any
+          const existingModal = document.getElementById('confirmDeleteModal');
+          if (existingModal) {
+              existingModal.remove();
+          }
+
+          // Add modal to body
+          document.body.insertAdjacentHTML('beforeend', modalHTML);
+          document.getElementById('confirmDeleteModal').style.display = 'block';
+
+          // Store the callback function
+          window.deleteKeywordCallback = onConfirm;
+      }
+
+      function closeDeleteConfirmationModal() {
+          const modal = document.getElementById('confirmDeleteModal');
+          if (modal) {
+              modal.remove();
+          }
+          window.deleteKeywordCallback = null;
+      }
+
+      function confirmDeleteTag() {
+          if (window.deleteKeywordCallback) {
+              window.deleteKeywordCallback();
+          }
+          closeDeleteConfirmationModal();
+      }
+
+      function showEditTagModal(currentTag, index) {
+          // Create modal HTML
+          const modalHTML = `
+              <div id="editTagModal" class="edit-tag-modal">
+                  <div class="edit-tag-content">
+                      <div class="edit-tag-header">
+                          <h3>Edit Tag</h3>
+                          <button type="button" onclick="closeEditTagModal()">
+                              <i class="fas fa-times"></i>
+                          </button>
+                      </div>
+                      <div class="edit-tag-body">
+                          <label for="editTagInput">Tag:</label>
+                          <input type="text" id="editTagInput" class="edit-tag-input" value="${currentTag}">
+                      </div>
+                      <div class="edit-tag-actions">
+                          <button type="button" class="btn-secondary" onclick="closeEditTagModal()">Cancel</button>
+                          <button type="button" class="btn-primary" onclick="saveEditedTag(${index})">Save</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          // Remove existing modal if any
+          const existingModal = document.getElementById('editTagModal');
+          if (existingModal) {
+              existingModal.remove();
+          }
+
+          // Add modal to body
+          document.body.insertAdjacentHTML('beforeend', modalHTML);
+          document.getElementById('editTagModal').style.display = 'block';
+          document.getElementById('editTagInput').focus();
+      }
+
+      function closeEditTagModal() {
+          const modal = document.getElementById('editTagModal');
+          if (modal) {
+              modal.remove();
+          }
+      }
+
+      function saveEditedTag(index) {
+          const newTag = document.getElementById('editTagInput').value.trim();
+          if (!newTag) {
+              alert('Please enter a valid tag');
+              return;
+          }
+
+          const card = document.querySelector(`[data-index="${index}"]`);
+          const oldTag = card.dataset.tag;
+
+          // Update the card
+          card.dataset.tag = newTag;
+          card.querySelector('.tag-card-text').textContent = newTag;
+
+          // Update subject tags
+          const subjectId = document.getElementById('subtopicSubject').value;
+          updateTagInSubject(subjectId, oldTag, newTag);
+
+          closeEditTagModal();
+          updateTagsInput();
+      }
+
+      function removeTagFromSubject(subjectId, tag) {
+          if (currentSubjects[subjectId] && currentSubjects[subjectId].allowed_keywords) {
+              const tags = currentSubjects[subjectId].allowed_keywords;
+              const tagIndex = tags.indexOf(tag);
+              if (tagIndex > -1) {
+                  tags.splice(tagIndex, 1);
+              }
+          }
+      }
+
+      function updateTagInSubject(subjectId, oldTag, newTag) {
+          if (currentSubjects[subjectId] && currentSubjects[subjectId].allowed_keywords) {
+              const tags = currentSubjects[subjectId].allowed_keywords;
+              const tagIndex = tags.indexOf(oldTag);
+              if (tagIndex > -1) {
+                  tags[tagIndex] = newTag;
+              }
+          }
+      }
+
+      function deleteSubtopic(subjectId, subtopicId) {
+          const subtopic = currentSubjects[subjectId]?.subtopics?.[subtopicId];
+          const subtopicName = subtopic?.name || subtopicId.replace('-', ' ').title();
+
+          if (confirm(`Are you sure you want to delete the subtopic "${subtopicName}"?\n\nThis will also delete all associated lessons and questions.`)) {
+              fetch(`/admin/subtopics/${subjectId}/${subtopicId}`, {
+                  method: 'DELETE',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      showNotification(data.message, 'success');
+                      setTimeout(() => {
+                          window.location.reload();
+                      }, 1500);
+                  } else {
+                      showNotification(data.error || 'An error occurred', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  showNotification('An error occurred while deleting the subtopic', 'error');
+              });
+          }
+      }
+
+      function submitSubtopicForm() {
+          const isEdit = document.getElementById('editMode').value === 'true';
+
+          // Prepare video data
+          const videoUrl = document.getElementById('videoUrl').value.trim();
+          const videoData = {};
+          if (videoUrl) {
+              const embedUrl = convertToEmbedUrl(videoUrl);
+              if (embedUrl) {
+                  videoData.title = document.getElementById('videoTitle').value.trim() || 'Video';
+                  videoData.url = embedUrl;
+                  videoData.description = document.getElementById('videoDescription').value.trim() || '';
+              }
+          }
+
+          const formData = {
+              subject: document.getElementById('subtopicSubject').value,
+              subtopic_id: document.getElementById('subtopicId').value,
+              name: document.getElementById('subtopicName').value,
+              description: document.getElementById('subtopicDescription').value,
+              keywords: document.getElementById('subtopicKeywords').value
+                  .split(',')
+                  .map(k => k.trim())
+                  .filter(k => k.length > 0),
+              estimated_time: document.getElementById('estimatedTime').value,
+              order: parseInt(document.getElementById('subtopicOrder').value) || 1,
+              prerequisites: getSelectedPrerequisites(),
+              video: Object.keys(videoData).length > 0 ? videoData : null
+          };
+
+          // Validation
+          if (!formData.subject || !formData.subtopic_id) {
+              showNotification('Please fill in all required fields', 'error');
+              return;
+          }
+
+          let url, method;
+          if (isEdit) {
+              const originalSubject = document.getElementById('originalSubjectId').value;
+              const originalSubtopic = document.getElementById('originalSubtopicId').value;
+              url = `/admin/subtopics/${originalSubject}/${originalSubtopic}`;
+              method = 'PUT';
+          } else {
+              url = '/admin/subtopics';
+              method = 'POST';
+          }
+
+          fetch(url, {
+              method: method,
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(formData)
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  showNotification(data.message, 'success');
+                  closeSubtopicModal();
+                  setTimeout(() => {
+                      window.location.reload();
+                  }, 1500);
+              } else {
+                  showNotification(data.error || 'An error occurred', 'error');
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              showNotification('An error occurred while saving the subtopic', 'error');
+          });
+      }
+
+      // Tags Management Functions
+      let currentSubtopicTags = [];
+
+      function manageTags(subjectId, subtopicId) {
+          const modal = document.getElementById('subtopicTagsModal');
+          const title = document.getElementById('subtopicTagsModalTitle');
+
+          const subjectName = currentSubjects[subjectId]?.name || subjectId;
+          const subtopicName = currentSubjects[subjectId]?.subtopics?.[subtopicId]?.name || subtopicId;
+
+          title.textContent = `Manage Tags - ${subtopicName} (${subjectName})`;
+          currentEditingSubject = subjectId;
+          currentEditingSubtopic = subtopicId;
+
+          // Initialize current subtopic tags (load from existing data if available)
+          currentSubtopicTags = loadExistingSubtopicTags(subjectId, subtopicId);
+
+          // Load current subtopic tags
+          loadCurrentSubtopicTags(subjectId, subtopicId);
+
+          // Load subject tags pool
+          loadSubjectTagsPool(subjectId);
+
+          // Update preview
+          updateFinalTagsPreview();
+
+          modal.style.display = 'block';
+      }
+
+      function closeSubtopicTagsModal() {
+          document.getElementById('subtopicTagsModal').style.display = 'none';
+          currentEditingSubtopic = null;
+          currentSubtopicTags = [];
+      }
+
+      function loadExistingSubtopicTags(subjectId, subtopicId) {
+          // For now, since tags are stored at subject level, we'll return an empty array
+          // In a future implementation, you could store subtopic-specific tags
+          // and load them here from the backend or local storage
+          return [];
+      }
+
+      function loadCurrentSubtopicTags(subjectId, subtopicId) {
+          const container = document.getElementById('currentSubtopicTagsList');
+          container.innerHTML = '';
+
+          // For now, we'll start with an empty set of subtopic-specific tags
+          // In a real implementation, you'd fetch this from the backend
+          currentSubtopicTags.forEach((tag, index) => {
+              const tagElement = createEditableTagElement(tag, index);
+              container.appendChild(tagElement);
+          });
+
+          if (currentSubtopicTags.length === 0) {
+              container.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No specific tags assigned to this subtopic yet.</p>';
+          }
+      }
+
+      async function loadSubjectTagsPool(subjectId) {
+          const container = document.getElementById('subjectTagsPool');
+          container.innerHTML = '<p style="color: #666; text-align: center;">Loading tags...</p>';
+
+          try {
+              const response = await fetch(`/api/subjects/${subjectId}/tags`);
+              if (response.ok) {
+                  const data = await response.json();
+                  const subjectTags = data.tags || [];
+
+                  container.innerHTML = '';
+
+                  if (subjectTags.length === 0) {
+                      container.innerHTML = '<p style="color: #666; font-style: italic; margin: 20px; text-align: center;">No tags in subject pool yet. <br><a href="#" onclick="editSubjectTags(\'' + subjectId + '\'); closeSubtopicTagsModal();" style="color: #4285f4;">Click here to add tags to the subject pool first.</a></p>';
+                      return;
+                  }
+
+                  subjectTags.forEach((tag, index) => {
+                      const card = createSelectableTagCard(tag, index);
+                      container.appendChild(card);
+                  });
+              } else {
+                  throw new Error('Failed to load tags');
+              }
+          } catch (error) {
+              console.error('Error loading subject tags:', error);
+              container.innerHTML = '<p style="color: #e53e3e; text-align: center;">Error loading tags. Please try again.</p>';
+          }
+      }
+
+      function createEditableTagElement(tag, index) {
+          const tagElement = document.createElement('div');
+          tagElement.className = 'editable-tag-element';
+          tagElement.innerHTML = `
+              <span>${tag}</span>
+              <span class="remove-tag" onclick="removeSubtopicTag(${index})" title="Remove tag">×</span>
+          `;
+          return tagElement;
+      }
+
+      function createSelectableTagCard(tag, index) {
+          const card = document.createElement('div');
+          card.className = 'tag-card';
+          card.dataset.tag = tag;
+          card.dataset.index = index;
+
+          card.innerHTML = `
+              <div class="tag-card-text">${tag}</div>
+          `;
+
+          // Add click handler for selection
+          card.addEventListener('click', function() {
+              toggleSubjectTagSelection(card);
+          });
+
+          return card;
+      }
+
+      function toggleSubjectTagSelection(card) {
+          card.classList.toggle('selected');
+          updateFinalTagsPreview();
+      }
+
+      function selectAllSubjectTags() {
+          const cards = document.querySelectorAll('#subjectTagsPool .tag-card');
+          cards.forEach(card => {
+              card.classList.add('selected');
+          });
+          updateFinalTagsPreview();
+      }
+
+      function clearAllSubjectTags() {
+          const cards = document.querySelectorAll('#subjectTagsPool .tag-card');
+          cards.forEach(card => {
+              card.classList.remove('selected');
+          });
+          updateFinalTagsPreview();
+      }
+
+      function addNewSubtopicTags() {
+          const input = document.getElementById('newSubtopicTagsInput');
+          const newTags = input.value.split(',').map(k => k.trim()).filter(k => k.length > 0);
+
+          if (newTags.length === 0) {
+              alert('Please enter at least one tag');
+              return;
+          }
+
+          // Add to current subtopic tags if not already present
+          newTags.forEach(tag => {
+              if (!currentSubtopicTags.includes(tag)) {
+                  currentSubtopicTags.push(tag);
+              }
+          });
+
+          // Clear input
+          input.value = '';
+
+          // Refresh display
+          loadCurrentSubtopicTags(currentEditingSubject, currentEditingSubtopic);
+          updateFinalTagsPreview();
+      }
+
+      function removeSubtopicTag(index) {
+          currentSubtopicTags.splice(index, 1);
+          loadCurrentSubtopicTags(currentEditingSubject, currentEditingSubtopic);
+          updateFinalTagsPreview();
+      }
+
+      function updateFinalTagsPreview() {
+          const preview = document.getElementById('finalTagsPreview');
+
+          // Get selected subject tags
+          const selectedCards = document.querySelectorAll('#subjectTagsPool .tag-card.selected');
+          const selectedSubjectTags = Array.from(selectedCards).map(card => card.dataset.tag);
+
+          // Combine subtopic-specific tags with selected subject tags
+          const allTags = [...new Set([...currentSubtopicTags, ...selectedSubjectTags])];
+
+          if (allTags.length === 0) {
+              preview.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No tags selected</p>';
+              return;
+          }
+
+          preview.innerHTML = allTags.map(tag =>
+              `<span class="preview-tag-element">${tag}</span>`
+          ).join('');
+      }
+
+      function searchSubjectTags() {
+          const searchTerm = document.getElementById('subjectTagsSearchInput').value.toLowerCase();
+          const cards = document.querySelectorAll('#subjectTagsPool .tag-card');
+
+          cards.forEach(card => {
+              const tag = card.dataset.tag.toLowerCase();
+              if (tag.includes(searchTerm)) {
+                  card.style.display = 'flex';
+              } else {
+                  card.style.display = 'none';
+              }
+          });
+      }
+
+      function saveSubtopicTags() {
+          // Get selected subject tags
+          const selectedCards = document.querySelectorAll('#subjectTagsPool .tag-card.selected');
+          const selectedSubjectTags = Array.from(selectedCards).map(card => card.dataset.tag);
+
+          // Combine all tags
+          const allTags = [...new Set([...currentSubtopicTags, ...selectedSubjectTags])];
+
+          // For now, we'll add these tags to the subject's tag pool
+          // In a full implementation, you'd save this association to the backend
+
+          // Add new subtopic-specific tags to the subject pool
+          const subjectTags = currentSubjects[currentEditingSubject].allowed_keywords || [];
+          const newTags = currentSubtopicTags.filter(k => !subjectTags.includes(k));
+
+          if (newTags.length > 0) {
+              // Update subject tags
+              fetch(`/admin/subjects/${currentEditingSubject}/keywords`, {
+                  method: 'PUT',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      keywords: [...subjectTags, ...newTags]
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Update local data
+                      currentSubjects[currentEditingSubject].allowed_keywords = [...subjectTags, ...newTags];
+                      showNotification(`Tags saved successfully! Added ${newTags.length} new tags to subject pool.`, 'success');
+                      closeSubtopicTagsModal();
+                  } else {
+                      showNotification(data.error || 'Failed to save tags', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error saving tags:', error);
+                  showNotification('Error saving tags', 'error');
+              });
+          } else {
+              showNotification('Tags selection saved!', 'success');
+              closeSubtopicTagsModal();
+          }
+      }
+
+      function editSubjectTags(subjectId) {
+          const modal = document.getElementById('subjectKeywordsModal');
+          const title = document.getElementById('subjectKeywordsModalTitle');
+
+          title.textContent = `Manage Tags - ${currentSubjects[subjectId]?.name || subjectId}`;
+          currentEditingSubject = subjectId;
+
+          // Load stats
+          const totalKeywords = currentSubjects[subjectId]?.allowed_keywords?.length || 0;
+          const subtopicsCount = Object.keys(currentSubjects[subjectId]?.subtopics || {}).length;
+
+          document.getElementById('totalKeywordsCount').textContent = totalKeywords;
+          document.getElementById('subtopicsCount').textContent = subtopicsCount;
+
+          // Load all subject keywords
+          loadAllSubjectKeywords(subjectId);
+
+          modal.style.display = 'block';
+      }
+
+      function viewTags(subjectId) {
+          const modal = document.getElementById('viewKeywordsModal');
+          const title = document.getElementById('viewKeywordsModalTitle');
+          const content = document.getElementById('viewKeywordsContent');
+
+          title.textContent = `${currentSubjects[subjectId]?.name || subjectId} Tags`;
+
+          const tags = currentSubjects[subjectId]?.allowed_keywords || [];
+          content.innerHTML = '';
+
+          if (tags.length > 0) {
+              tags.forEach(tag => {
+                  const tagElement = document.createElement('span');
+                  tagElement.className = 'tag-chip';
+                  tagElement.textContent = tag;
+                  content.appendChild(tagElement);
+              });
+          } else {
+              content.innerHTML = '<div class="no-tags"><i class="fas fa-info-circle"></i> No tags defined for this subject.</div>';
+          }
+
+          modal.style.display = 'block';
+      }
+
+      function loadCurrentKeywords(subjectId) {
+          const container = document.getElementById('currentKeywordsList');
+          const keywords = currentSubjects[subjectId]?.allowed_keywords || [];
+
+          container.innerHTML = '';
+
+          if (keywords.length > 0) {
+              keywords.forEach((keyword, index) => {
+                  const tag = document.createElement('div');
+                  tag.className = 'keyword-tag-editable';
+                  tag.innerHTML = `
+                      <span>${keyword}</span>
+                      <span class="remove-keyword" onclick="removeKeyword(${index})" title="Remove keyword">
+                          <i class="fas fa-times"></i>
+                      </span>
+                  `;
+                  container.appendChild(tag);
+              });
+          } else {
+              container.innerHTML = '<div style="color: #718096; font-style: italic; text-align: center; padding: 20px;">No keywords defined yet. Add some keywords above.</div>';
+          }
+      }
+
+      function loadAllSubjectKeywords(subjectId) {
+          const container = document.getElementById('allSubjectKeywordsList');
+          const keywords = currentSubjects[subjectId]?.allowed_keywords || [];
+
+          container.innerHTML = '';
+
+          if (keywords.length > 0) {
+              keywords.forEach((keyword, index) => {
+                  const tag = document.createElement('div');
+                  tag.className = 'keyword-tag-editable';
+                  tag.innerHTML = `
+                      <span>${keyword}</span>
+                      <span class="remove-keyword" onclick="removeSubjectKeyword(${index})" title="Remove keyword">
+                          <i class="fas fa-times"></i>
+                      </span>
+                  `;
+                  container.appendChild(tag);
+              });
+          } else {
+              container.innerHTML = '<div style="color: #718096; font-style: italic; text-align: center; padding: 20px;">No keywords defined yet.</div>';
+          }
+      }
+
+      function loadSuggestedKeywords(subjectId) {
+          const container = document.getElementById('suggestedKeywordsList');
+
+          // Common programming keywords - in a real app, these might come from AI analysis
+          const suggestions = {
+              'python': [
+                  'variables', 'data types', 'control flow', 'object-oriented programming',
+                  'exception handling', 'file handling', 'modules', 'packages',
+                  'decorators', 'generators', 'comprehensions', 'async programming'
+              ],
+              'javascript': [
+                  'DOM manipulation', 'event handling', 'closures', 'prototypes',
+                  'async/await', 'promises', 'ES6 features', 'React', 'Node.js'
+              ]
+          };
+
+          const subjectSuggestions = suggestions[subjectId] || [
+              'fundamentals', 'basics', 'advanced concepts', 'best practices',
+              'debugging', 'testing', 'performance optimization'
+          ];
+
+          container.innerHTML = '';
+
+          subjectSuggestions.forEach(suggestion => {
+              const tag = document.createElement('span');
+              tag.className = 'suggested-keyword';
+              tag.textContent = suggestion;
+              tag.onclick = () => addSuggestedKeyword(suggestion);
+              container.appendChild(tag);
+          });
+      }
+
+      function addNewKeywords() {
+          const input = document.getElementById('newKeywordsInput');
+          const keywords = input.value.split(',').map(k => k.trim()).filter(k => k.length > 0);
+
+          if (keywords.length === 0) {
+              showNotification('Please enter at least one keyword', 'error');
+              return;
+          }
+
+          // Add to current subject's keywords
+          if (!currentSubjects[currentEditingSubject].allowed_keywords) {
+              currentSubjects[currentEditingSubject].allowed_keywords = [];
+          }
+
+          const existing = new Set(currentSubjects[currentEditingSubject].allowed_keywords.map(k => k.toLowerCase()));
+          const newKeywords = keywords.filter(k => !existing.has(k.toLowerCase()));
+
+          if (newKeywords.length > 0) {
+              currentSubjects[currentEditingSubject].allowed_keywords.push(...newKeywords);
+              loadCurrentKeywords(currentEditingSubject);
+              input.value = '';
+              showNotification(`Added ${newKeywords.length} new keywords`, 'success');
+          } else {
+              showNotification('All keywords already exist', 'error');
+          }
+      }
+
+      function addNewSubjectKeywords() {
+          const input = document.getElementById('newSubjectKeywordsInput');
+          const keywords = input.value.split(',').map(k => k.trim()).filter(k => k.length > 0);
+
+          if (keywords.length === 0) {
+              showNotification('Please enter at least one keyword', 'error');
+              return;
+          }
+
+          // Add to current subject's keywords
+          if (!currentSubjects[currentEditingSubject].allowed_keywords) {
+              currentSubjects[currentEditingSubject].allowed_keywords = [];
+          }
+
+          const existing = new Set(currentSubjects[currentEditingSubject].allowed_keywords.map(k => k.toLowerCase()));
+          const newKeywords = keywords.filter(k => !existing.has(k.toLowerCase()));
+
+          if (newKeywords.length > 0) {
+              currentSubjects[currentEditingSubject].allowed_keywords.push(...newKeywords);
+              loadAllSubjectKeywords(currentEditingSubject);
+
+              // Update stats
+              document.getElementById('totalKeywordsCount').textContent = currentSubjects[currentEditingSubject].allowed_keywords.length;
+
+              input.value = '';
+              showNotification(`Added ${newKeywords.length} new keywords`, 'success');
+          } else {
+              showNotification('All keywords already exist', 'error');
+          }
+      }
+
+      function addSuggestedKeyword(keyword) {
+          if (!currentSubjects[currentEditingSubject].allowed_keywords) {
+              currentSubjects[currentEditingSubject].allowed_keywords = [];
+          }
+
+          const existing = new Set(currentSubjects[currentEditingSubject].allowed_keywords.map(k => k.toLowerCase()));
+
+          if (!existing.has(keyword.toLowerCase())) {
+              currentSubjects[currentEditingSubject].allowed_keywords.push(keyword);
+              loadCurrentKeywords(currentEditingSubject);
+              showNotification(`Added "${keyword}" to keywords`, 'success');
+          } else {
+              showNotification('Keyword already exists', 'error');
+          }
+      }
+
+      function removeKeyword(index) {
+          if (confirm('Are you sure you want to remove this keyword?')) {
+              currentSubjects[currentEditingSubject].allowed_keywords.splice(index, 1);
+              loadCurrentKeywords(currentEditingSubject);
+          }
+      }
+
+      function removeSubjectKeyword(index) {
+          if (confirm('Are you sure you want to remove this keyword?')) {
+              currentSubjects[currentEditingSubject].allowed_keywords.splice(index, 1);
+              loadAllSubjectKeywords(currentEditingSubject);
+
+              // Update stats
+              document.getElementById('totalKeywordsCount').textContent = currentSubjects[currentEditingSubject].allowed_keywords.length;
+          }
+      }
+
+      function searchKeywords() {
+          const searchTerm = document.getElementById('keywordsSearchInput').value.toLowerCase();
+          const keywords = document.querySelectorAll('#allSubjectKeywordsList .keyword-tag-editable');
+
+          keywords.forEach(keyword => {
+              const text = keyword.textContent.toLowerCase();
+              if (text.includes(searchTerm)) {
+                  keyword.style.display = 'flex';
+              } else {
+                  keyword.style.display = 'none';
+              }
+          });
+      }
+
+      function saveKeywords() {
+          // Save keywords to backend
+          const keywords = currentSubjects[currentEditingSubject].allowed_keywords || [];
+
+          fetch(`/admin/subjects/${currentEditingSubject}/keywords`, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ keywords: keywords })
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  showNotification('Keywords saved successfully', 'success');
+                  closeKeywordsModal();
+                  setTimeout(() => {
+                      window.location.reload();
+                  }, 1500);
+              } else {
+                  showNotification(data.error || 'An error occurred', 'error');
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              showNotification('An error occurred while saving keywords', 'error');
+          });
+      }
+
+      function saveSubjectKeywords() {
+          saveKeywords(); // Same function for now
+          closeSubjectKeywordsModal();
+      }
+
+      // Modal close functions
+      function closeKeywordsModal() {
+          document.getElementById('keywordsModal').style.display = 'none';
+      }
+
+      function closeSubjectKeywordsModal() {
+          document.getElementById('subjectKeywordsModal').style.display = 'none';
+      }
+
+      function closeViewKeywordsModal() {
+          document.getElementById('viewKeywordsModal').style.display = 'none';
+      }
+
+      // Global variables for tracking current editing context
+      let currentEditingSubject = null;
+      let currentEditingSubtopic = null;
+
+      function updateSubtopicCounts() {
+          // This would typically come from the backend
+          // For now, we'll just show placeholder counts
+          document.querySelectorAll('.subtopic-card').forEach(card => {
+              const stats = card.querySelector('.subtopic-stats');
+              if (stats) {
+                  // You can implement actual count logic here
+                  // For now, showing placeholder counts
+              }
+          });
+      }
+
+      function showNotification(message, type) {
+          const notification = document.createElement('div');
+          notification.className = `notification ${type}`;
+          notification.textContent = message;
+          notification.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              padding: 12px 20px;
+              border-radius: 6px;
+              color: white;
+              font-weight: 500;
+              z-index: 1001;
+              animation: slideIn 0.3s ease;
+              ${type === 'success' ? 'background-color: #28a745;' : 'background-color: #dc3545;'}
+          `;
+
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+              notification.remove();
+          }, 3000);
+      }
+
+      // Close modal when clicking outside
+      window.addEventListener('click', function(event) {
+          const subtopicModal = document.getElementById('subtopicModal');
+          const keywordsModal = document.getElementById('keywordsModal');
+          const subjectKeywordsModal = document.getElementById('subjectKeywordsModal');
+          const viewKeywordsModal = document.getElementById('viewKeywordsModal');
+
+          if (event.target === subtopicModal) {
+              closeSubtopicModal();
+          } else if (event.target === keywordsModal) {
+              closeKeywordsModal();
+          } else if (event.target === subjectKeywordsModal) {
+              closeSubjectKeywordsModal();
+          } else if (event.target === viewKeywordsModal) {
+              closeViewKeywordsModal();
+          }
+      });
+
+      // Add CSS for notification animation
+      const style = document.createElement('style');
+      style.textContent = `
+          @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+          }
+      `;
+      document.head.appendChild(style);
+    </script>
+  </body>
+</html>
