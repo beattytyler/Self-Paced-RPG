@@ -10,10 +10,14 @@ from flask import (
     session,
     redirect,
     url_for,
+    flash,
 )  # Added redirect, url_for
 from openai import OpenAI
 from dotenv import load_dotenv
 from utils.data_loader import DataLoader
+from werkzeug.security import generate_password_hash, check_password_hash
+import random, string
+from flask_sqlalchemy import SQLAlchemy
 
 #  Load Environment Variables
 load_dotenv()
@@ -29,7 +33,11 @@ if not app.secret_key:
         "your_default_secret_key_for_development_12345_v2"  # Fallback for local dev
     )
 
-#  OpenAI Client Initialization
+SECRET_KEY = os.getenv("SECRET_KEY", "devkey")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
+
 # Ensure OPENAI_API_KEY is set in your .env file
 try:
     api_key = os.getenv("OPENAI_API_KEY")
@@ -194,12 +202,95 @@ def call_openai_api(
     except Exception as e:
         app.logger.error(f"OpenAI API call failed: {e}")
         return None
+    
+# -------------------------
+# Models
+# -------------------------
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'teacher' or 'student'
+    classes = db.relationship("Class", backref="teacher", lazy=True)
 
+class Class(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(10), unique=True, nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+class ClassRegistration(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=False)
+
+# -------------------------
+# Helper Functions
+# -------------------------
+def generate_class_code(length=6):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+# -------------------------
+@app.route('/')
+def index():
+    if session.get('user_id'):
+        return redirect(url_for('subject_selection'))
+    return redirect(url_for('login'))
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = generate_password_hash(request.form['password'])
+        role = request.form['role']
+
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered")
+            return redirect('/register')
+
+        user = User(username=username, email=email, password_hash=password, role=role)
+        db.session.add(user)
+        db.session.commit()
+        flash('Account created! Please log in.')
+        return redirect('/login')
+
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            session['role'] = user.role
+            flash(f"Welcome {user.username}!")
+
+            return redirect(url_for('subject_selection'))
+
+        flash('Invalid email or password', 'error')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("Logged out successfully")
+    return redirect('/login')
 
 #  Main Application Routes
-@app.route("/")
+@app.route("/subjects")
 def subject_selection():
     """New home page showing all available subjects."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
     try:
         # Use auto-discovery instead of subjects.json
         subjects = data_loader.discover_subjects()
@@ -279,7 +370,6 @@ def subject_page(subject):
     except Exception as e:
         app.logger.error(f"Error loading subject page for {subject}: {e}")
         return redirect(url_for("subject_selection"))
-
 
 @app.route("/legacy")
 def legacy_index():
