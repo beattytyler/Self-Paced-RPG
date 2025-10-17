@@ -1,12 +1,38 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>Login</h2>
-<form method="POST" action="/login">
-    <label>Email:</label>
-    <input type="email" name="email" required><br>
-    <label>Password:</label>
-    <input type="password" name="password" required><br>
-    <button type="submit">Login</button>
-</form>
-<p>Don't have an account? <a href="/register">Register here</a></p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Standalone</title>
+    <style>
+        body { font-family: Arial; background: #f5f5f5; margin:0; padding:0; }
+        .container { max-width: 400px; margin: 5rem auto; background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; margin-bottom: 1rem; }
+        label { display: block; margin-top: 1rem; }
+        input { width: 100%; padding: 8px; margin-top: 0.5rem; border-radius: 5px; border: 1px solid #ccc; }
+        button { margin-top: 1rem; padding: 10px 20px; width: 100%; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .flash { color: red; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Login</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="flash">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <label>Email</label>
+            <input type="email" name="email" required>
+            <label>Password</label>
+            <input type="password" name="password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html>
