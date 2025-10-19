@@ -14,6 +14,7 @@ class User(db.Model):
     email = db.Column(db.String(100), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(Enum('student', 'teacher', name='user_roles'), nullable=False)
+    code = db.Column(db.String(10), nullable=True, unique=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
