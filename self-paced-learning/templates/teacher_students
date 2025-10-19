@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard - Manage Students</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
+    .students-container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 2rem;
+    }
+
+    .students-container h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+
+    .student-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      transition: background 0.2s ease;
+    }
+
+    .student-item:hover {
+      background: #e9ecef;
+    }
+
+    .student-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .btn-remove {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-remove:hover {
+      background: #c82333;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .back-link a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Manage Students</h1>
+  </header>
+
+  <div class="students-container">
+    <h2>Your Students</h2>
+
+    {% if students %}
+      {% for student in students %}
+      <div class="student-item">
+        <span class="student-name">{{ student.name }}</span>
+        <form action="/teacher/remove_student/{{ student.id }}" method="POST" style="margin:0;">
+          <button type="submit" class="btn-remove">
+            <i class="fas fa-user-times"></i> Remove
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="text-align:center; color:#666;">No students enrolled yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="back-link">
+    <a href="/subjects"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+  </div>
+</body>
+</html>
