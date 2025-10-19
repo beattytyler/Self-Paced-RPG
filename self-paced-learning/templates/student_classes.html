@@ -96,7 +96,7 @@
     <h2>Add a Teacher</h2>
 
     <form class="add-teacher-form" action="/student/add_teacher" method="POST">
-      <input type="text" name="teacher_code" placeholder="Enter teacher code" required />
+      <input type="text" name="code" placeholder="Enter teacher code" required />
       <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Add</button>
     </form>
 
@@ -104,7 +104,6 @@
     {% if classes %}
       {% for c in classes %}
       <div class="class-item">
-        <span class="class-info">{{ c.name }}</span>
         <span class="class-teacher"><i class="fas fa-user"></i> {{ c.teacher_name }}</span>
       </div>
       {% endfor %}
