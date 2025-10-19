@@ -32,7 +32,8 @@ if not app.secret_key:
     app.secret_key = (
         "your_default_secret_key_for_development_12345_v2"  # Fallback for local dev
     )
-
+    
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 SECRET_KEY = os.getenv("SECRET_KEY", "devkey")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -236,7 +237,7 @@ def generate_class_code(length=6):
 def index():
     if session.get('user_id'):
         return redirect(url_for('subject_selection'))
-    return redirect(url_for('login'))
+    return redirect('/login')
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -275,8 +276,8 @@ def login():
             return redirect(url_for('subject_selection'))
 
         flash('Invalid email or password', 'error')
-
-    return render_template('login.html')
+    version = '1.0.3'
+    return render_template('login.html', version=version)
 
 @app.route('/logout')
 def logout():
@@ -288,8 +289,6 @@ def logout():
 @app.route("/subjects")
 def subject_selection():
     """New home page showing all available subjects."""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
     
     try:
         # Use auto-discovery instead of subjects.json

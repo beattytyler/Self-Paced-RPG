@@ -1,12 +1,91 @@
-{% extends 'base.html' %}
-{% block content %}
-<h2>Login</h2>
-<form method="POST" action="/login">
-    <label>Email:</label>
-    <input type="email" name="email" required><br>
-    <label>Password:</label>
-    <input type="password" name="password" required><br>
-    <button type="submit">Login</button>
-</form>
-<p>Don't have an account? <a href="/register">Register here</a></p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standalone Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd, #90caf9);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            padding: 2rem 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #1565c0;
+        }
+        label {
+            display: block;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 0.3rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            background-color: #1976d2;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-top: 1.5rem;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0d47a1;
+        }
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            color: red;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .success {
+            color: green;
+        }
+        p {
+            text-align: center;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Standalone Login</h1>
+
+        <form method="POST" action="/login">
+            <label for="email">Email:</label>
+            <input type="email" name="email" id="email" required />
+
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required />
+
+            <button type="submit">Login</button>
+        </form>
+
+        <p>Don’t have an account? <a href="#">Register</a></p>
+    </div>
+</body>
+</html>
