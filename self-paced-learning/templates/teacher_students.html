@@ -88,31 +88,22 @@
     <h1 style="text-align:center; margin-top:2rem;">Manage Students</h1>
   </header>
 
-  <div class="students-container">
-    <h2>Your Students</h2>
+<h2>Your Teacher Code: <span style="color: #007bff;">{{ code }}</span></h2>
 
-    {% if students %}
-      {% for student in students %}
-      <div class="student-item">
-        <div class="student-details">
-          <span class="student-name">{{ student.username }}</span>
-          <div class="student-meta">
-            {{ student.email }} | Role: {{ student.role }}
-            <br>
-            Class Code{% if student.class_codes|length > 1 %}s{% endif %}: {{ student.class_codes }}
-          </div>
-        </div>
-        <form action="/teacher/remove_student/{{ student.id }}" method="POST" style="margin:0;">
-          <button type="submit" class="btn-remove">
-            <i class="fas fa-user-times"></i> Remove
-          </button>
-        </form>
-      </div>
-      {% endfor %}
-    {% else %}
-      <p style="text-align:center; color:#666;">No students enrolled yet.</p>
-    {% endif %}
-  </div>
+<div class="students-container">
+  <h2>Your Students</h2>
+
+  {% if students %}
+    {% for student in students %}
+    <div class="student-item">
+      <span class="student-name">{{ student.username }}</span>
+      <span class="student-email">{{ student.email }}</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p style="text-align:center; color:#666;">No students enrolled yet.</p>
+  {% endif %}
+</div>
 
   <div class="back-link">
     <a href="/subjects"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
