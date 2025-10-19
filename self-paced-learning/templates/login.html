@@ -1,38 +1,252 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Standalone</title>
-    <style>
-        body { font-family: Arial; background: #f5f5f5; margin:0; padding:0; }
-        .container { max-width: 400px; margin: 5rem auto; background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; margin-bottom: 1rem; }
-        label { display: block; margin-top: 1rem; }
-        input { width: 100%; padding: 8px; margin-top: 0.5rem; border-radius: 5px; border: 1px solid #ccc; }
-        button { margin-top: 1rem; padding: 10px 20px; width: 100%; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .flash { color: red; margin-bottom: 1rem; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Login</h1>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, msg in messages %}
-                    <div class="flash">{{ msg }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+    <title>Learning Platform - Subject Selection</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Choose a Subject!</h1>
+    </header>
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <label>Email</label>
-            <input type="email" name="email" required>
-            <label>Password</label>
-            <input type="password" name="password" required>
-            <button type="submit">Login</button>
-        </form>
+    <div class="subjects-container">
+      {% for subject_id, subject_data in subjects.items() %}
+      <div class="subject-card" data-subject="{{ subject_id }}">
+          <div class="subject-icon">
+              <i class="{{ subject_data.icon }}" style="color: {{ subject_data.color }};"></i>
+          </div>
+          <div class="subject-content">
+              <h2 class="subject-title">{{ subject_data.name }}</h2>
+              <p class="subject-description">{{ subject_data.description }}</p>
+              <div class="subject-stats">
+                  <span class="stat">
+                      <i class="fas fa-book"></i>
+                      {{ subject_data.subtopic_count }} Topics
+                  </span>
+                  <span class="stat">
+                      <i class="fas fa-chart-line"></i>
+                      Beginner to Advanced
+                  </span>
+              </div>
+              <div class="subject-actions">
+                  <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
+                      <i class="fas fa-play"></i>
+                      Start Learning
+                  </a>
+              </div>
+          </div>
+      </div>
+      {% endfor %}
     </div>
-</body>
+
+        </div> <!-- end of subjects-container -->
+
+    <!-- Role-specific buttons -->
+    <div class="role-buttons">
+      {% if user_role == 'teacher' %}
+      <a href="{{ url_for('teacher_students') }}" class="btn btn-teacher">
+        <i class="fas fa-users"></i>
+        View Students
+      </a>
+      {% elif user_role == 'student' %}
+      <a href="{{ url_for('student_classes') }}" class="btn btn-student">
+        <i class="fas fa-book-open"></i>
+        Add/View Classes
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Admin Panel Link -->
+    <div class="admin-link">
+      <a href="/admin" class="btn btn-secondary">
+        <i class="fas fa-cog"></i>
+        Admin Panel
+      </a>
+    </div>
+
+
+
+
+
+    <!-- Admin Panel Link (Optional) -->
+    <div class="admin-link">
+      <a href="/admin" class="btn btn-secondary">
+        <i class="fas fa-cog"></i>
+        Admin Panel
+      </a>
+    </div>
+
+    <style>
+      .subjects-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+
+      .subject-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+
+      .subject-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-color, #007bff);
+      }
+
+      .subject-icon {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .subject-icon i {
+        font-size: 4rem;
+        opacity: 0.9;
+      }
+
+      .subject-title {
+        color: #333;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .subject-description {
+        color: #666;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        line-height: 1.5;
+      }
+
+      .subject-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #777;
+        font-size: 0.9rem;
+      }
+
+      .subject-actions {
+        text-align: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        transform: translateY(-2px);
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+        font-size: 0.9rem;
+        padding: 8px 16px;
+      }
+
+      .btn-secondary:hover {
+        background: #545b62;
+      }
+
+      .admin-link {
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      @media (max-width: 768px) {
+        .subjects-container {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .subject-card {
+          padding: 1.5rem;
+        }
+
+        .subject-stats {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+      }
+        .role-buttons {
+          text-align: center;
+          margin-top: 1.5rem;
+        }
+
+        .btn-teacher {
+          background: linear-gradient(135deg, #28a745, #218838);
+          color: white;
+          margin-right: 1rem;
+        }
+
+        .btn-teacher:hover {
+          background: linear-gradient(135deg, #218838, #1e7e34);
+          transform: translateY(-2px);
+        }
+
+        .btn-student {
+          background: linear-gradient(135deg, #17a2b8, #117a8b);
+          color: white;
+        }
+
+        .btn-student:hover {
+          background: linear-gradient(135deg, #117a8b, #0c5460);
+          transform: translateY(-2px);
+        }  
+      </style>
+
+    <script>
+      // Add click handler for entire card
+      document.querySelectorAll(".subject-card").forEach((card) => {
+        card.addEventListener("click", (e) => {
+          if (e.target.tagName !== "A") {
+            const subject = card.dataset.subject;
+            window.location.href = `/subjects/${subject}`;
+          }
+        });
+      });
+    </script>
+  </body>
 </html>
