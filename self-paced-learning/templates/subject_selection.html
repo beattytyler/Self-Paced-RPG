@@ -53,12 +53,12 @@
     <!-- Role-specific buttons -->
     <div class="role-buttons">
       {% if user_role == 'teacher' %}
-      <a href="/teacher/students" class="btn btn-teacher">
+      <a href="{{ url_for('teacher_students') }}" class="btn btn-teacher">
         <i class="fas fa-users"></i>
         View Students
       </a>
       {% elif user_role == 'student' %}
-      <a href="/student/classes" class="btn btn-student">
+      <a href="{{ url_for('student_classes') }}" class="btn btn-student">
         <i class="fas fa-book-open"></i>
         Add/View Classes
       </a>
