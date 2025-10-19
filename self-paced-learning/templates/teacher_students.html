@@ -37,9 +37,19 @@
       background: #e9ecef;
     }
 
+    .student-details {
+      line-height: 1.3;
+    }
+
     .student-name {
       font-weight: 600;
       color: #333;
+      font-size: 1.1rem;
+    }
+
+    .student-meta {
+      font-size: 0.9rem;
+      color: #555;
     }
 
     .btn-remove {
@@ -75,7 +85,7 @@
 
 <body>
   <header>
-    <h1>Manage Students</h1>
+    <h1 style="text-align:center; margin-top:2rem;">Manage Students</h1>
   </header>
 
   <div class="students-container">
@@ -84,7 +94,14 @@
     {% if students %}
       {% for student in students %}
       <div class="student-item">
-        <span class="student-name">{{ student.name }}</span>
+        <div class="student-details">
+          <span class="student-name">{{ student.username }}</span>
+          <div class="student-meta">
+            {{ student.email }} | Role: {{ student.role }}
+            <br>
+            Class Code{% if student.class_codes|length > 1 %}s{% endif %}: {{ student.class_codes }}
+          </div>
+        </div>
         <form action="/teacher/remove_student/{{ student.id }}" method="POST" style="margin:0;">
           <button type="submit" class="btn-remove">
             <i class="fas fa-user-times"></i> Remove
