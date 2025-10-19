@@ -16,41 +16,66 @@
   <body>
     <header>
       <h1>Choose a Subject!</h1>
-      <p class="subtitle"></p>
     </header>
 
     <div class="subjects-container">
       {% for subject_id, subject_data in subjects.items() %}
       <div class="subject-card" data-subject="{{ subject_id }}">
-        <div class="subject-icon">
-          <i
-            class="{{ subject_data.icon }}"
-            style="color: {{ subject_data.color }};"
-          ></i>
-        </div>
-        <div class="subject-content">
-          <h2 class="subject-title">{{ subject_data.name }}</h2>
-          <p class="subject-description">{{ subject_data.description }}</p>
-          <div class="subject-stats">
-            <span class="stat">
-              <i class="fas fa-book"></i>
-              {{ subject_data.subtopic_count }} Topics
-            </span>
-            <span class="stat">
-              <i class="fas fa-chart-line"></i>
-              Beginner to Advanced
-            </span>
+          <div class="subject-icon">
+              <i class="{{ subject_data.icon }}" style="color: {{ subject_data.color }};"></i>
           </div>
-          <div class="subject-actions">
-            <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
-              <i class="fas fa-play"></i>
-              Start Learning
-            </a>
+          <div class="subject-content">
+              <h2 class="subject-title">{{ subject_data.name }}</h2>
+              <p class="subject-description">{{ subject_data.description }}</p>
+              <div class="subject-stats">
+                  <span class="stat">
+                      <i class="fas fa-book"></i>
+                      {{ subject_data.subtopic_count }} Topics
+                  </span>
+                  <span class="stat">
+                      <i class="fas fa-chart-line"></i>
+                      Beginner to Advanced
+                  </span>
+              </div>
+              <div class="subject-actions">
+                  <a href="/subjects/{{ subject_id }}" class="btn btn-primary">
+                      <i class="fas fa-play"></i>
+                      Start Learning
+                  </a>
+              </div>
           </div>
-        </div>
       </div>
       {% endfor %}
     </div>
+
+        </div> <!-- end of subjects-container -->
+
+    <!-- Role-specific buttons -->
+    <div class="role-buttons">
+      {% if user_role == 'teacher' %}
+      <a href="/teacher/students" class="btn btn-teacher">
+        <i class="fas fa-users"></i>
+        View Students
+      </a>
+      {% elif user_role == 'student' %}
+      <a href="/student/classes" class="btn btn-student">
+        <i class="fas fa-book-open"></i>
+        Add/View Classes
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Admin Panel Link -->
+    <div class="admin-link">
+      <a href="/admin" class="btn btn-secondary">
+        <i class="fas fa-cog"></i>
+        Admin Panel
+      </a>
+    </div>
+
+
+
+
 
     <!-- Admin Panel Link (Optional) -->
     <div class="admin-link">
@@ -183,8 +208,34 @@
           flex-direction: column;
           gap: 0.5rem;
         }
+        
       }
-    </style>
+        .role-buttons {
+          text-align: center;
+          margin-top: 1.5rem;
+        }
+
+        .btn-teacher {
+          background: linear-gradient(135deg, #28a745, #218838);
+          color: white;
+          margin-right: 1rem;
+        }
+
+        .btn-teacher:hover {
+          background: linear-gradient(135deg, #218838, #1e7e34);
+          transform: translateY(-2px);
+        }
+
+        .btn-student {
+          background: linear-gradient(135deg, #17a2b8, #117a8b);
+          color: white;
+        }
+
+        .btn-student:hover {
+          background: linear-gradient(135deg, #117a8b, #0c5460);
+          transform: translateY(-2px);
+        }  
+      </style>
 
     <script>
       // Add click handler for entire card
