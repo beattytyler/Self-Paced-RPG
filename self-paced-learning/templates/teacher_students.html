@@ -98,7 +98,7 @@
     <div class="student-item">
       <span class="student-name">{{ student.username }}</span>
       <span class="student-email">{{ student.email }}</span>
-      <form method="POST" action="/remove_student" style="margin:0;">
+      <form method="POST" action="/teacher/remove_student/{{ student.id }}" style="margin:0;">
         <input type="hidden" name="student_id" value="{{ student.id }}" />
         <button type="submit" class="btn-remove"><i class="fas fa-user-minus"></i> Remove</button>
       </form>
