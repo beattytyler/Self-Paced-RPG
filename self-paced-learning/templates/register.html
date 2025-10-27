@@ -13,7 +13,10 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+<<<<<<< HEAD
       margin: 0;
+=======
+>>>>>>> aa3e3dac3ae5ea8d5e7988b186accfd0ae58ccfc
     }
 
     .register-container {
@@ -22,8 +25,11 @@
       border-radius: 10px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       width: 350px;
+<<<<<<< HEAD
       position: relative;
       z-index: 1;
+=======
+>>>>>>> aa3e3dac3ae5ea8d5e7988b186accfd0ae58ccfc
     }
 
     .register-container h2 {
@@ -73,6 +79,7 @@
       text-decoration: underline;
     }
 
+<<<<<<< HEAD
     /* Flash messages floating above content */
     .flash-container {
       position: fixed;
@@ -105,10 +112,20 @@
       background-color: #d4edda;
       color: #155724;
       border-color: #c3e6cb;
+=======
+    .flash-message {
+      background: #ffdddd;
+      color: #900;
+      padding: 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      text-align: center;
+>>>>>>> aa3e3dac3ae5ea8d5e7988b186accfd0ae58ccfc
     }
   </style>
 </head>
 <body>
+<<<<<<< HEAD
 
   <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -121,13 +138,19 @@
     {% endif %}
   {% endwith %}
 
+=======
+>>>>>>> aa3e3dac3ae5ea8d5e7988b186accfd0ae58ccfc
   <div class="register-container">
     <h2>Create Account</h2>
 
     <form action="{{ url_for('register') }}" method="POST">
       <input type="text" name="username" placeholder="Username" required />
       <input type="email" name="email" placeholder="Email" required />
+<<<<<<< HEAD
       <input type="password" name="password" placeholder="Password" minlength="8" required />
+=======
+      <input type="password" name="password" placeholder="Password" required />
+>>>>>>> aa3e3dac3ae5ea8d5e7988b186accfd0ae58ccfc
       
       <select name="role" required>
         <option value="" disabled selected>Select Role</option>
