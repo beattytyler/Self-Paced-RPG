@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Dashboard - My Classes</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
+    .classes-container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 2rem;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+
+    form.add-teacher-form {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    input[name="teacher_code"] {
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 250px;
+    }
+
+    .btn-add {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-add:hover {
+      background: #0056b3;
+    }
+
+    .class-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s ease;
+    }
+
+    .class-item:hover {
+      background: #e9ecef;
+    }
+
+    .class-info {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .back-link a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>My Classes</h1>
+  </header>
+
+  <div class="classes-container">
+    <h2>Add a Teacher</h2>
+
+    <form class="add-teacher-form" action="/student/add_teacher" method="POST">
+      <input type="text" name="code" placeholder="Enter teacher code" required />
+      <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Add</button>
+    </form>
+
+    <h2>My Enrolled Classes</h2>
+    {% if classes %}
+      {% for c in classes %}
+      <div class="class-item">
+        <span class="class-teacher"><i class="fas fa-user"></i> {{ c.teacher_username }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="text-align:center; color:#666;">You have not joined any classes yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="back-link">
+    <a href="/subjects"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+  </div>
+</body>
+</html>

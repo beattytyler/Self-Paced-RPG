@@ -18,6 +18,8 @@ from utils.data_loader import DataLoader
 from werkzeug.security import generate_password_hash, check_password_hash
 import random, string
 from flask_sqlalchemy import SQLAlchemy
+from extensions import db
+
 
 #  Load Environment Variables
 load_dotenv()
@@ -35,10 +37,14 @@ if not app.secret_key:
     
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 SECRET_KEY = os.getenv("SECRET_KEY", "devkey")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///app.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
 
+db.init_app(app)
+from models import User, Class, ClassRegistration
+
+from flask_migrate import Migrate
+migrate = Migrate(app, db)
 # Ensure OPENAI_API_KEY is set in your .env file
 try:
     api_key = os.getenv("OPENAI_API_KEY")
@@ -203,28 +209,6 @@ def call_openai_api(
     except Exception as e:
         app.logger.error(f"OpenAI API call failed: {e}")
         return None
-    
-# -------------------------
-# Models
-# -------------------------
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'teacher' or 'student'
-    classes = db.relationship("Class", backref="teacher", lazy=True)
-
-class Class(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(10), unique=True, nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-
-class ClassRegistration(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    class_id = db.Column(db.Integer, db.ForeignKey("class.id"), nullable=False)
 
 # -------------------------
 # Helper Functions
@@ -235,6 +219,7 @@ def generate_class_code(length=6):
 # -------------------------
 @app.route('/')
 def index():
+    session.clear()
     if session.get('user_id'):
         return redirect(url_for('subject_selection'))
     return redirect('/login')
@@ -245,19 +230,39 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
-        password = generate_password_hash(request.form['password'])
+        password = request.form['password']
         role = request.form['role']
 
-        if User.query.filter_by(email=email).first():
-            flash("Email already registered")
+        # 1. Check password length
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long.", "error")
             return redirect('/register')
 
-        user = User(username=username, email=email, password_hash=password, role=role)
+        # 2. Check if email already exists
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered", "error")
+            return redirect('/register')
+
+        # 3. Generate teacher code if role is teacher
+        code = generate_class_code() if role == 'teacher' else None
+
+        # 4. Hash password and create user
+        password_hash = generate_password_hash(password)
+        user = User(
+            username=username,
+            email=email,
+            password_hash=password_hash,
+            role=role,
+            code=code
+        )
+
         db.session.add(user)
         db.session.commit()
-        flash('Account created! Please log in.')
+
+        flash('Account created! Please log in.', 'success')
         return redirect('/login')
 
+    # GET request: show registration form
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -285,11 +290,141 @@ def logout():
     flash("Logged out successfully")
     return redirect('/login')
 
+@app.route("/teacher/students")
+def teacher_students():
+    teacher_id = session.get("user_id")
+    if not teacher_id:
+        return redirect("/login")
+
+    # Get the teacher
+    teacher = User.query.get(teacher_id)
+    code = teacher.code if teacher else None
+
+    # Find all students enrolled in this teacher's classes
+    students = (
+        db.session.query(User)
+        .join(ClassRegistration, ClassRegistration.student_id == User.id)
+        .join(Class, Class.id == ClassRegistration.class_id)
+        .filter(Class.teacher_id == teacher_id)
+        .distinct()
+        .all()
+    )
+
+    return render_template(
+        "teacher_students.html",
+        students=students,
+        code=teacher.code  # pass the code to the template
+    )
+
+@app.route('/teacher/student_progress/<int:student_id>')
+def student_progress(student_id):
+    """Temporary page to confirm the 'View Progress' button works."""
+    
+    # You can fetch the student's name here if you have a database function
+    # For now, we'll use a placeholder name:
+    student_name = f"Student {student_id}"
+
+    return render_template(
+        'student_progress_temp.html',
+        student_name=student_name,
+        student_id=student_id
+    )
+
+
+@app.route("/teacher/remove_student/<int:student_id>", methods=["POST"])
+def remove_student(student_id):
+    teacher_id = session.get("user_id")
+
+    # Remove enrollment of this student from teacher's classes
+    enrollments = (
+        ClassRegistration.query
+        .join(Class, Class.id == ClassRegistration.class_id)
+        .filter(Class.teacher_id == teacher_id, ClassRegistration.student_id == student_id)
+        .all()
+    )
+    for e in enrollments:
+        db.session.delete(e)
+    db.session.commit()
+    return redirect("/teacher/students")
+
+@app.route("/student/add_teacher", methods=["POST"])
+def add_teacher():
+    student_id = session.get("user_id")
+
+    if not student_id:
+        flash("Please log in first.")
+        return redirect("/login")
+
+    code = request.form.get("code")
+    if not code:
+        flash("Teacher code is required.")
+        return redirect("/student/classes")
+
+    teacher = User.query.filter_by(code=code, role="teacher").first()
+    if not teacher:
+        flash("Invalid teacher code.")
+        return redirect("/student/classes")
+
+    # Get all classes for this teacher, create one if none exists
+    classes = Class.query.filter_by(teacher_id=teacher.id).all()
+    if not classes:
+        # Create a default class for this teacher
+        default_class = Class(
+            name=f"{teacher.username}'s Class",
+            code=code,  # optional, can reuse teacher code
+            teacher_id=teacher.id
+        )
+        db.session.add(default_class)
+        db.session.commit()
+        classes = [default_class]
+
+    # Enroll the student in all of the teacher's classes
+    for c in classes:
+        existing = ClassRegistration.query.filter_by(student_id=student_id, class_id=c.id).first()
+        if not existing:
+            db.session.add(ClassRegistration(student_id=student_id, class_id=c.id))
+
+    db.session.commit()
+    flash(f"Successfully joined {teacher.username}'s class!")
+    return redirect("/student/classes")
+
+
+
+@app.route("/student/classes")
+def student_classes():
+    student_id = session.get("user_id")
+    if not student_id:
+        flash("Please log in first.")
+        return redirect("/login")
+
+    # Query all classes the student is enrolled in, joined with teacher info
+    results = (
+        db.session.query(Class, User.username.label("teacher_username"))
+        .join(User, Class.teacher_id == User.id)
+        .join(ClassRegistration, ClassRegistration.class_id == Class.id)
+        .filter(ClassRegistration.student_id == student_id)
+        .all()
+    )
+
+    # Convert query results into a list of dicts for the template
+    classes = [
+        {
+            "class_name": cls.name,
+            "teacher_username": teacher_username,
+        }
+        for cls, teacher_username in results
+    ]
+
+    return render_template("student_classes.html", classes=classes)
+
+
+
+
+
 #  Main Application Routes
 @app.route("/subjects")
 def subject_selection():
     """New home page showing all available subjects."""
-    
     try:
         # Use auto-discovery instead of subjects.json
         subjects = data_loader.discover_subjects()
@@ -307,11 +442,18 @@ def subject_selection():
                 }
             }
 
-        return render_template("subject_selection.html", subjects=subjects)
+        user_role = session.get("role")  # get the logged-in user's role
+
+        return render_template(
+            "subject_selection.html",
+            subjects=subjects,
+            user_role=user_role  # <-- pass it here
+        )
     except Exception as e:
         app.logger.error(f"Error loading subject selection: {e}")
         # Fallback to legacy index if there's an error
         return redirect(url_for("python_subject_page"))
+
 
 
 @app.route("/subjects/<subject>")

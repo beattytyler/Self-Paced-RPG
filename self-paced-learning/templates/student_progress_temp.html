@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress View (Temporary)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding-top: 50px;
+            background-color: #f4f7f6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007bff;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #333;
+            transition: background 0.2s;
+        }
+        .back-link:hover {
+            background: #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Progress View for {{ student_name }}</h1>
+        <p>This is a **temporary page** for student progress (ID: `{{ student_id }}`).</p>
+        <p>The actual progress data dashboard will be built here later.</p>
+
+        <a href="/teacher/students" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Student List
+        </a>
+    </div>
+</body>
+</html>

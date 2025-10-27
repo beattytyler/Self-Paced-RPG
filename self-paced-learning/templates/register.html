@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .register-container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 350px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .register-container h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .register-container form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .register-container input, .register-container select {
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .register-container button {
+      padding: 0.75rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .register-container button:hover {
+      background: #0056b3;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .login-link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Flash messages floating above content */
+    .flash-container {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: auto;
+      max-width: 90%;
+    }
+
+    .flash {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+
+    .flash.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
+
+    .flash.success {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="register-container">
+    <h2>Create Account</h2>
+
+    <form action="{{ url_for('register') }}" method="POST">
+      <input type="text" name="username" placeholder="Username" required />
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Password" minlength="8" required />
+      
+      <select name="role" required>
+        <option value="" disabled selected>Select Role</option>
+        <option value="teacher">Teacher</option>
+        <option value="student">Student</option>
+      </select>
+
+      <button type="submit">Register</button>
+    </form>
+
+    <div class="login-link">
+      Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+    </div>
+  </div>
+</body>
+</html>

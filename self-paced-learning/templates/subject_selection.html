@@ -50,34 +50,29 @@
 
         </div> <!-- end of subjects-container -->
 
-    <!-- Role-specific buttons -->
-    <div class="role-buttons">
+    <!-- Fixed top-left button container -->
+    <div class="top-left-buttons">
       {% if user_role == 'teacher' %}
-      <a href="/teacher/students" class="btn btn-teacher">
+      <a href="{{ url_for('teacher_students') }}" class="btn btn-teacher">
         <i class="fas fa-users"></i>
         View Students
       </a>
       {% elif user_role == 'student' %}
-      <a href="/student/classes" class="btn btn-student">
+      <a href="{{ url_for('student_classes') }}" class="btn btn-student">
         <i class="fas fa-book-open"></i>
         Add/View Classes
       </a>
       {% endif %}
-    </div>
 
-    <!-- Admin Panel Link -->
-    <div class="admin-link">
-      <a href="/admin" class="btn btn-secondary">
-        <i class="fas fa-cog"></i>
-        Admin Panel
+      <!-- Logout Button -->
+      <a href="{{ url_for('logout') }}" class="btn btn-logout">
+        <i class="fas fa-sign-out-alt"></i>
+        Logout
       </a>
     </div>
 
 
-
-
-
-    <!-- Admin Panel Link (Optional) -->
+    <!-- Admin Panel Link -->
     <div class="admin-link">
       <a href="/admin" class="btn btn-secondary">
         <i class="fas fa-cog"></i>
@@ -208,34 +203,45 @@
           flex-direction: column;
           gap: 0.5rem;
         }
-        
       }
-        .role-buttons {
-          text-align: center;
-          margin-top: 1.5rem;
-        }
+        
+      .top-left-buttons {
+          position: fixed;
+          top: 1rem;
+          left: 1rem;
+          display: flex;
+          flex-direction: column; /* stack vertically */
+          gap: 0.5rem;
+          z-index: 1000; /* stay above other content */
+      }
 
-        .btn-teacher {
-          background: linear-gradient(135deg, #28a745, #218838);
-          color: white;
-          margin-right: 1rem;
-        }
+      .top-left-buttons .btn {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+      }
 
-        .btn-teacher:hover {
-          background: linear-gradient(135deg, #218838, #1e7e34);
-          transform: translateY(-2px);
-        }
 
-        .btn-student {
-          background: linear-gradient(135deg, #17a2b8, #117a8b);
-          color: white;
-        }
+      .btn-teacher {
+        background: linear-gradient(135deg, #28a745, #218838);
+        color: white;
+        margin-right: 1rem;
+      }
 
-        .btn-student:hover {
-          background: linear-gradient(135deg, #117a8b, #0c5460);
-          transform: translateY(-2px);
-        }  
-      </style>
+      .btn-teacher:hover {
+        background: linear-gradient(135deg, #218838, #1e7e34);
+        transform: translateY(-2px);
+      }
+
+      .btn-student {
+        background: linear-gradient(135deg, #17a2b8, #117a8b);
+        color: white;
+      }
+
+      .btn-student:hover {
+        background: linear-gradient(135deg, #117a8b, #0c5460);
+        transform: translateY(-2px);
+      }  
+    </style>
 
     <script>
       // Add click handler for entire card
